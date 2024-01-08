@@ -1,6 +1,13 @@
 # Custom Dictionary Words
+Darwinex
 dotenv
 forex
 freezegun
+gethostname
+levelname
+metatrader
+millis
+papertrailapp
 pytz
+raspberrypi
 tradingbot

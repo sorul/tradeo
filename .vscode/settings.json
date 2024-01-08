@@ -15,5 +15,8 @@
       "addWords": true,
       "scope": "workspace"
     }
+  },
+  "files.associations": {
+    "*.mq5": "cpp"
   }
 }

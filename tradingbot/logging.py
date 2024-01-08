@@ -1,1 +1,0 @@
-"""Script to handle logging."""
