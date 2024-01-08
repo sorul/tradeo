@@ -1,0 +1,6 @@
+# Custom Dictionary Words
+dotenv
+forex
+freezegun
+pytz
+tradingbot
