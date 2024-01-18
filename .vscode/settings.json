@@ -1,7 +1,7 @@
 {
   "flake8.args": [
     "--config",
-    "${workspaceFolder}/config/tox.ini",
+    "${workspaceFolder:tradingbot}/config/tox.ini",
   ],
   "python.testing.pytestArgs": [
     "tests"

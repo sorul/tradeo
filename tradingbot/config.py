@@ -1,6 +1,7 @@
 """Script to manage envs files."""
 from dotenv import load_dotenv
 from .paths import config_path
+from pathlib import Path
 import logging
 import os
 import pytz
@@ -18,9 +19,17 @@ class Config:
       os.getenv('FOREX_TIMEZONE') or 'US/Eastern')
   broker_timezone = pytz.timezone(
       os.getenv('BROKER_TIMEZONE') or '')
+  utc_timezone = pytz.utc
 
   # Paths configuration
-  zmq_files_path = os.getenv('ZMQ_FILES_PATH')
+  default_mt_files_path = Path(
+      '/home/pi/.wine/drive_c/Program Files/MetaTrader/MQL5/Files')
+  mt_files_path = Path(os.getenv('MT_FILES_PATH') or default_mt_files_path)
+
+  # Trading configuration
+  symbols = (os.getenv('SYMBOLS') or 'EURUSD').split(',')
+  timeframe = os.getenv('TIMEFRAME') or 'M5'
+  lookback_days = float(os.getenv('LOOKBACK_DAYS') or 10)
 
   # Logging configuration
   ll = os.getenv('LOG_LEVEL') or 'INFO'
