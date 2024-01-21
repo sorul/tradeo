@@ -8,6 +8,6 @@ def stringToDateUTC(
     format='%Y.%m.%d %H:%M',
     timezone=Config.utc_timezone
 ) -> datetime:
-  """Convert a string to a datetime object."""
+  """Convert a string to a datetime object in UTC timezone."""
   r = timezone.localize(datetime.strptime(str_date, format))
   return r.astimezone(Config.utc_timezone)

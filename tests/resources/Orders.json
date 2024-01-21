@@ -1,0 +1,26 @@
+{
+  "account_info": {
+    "name": "Foo",
+    "number": -999999999,
+    "currency": "EUR",
+    "leverage": 200,
+    "free_margin": 999999.99,
+    "balance": 999999.99,
+    "equity": 999999.99
+  },
+  "orders": {
+    "2023993175": {
+      "magic": 1705617043,
+      "symbol": "AUDUSD",
+      "lots": 0.01,
+      "type": "buy",
+      "open_price": 0.65754,
+      "open_time": "2024.01.19 00:30:43",
+      "SL": 0.65443,
+      "TP": 0.00000,
+      "pnl": -0.59,
+      "swap": 0.00,
+      "comment": "KAMIKAZE"
+    }
+  }
+}

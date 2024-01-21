@@ -1,0 +1,15 @@
+{
+  "2015257378": {
+    "magic": 1696018543,
+    "symbol": "GBPCAD",
+    "lots": 0.01,
+    "type": "sell",
+    "entry": "entry_out",
+    "deal_time": "2023.09.29 23:52:28",
+    "deal_price": 1.65396,
+    "pnl": -2.45,
+    "commission": -0.03,
+    "swap": 0.00,
+    "comment": "[sl 1.65410]"
+  }
+}

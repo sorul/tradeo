@@ -35,6 +35,19 @@ def try_load_json(file_path: Path) -> ty.Dict[str, ty.Dict]:
   return {}
 
 
+def try_read_file(file_path: Path) -> str:
+  """Try to read a file."""
+  for _ in range(5):
+    if file_path.exists():
+      try:
+        with open(file_path, 'r') as f:
+          return f.read()
+      except (IOError, PermissionError, FileNotFoundError):
+        pass
+      sleep(0.1)
+  return ''
+
+
 def try_remove_file(file_path: Path) -> bool:
   """Try to remove a file."""
   for _ in range(5):

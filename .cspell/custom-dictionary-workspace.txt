@@ -1,13 +1,17 @@
 # Custom Dictionary Words
+AUDUSD
 buylimit
 buystop
 Darwinex
 dataframe
 dotenv
+EURGBP
 EURUSD
 forex
 freezegun
+GBPCAD
 GBPNZD
+GBPUSD
 gethostname
 levelname
 lookback
@@ -19,4 +23,5 @@ raspberrypi
 selllimit
 sellstop
 tradingbot
-GBPUSD
+USDCAD
+USDJPY
