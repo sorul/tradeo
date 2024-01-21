@@ -1,13 +1,27 @@
 # Custom Dictionary Words
+AUDUSD
+buylimit
+buystop
 Darwinex
+dataframe
 dotenv
+EURGBP
+EURUSD
 forex
 freezegun
+GBPCAD
+GBPNZD
+GBPUSD
 gethostname
 levelname
+lookback
 metatrader
 millis
 papertrailapp
 pytz
 raspberrypi
+selllimit
+sellstop
 tradingbot
+USDCAD
+USDJPY

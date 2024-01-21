@@ -1,7 +1,7 @@
 """Script to handle the forex bot."""
 from datetime import datetime
 from .config import Config
-from .paths import file_exists
+from .files import file_exists
 
 
 def main():

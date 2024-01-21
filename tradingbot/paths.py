@@ -1,6 +1,5 @@
 """Script to collect different path utilities."""
 from pathlib import Path
-import os
 
 
 def root_project() -> Path:
@@ -16,8 +15,3 @@ def config_path() -> Path:
 def data_path() -> Path:
   """Return the data path."""""
   return root_project() / 'data'
-
-
-def file_exists(file: str, path: Path = config_path()) -> bool:
-  """Return True if the file exists."""
-  return os.path.exists(path / file)
