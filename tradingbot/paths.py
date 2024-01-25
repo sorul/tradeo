@@ -15,3 +15,13 @@ def config_path() -> Path:
 def data_path() -> Path:
   """Return the data path."""""
   return root_project() / 'data'
+
+
+def bash_path() -> Path:
+  """Return the bash path."""
+  return root_project() / 'bash'
+
+
+def test_resources() -> Path:
+  """Return the test resources path."""
+  return root_project() / 'tests' / 'resources'

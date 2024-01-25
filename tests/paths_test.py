@@ -1,14 +1,22 @@
-from tradingbot.paths import root_project, config_path, data_path
+from tradingbot import paths as p
 from pathlib import Path
 
 
 def test_root_project():
-  assert isinstance(root_project(), Path)
+  assert isinstance(p.root_project(), Path)
 
 
 def test_config_path():
-  assert config_path().exists()
+  assert p.config_path().exists()
 
 
 def test_data_path():
-  assert data_path().exists()
+  assert p.data_path().exists()
+
+
+def test_bash_path():
+  assert p.bash_path().exists()
+
+
+def test_tests_resources():
+  assert p.test_resources().exists()

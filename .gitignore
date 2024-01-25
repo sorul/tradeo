@@ -127,6 +127,7 @@ env.bak/
 venv.bak/
 .env.*
 !.env.dummy
+!.env.setup
 
 # Spyder project settings
 .spyderproject

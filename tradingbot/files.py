@@ -1,50 +1,76 @@
 """Script to collect different files utilities."""
 import typing as ty
 from pathlib import Path
-from tradingbot.paths import config_path, data_path
+from tradingbot.paths import data_path
 from os.path import exists
 import json
 import os
 from time import sleep
 from json.decoder import JSONDecodeError
+from enum import Enum
 
 
-def get_successful_symbols() -> ty.List[str]:
-  """Return the list of successful symbols."""
-  path = data_path().joinpath('successful_symbols.txt')
-  with open(path, 'r') as file:
-    lines = file.readlines()
-    symbols = [symbol.strip() for symbol in lines]
-  return symbols
+class Files(str, Enum):
+  """Files enum."""
+
+  # GENERAL
+  SUCCESSFUL_SYMBOLS = 'successful_symbols.txt'
+  CONSECUTIVE_TIMES_DOWN = 'consecutive_orders.txt'
+  LAST_BALANCE = 'last_balance.txt'
+
+  # LOCKS
+  FOREX_LOCK = 'forex.lock'
 
 
-def file_exists(file: str, path: Path = config_path()) -> bool:
-  """Return True if the file exists."""
+def write_file(
+    file_name: str,
+    text: str = '',
+    mode: str = 'w',
+    file_path: Path = Path()
+) -> None:
+  """Write a file.
+
+  file_path: "data_path" as default value.
+  """
+  file_path = file_path if file_path != Path() else data_path()
+  with open(file=file_path / file_name, mode=mode) as f:
+    f.write(str(text))
+
+
+def file_exists(file: str, path: Path = Path()) -> bool:
+  """Return True if the file exists.
+
+  file_path: "data_path" as default value.
+  """
+  path = path if path != Path() else data_path()
   return exists(path / file)
 
 
 def try_load_json(file_path: Path) -> ty.Dict[str, ty.Dict]:
   """Try to load a JSON from a file generate from MQL."""
-  try:
-    if exists(file_path):
-      with open(file_path) as f:
-        text = f.read()
-        return json.loads(text)
-  except (IOError, PermissionError, JSONDecodeError):
-    pass
+  for _ in range(5):
+    try:
+      if exists(file_path):
+        with open(file_path) as f:
+          text = f.read()
+          return json.loads(text)
+    except (IOError, PermissionError, JSONDecodeError):
+      pass
+    sleep(0.1)
   return {}
 
 
-def try_read_file(file_path: Path) -> str:
-  """Try to read a file."""
-  for _ in range(5):
-    if file_path.exists():
-      try:
-        with open(file_path, 'r') as f:
-          return f.read()
-      except (IOError, PermissionError, FileNotFoundError):
-        pass
-      sleep(0.1)
+def try_read_file(file_name: str, file_path: Path = Path()) -> str:
+  """Try to read a file.
+
+  file_path: "data_path" as default value.
+  """
+  file_path = file_path if file_path != Path() else data_path()
+  try:
+    with open(file_path / file_name, 'r') as f:
+      return f.read()
+  except (IOError, PermissionError):
+    pass
   return ''
 
 
@@ -59,3 +85,40 @@ def try_remove_file(file_path: Path) -> bool:
         pass
       sleep(0.1)
   return False
+
+
+def lock(lock_name: str) -> None:
+  """Create a lock file."""
+  write_file(f'{lock_name}')
+
+
+def unlock(lock_name: str) -> None:
+  """Remove a lock file."""
+  file_path = data_path()
+  try_remove_file(file_path / f'{lock_name}')
+
+
+def reset_successful_symbols_file() -> None:
+  """Reset the successful symbols file."""
+  write_file(Files.SUCCESSFUL_SYMBOLS, '')
+
+
+def reset_consecutive_times_down_file() -> None:
+  """Reset the consecutive times down file."""
+  write_file(Files.CONSECUTIVE_TIMES_DOWN, '0')
+
+
+def get_last_balance() -> float:
+  """Get the balance of the account."""
+  return float(try_read_file(Files.LAST_BALANCE))
+
+
+def get_consecutive_times_down() -> int:
+  """Get the consecutive times down."""
+  return int(try_read_file(Files.CONSECUTIVE_TIMES_DOWN))
+
+
+def increment_consecutive_times_down() -> None:
+  """Increment the consecutive times down."""
+  write_file(Files.CONSECUTIVE_TIMES_DOWN,
+             str(get_consecutive_times_down() + 1))

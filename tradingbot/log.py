@@ -39,21 +39,21 @@ class Log(metaclass=Singleton):
     self.syslog.setFormatter(self.formatter)
     self.logger.addHandler(self.syslog)
 
-  def debug(self, msg):
+  def debug(self, msg: str):
     """Log debug message."""
     self.logger.debug(msg)
 
-  def info(self, msg):
+  def info(self, msg: str):
     """Log info message."""
     self.logger.info(msg)
 
-  def warning(self, msg):
+  def warning(self, msg: str):
     """Log warning message."""
     self.logger.warning(msg)
 
-  def error(self, msg):
+  def error(self, msg: str):
     """Log error message."""
-    self.logger.error(msg)
+    self.logger.error(msg.replace('\n', ' '))
 
 
 # Singleton instance

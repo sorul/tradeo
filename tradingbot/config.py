@@ -15,8 +15,6 @@ class Config:
   # Timezone Configuration
   local_timezone = pytz.timezone(
       os.getenv('LOCAL_TIMEZONE') or 'Europe/Madrid')
-  forex_timezone = pytz.timezone(
-      os.getenv('FOREX_TIMEZONE') or 'US/Eastern')
   broker_timezone = pytz.timezone(
       os.getenv('BROKER_TIMEZONE') or '')
   utc_timezone = pytz.utc

@@ -10,33 +10,33 @@ import json
 from datetime import datetime
 import pytz
 from freezegun import freeze_time
-import os
+from tradingbot.paths import test_resources
+from os.path import join
 
 
 def test_set_agent_paths():
   mock_config = MagicMock()
-  mock_config.mt_files_path = 'tests/resources'
+  mock_config.mt_files_path = test_resources()
 
   with patch('tradingbot.forex_client.Config', mock_config):
-    client = MT_Client(start=False)
+    client = MT_Client()
+    path_file = join(mock_config.mt_files_path, client.prefix_files_path)
+
+    # Method to test
     client.set_agent_paths()
 
-    assert client.path_orders == Path('tests/resources/AgentFiles/Orders.json')
-    assert client.path_messages == Path(
-        'tests/resources/AgentFiles/Messages.json')
-    assert client.path_market_data == Path(
-        'tests/resources/AgentFiles/Market_Data.json')
-    assert client.path_bar_data == Path(
-        'tests/resources/AgentFiles/Bar_Data.json')
-    assert client.path_historic_data == Path('tests/resources/AgentFiles')
-    assert client.path_historic_trades == Path(
-        'tests/resources/AgentFiles/Historic_Trades.json')
-    assert client.path_orders_stored == Path(
-        'tests/resources/AgentFiles/Orders_Stored.json')
-    assert client.path_messages_stored == Path(
-        'tests/resources/AgentFiles/Messages_Stored.json')
-    assert client.path_commands_prefix == Path(
-        'tests/resources/AgentFiles/Commands_')
+    assert client.path_orders == Path(join(path_file, 'Orders.json'))
+    assert client.path_messages == Path(join(path_file, 'Messages.json'))
+    assert client.path_market_data == Path(join(path_file, 'Market_Data.json'))
+    assert client.path_bar_data == Path(join(path_file, 'Bar_Data.json'))
+    assert client.path_historic_data == Path(join(path_file))
+    assert client.path_historic_trades == Path(join(
+        path_file, 'Historic_Trades.json'))
+    assert client.path_orders_stored == Path(join(
+        path_file, 'Orders_Stored.json'))
+    assert client.path_messages_stored == Path(join(
+        path_file, 'Messages_Stored.json'))
+    assert client.path_commands_prefix == Path(join(path_file, 'Commands_'))
 
 
 def test_set_agent_paths_missing_dir():
@@ -52,10 +52,10 @@ def test_check_messages(tmp_path):
 
   # Copy the Messages.json file to the temporary folder
   messages_path = tmp_path / 'Messages.json'
-  original_messages_path = Path('tests/resources/Messages.json')
+  original_messages_path = Path(f'{test_resources()}/Messages.json')
   shutil.copyfile(original_messages_path, messages_path)
 
-  client = MT_Client(start=False)
+  client = MT_Client()
   client.path_messages = messages_path
 
   # Call for the first time to read messages
@@ -91,10 +91,10 @@ def test_check_market_data(tmp_path):
 
   # Copy the Market_Data.json file to the temporary folder
   market_data_path = tmp_path / 'Market_Data.json'
-  original_market_data_path = Path('tests/resources/Market_Data.json')
+  original_market_data_path = Path(f'{test_resources()}/Market_Data.json')
   shutil.copyfile(original_market_data_path, market_data_path)
 
-  client = MT_Client(start=False)
+  client = MT_Client()
   client.path_market_data = market_data_path
 
   # Call for the first time to read data
@@ -139,10 +139,10 @@ def test_check_bar_data(tmp_path):
 
   # Copy the Bar_Data.json file to the temporary folder
   bar_data_path = tmp_path / 'Bar_Data.json'
-  original_bar_data_path = Path('tests/resources/Bar_Data.json')
+  original_bar_data_path = Path(f'{test_resources()}/Bar_Data.json')
   shutil.copyfile(original_bar_data_path, bar_data_path)
 
-  client = MT_Client(start=False)
+  client = MT_Client()
   client.path_bar_data = bar_data_path
 
   # Call for the first time to read data
@@ -185,11 +185,17 @@ def test_check_open_orders(tmp_path):
 
   # Copy the Orders.json file to the temporary folder
   orders_path = tmp_path / 'Orders.json'
-  original_orders_path = Path('tests/resources/Orders.json')
+  original_orders_path = Path(f'{test_resources()}/Orders.json')
   shutil.copyfile(original_orders_path, orders_path)
 
-  client = MT_Client(start=False)
+  # Copy the Orders_Stored.json file to the temporary folder
+  orders_stored_path = tmp_path / 'Orders_Stored.json'
+  original_orders_stored_path = Path(f'{test_resources()}/Orders_Stored.json')
+  shutil.copyfile(original_orders_stored_path, orders_stored_path)
+
+  client = MT_Client()
   client.path_orders = orders_path
+  client.path_orders_stored = orders_stored_path
 
   # Call for the first time to read orders
   client.check_open_orders()
@@ -260,9 +266,9 @@ def test_check_historic_data(tmp_path):
   symbol = 'USDJPY'
 
   # Create client
-  client = MT_Client(start=False)
+  client = MT_Client()
   client.path_historic_data = tmp_path
-  client.path_historic_data = Path('tests/resources/')
+  client.path_historic_data = test_resources()
 
   data = client.check_historic_data(symbol)
   mock_data = {
@@ -284,7 +290,7 @@ def test_check_historic_data(tmp_path):
       }
   }
   mock_df = DataFrame.from_dict(
-    data[f'{symbol}_{Config.timeframe}'], orient='index')
+      data[f'{symbol}_{Config.timeframe}'], orient='index')
 
   # Assertions
   assert data == mock_data
@@ -319,10 +325,10 @@ def test_check_historic_trades(tmp_path):
 
   # Copy the Bar_Data.json file to the temporary folder
   bar_data_path = tmp_path / 'Historic_Trades.json'
-  original_bar_data_path = Path('tests/resources/Historic_Trades.json')
+  original_bar_data_path = Path(f'{test_resources()}/Historic_Trades.json')
   shutil.copyfile(original_bar_data_path, bar_data_path)
 
-  client = MT_Client(start=False)
+  client = MT_Client()
   client.path_bar_data = bar_data_path
 
   # Call for the first time to read data
@@ -377,8 +383,9 @@ def test_check_historic_trades(tmp_path):
 
 def test_send_command(tmp_path):
 
-  client = MT_Client(start=False)
-  client.path_commands_prefix = tmp_path
+  client = MT_Client()
+  tmp_path = Path(tmp_path)
+  client.path_commands_prefix = tmp_path / 'Commands_'
 
   # Acquire and release lock
   client.lock.acquire()
@@ -391,12 +398,12 @@ def test_send_command(tmp_path):
   client.send_command('TEST', 'test content')
 
   assert client.command_id == 1
-  assert try_read_file(Path(f'{tmp_path}0.txt')) == '<:1|TEST|test content:>'
+  assert try_read_file('Commands_0.txt', tmp_path) == '<:1|TEST|test content:>'
 
 
 def test_clean_all_command_files(tmp_path):
 
-  client = MT_Client(start=False)
+  client = MT_Client()
   client.path_commands_prefix = tmp_path
 
   # Create some files
@@ -417,12 +424,12 @@ def test_clean_all_command_files(tmp_path):
 
 def test_clean_all_historic_files(tmp_path):
 
-  client = MT_Client(start=False)
+  client = MT_Client()
   client.path_historic_data = tmp_path
 
   # Create some files
-  file1 = Path(os.path.join(tmp_path, 'Historic_Data_EURUSD.json'))
-  file2 = Path(os.path.join(tmp_path, 'Historic_Data_USDJPY.json'))
+  file1 = Path(join(tmp_path, 'Historic_Data_EURUSD.json'))
+  file2 = Path(join(tmp_path, 'Historic_Data_USDJPY.json'))
   file1.touch()
   file2.touch()
 
@@ -437,8 +444,8 @@ def test_clean_all_historic_files(tmp_path):
 
 
 def test_command_file_exist():
-  client = MT_Client(start=False)
-  client.path_commands_prefix = Path('tests/resources/Commands_')
+  client = MT_Client()
+  client.path_commands_prefix = Path(f'{test_resources()}/Commands_')
 
   assert client.command_file_exist('GBPNZD')
   assert not client.command_file_exist('EURUSD')
