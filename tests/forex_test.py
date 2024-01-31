@@ -1,14 +1,16 @@
 from tradingbot.forex import is_locked, check_time_viability
 from tradingbot.files import Files
+from tradingbot.forex import _send_profit_message
 from freezegun import freeze_time
 from datetime import datetime
 from pathlib import Path
 from tradingbot.config import Config
 from unittest.mock import patch
+from tradingbot.forex_client import mt_client
 import pytz
 
 
-@patch('tradingbot.files.data_path')
+@patch('tradingbot.files.get_default_path')
 def test_is_locked(mock_data_path, tmp_path):
 
   # Make data_path() return the temporary directory
@@ -51,3 +53,24 @@ def test_check_time_viability():
   d = datetime(2024, 1, 28, 23, 55)
   with freeze_time(tz.localize(d)):
     assert not check_time_viability()
+
+
+@patch('tradingbot.files.get_default_path')
+def test_send_profit_message(mock_data_path, tmp_path):
+  tz = pytz.timezone(str(Config.local_timezone))
+  mt_client.account_info = {'balance': 100.0}
+
+  # Make data_path() return the temporary directory
+  mock_data_path.return_value = tmp_path
+
+  # Create the file with some content
+  with open(tmp_path / Files.LAST_BALANCE, 'w') as file:
+    file.write('20')
+
+  # Sends a message
+  d = datetime(2024, 1, 1, 12, 5)
+  assert _send_profit_message(tz.localize(d))
+
+  # Doesn't send a message
+  d = datetime(2024, 1, 1, 13, 5)
+  assert not _send_profit_message(tz.localize(d))

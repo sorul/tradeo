@@ -9,15 +9,19 @@ import subprocess
 import typing as ty
 from .log import log
 from os.path import basename, join
+from pytz import BaseTzInfo
+from pytz.tzinfo import DstTzInfo, StaticTzInfo
+
+timezone_type = ty.Union[DstTzInfo, BaseTzInfo, StaticTzInfo]
 
 
 def stringToDateUTC(
-    str_date,
-    format='%Y.%m.%d %H:%M',
-    timezone=Config.utc_timezone
+    str_date: str,
+    date_format: str = '%Y.%m.%d %H:%M',
+    timezone: timezone_type = Config.utc_timezone
 ) -> datetime:
   """Convert a string to a datetime object in UTC timezone."""
-  r = timezone.localize(datetime.strptime(str_date, format))
+  r = timezone.localize(datetime.strptime(str_date, date_format))
   return r.astimezone(Config.utc_timezone)
 
 

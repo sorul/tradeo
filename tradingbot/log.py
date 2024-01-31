@@ -15,7 +15,7 @@ class ContextFilter(logging.Filter):
 
   hostname = socket.gethostname()
 
-  def filter(self, record):
+  def filter(self, record): # noqa
     """Add the hostname 'e.g. raspberrypi' to the log record."""
     record.hostname = ContextFilter.hostname
     return True  # No filtering

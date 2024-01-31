@@ -30,7 +30,7 @@ def test_try_read_file():
   with tempfile.TemporaryDirectory() as tmp_dir:
 
     # Create the temporary file inside the temporary directory
-    filename = "temp.txt"
+    filename = 'temp.txt'
     tmp_dir = Path(tmp_dir)
     temp_file = Path(tmp_dir) / filename
     with open(temp_file, 'w') as fi:
@@ -47,7 +47,7 @@ def test_try_remove_file():
   with tempfile.TemporaryDirectory() as tmp_dir:
 
     # Create the temporary file inside the temporary directory
-    temp_file = Path(tmp_dir) / "temp.txt"
+    temp_file = Path(tmp_dir) / 'temp.txt'
     temp_file.touch()
 
     # Make sure it exists before trying to remove it
@@ -67,11 +67,11 @@ def test_write_file(tmp_path):
     assert fi.read() == 'test'
 
 
-@patch('tradingbot.files.data_path')
-def test_lock(mock_data_path, tmp_path):
+@patch('tradingbot.files.get_default_path')
+def test_lock(mock_default_path, tmp_path):
 
   # Make data_path() return the temporary directory
-  mock_data_path.return_value = tmp_path
+  mock_default_path.return_value = tmp_path
 
   f.lock(Files.FOREX_LOCK)
 
@@ -84,11 +84,11 @@ def test_lock(mock_data_path, tmp_path):
   assert not os.path.exists(tmp_path / Files.FOREX_LOCK.value)
 
 
-@patch('tradingbot.files.data_path')
-def test_reset_successful_symbols_file(mock_data_path, tmp_path):
+@patch('tradingbot.files.get_default_path')
+def test_reset_successful_symbols_file(mock_default_path, tmp_path):
 
   # Make data_path() return the temporary directory
-  mock_data_path.return_value = tmp_path
+  mock_default_path.return_value = tmp_path
 
   # Create the file with some content
   mock_text = 'EURUSD\nUSDJPY\nGBPUSD'
@@ -103,11 +103,11 @@ def test_reset_successful_symbols_file(mock_data_path, tmp_path):
   assert f.try_read_file(Files.SUCCESSFUL_SYMBOLS) == ''
 
 
-@patch('tradingbot.files.data_path')
-def test_reset_consecutive_times_down_file(mock_data_path, tmp_path):
+@patch('tradingbot.files.get_default_path')
+def test_reset_consecutive_times_down_file(mock_default_path, tmp_path):
 
   # Make data_path() return the temporary directory
-  mock_data_path.return_value = tmp_path
+  mock_default_path.return_value = tmp_path
 
   # Create the file with some content
   mock_text = '10'
@@ -122,11 +122,11 @@ def test_reset_consecutive_times_down_file(mock_data_path, tmp_path):
   assert f.try_read_file(Files.CONSECUTIVE_TIMES_DOWN) == '0'
 
 
-@patch('tradingbot.files.data_path')
-def test_get_last_balance(mock_data_path, tmp_path):
+@patch('tradingbot.files.get_default_path')
+def test_get_last_balance(mock_default_path, tmp_path):
 
   # Make data_path() return the temporary directory
-  mock_data_path.return_value = tmp_path
+  mock_default_path.return_value = tmp_path
 
   # Create the file with some content
   with open(tmp_path / Files.LAST_BALANCE, 'w') as file:
@@ -136,11 +136,11 @@ def test_get_last_balance(mock_data_path, tmp_path):
   assert f.get_last_balance() == 100
 
 
-@patch('tradingbot.files.data_path')
-def test_get_consecutive_times_down(mock_data_path, tmp_path):
+@patch('tradingbot.files.get_default_path')
+def test_get_consecutive_times_down(mock_default_path, tmp_path):
 
   # Make data_path() return the temporary directory
-  mock_data_path.return_value = tmp_path
+  mock_default_path.return_value = tmp_path
 
   # Create the file with some content
   with open(tmp_path / Files.CONSECUTIVE_TIMES_DOWN, 'w') as file:
@@ -150,11 +150,11 @@ def test_get_consecutive_times_down(mock_data_path, tmp_path):
   assert f.get_consecutive_times_down() == 10
 
 
-@patch('tradingbot.files.data_path')
-def test_increment_consecutive_times_down(mock_data_path, tmp_path):
+@patch('tradingbot.files.get_default_path')
+def test_increment_consecutive_times_down(mock_default_path, tmp_path):
 
   # Make data_path() return the temporary directory
-  mock_data_path.return_value = tmp_path
+  mock_default_path.return_value = tmp_path
 
   # Create the file with some content
   with open(tmp_path / Files.CONSECUTIVE_TIMES_DOWN, 'w') as file:

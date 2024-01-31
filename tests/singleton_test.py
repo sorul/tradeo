@@ -2,11 +2,11 @@ from tradingbot.singleton import Singleton
 
 
 class Test_Singleton(metaclass=Singleton):
-  pass
+  """Dummy class that is a singleton."""
 
 
 class Test_Not_Singleton():
-  pass
+  """Dummy class that is not a singleton."""
 
 
 def test_singleton():

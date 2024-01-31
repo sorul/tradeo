@@ -1,13 +1,15 @@
 """Script to collect different files utilities."""
 import typing as ty
 from pathlib import Path
-from tradingbot.paths import data_path
+from tradingbot.paths import get_default_path
 from os.path import exists
 import json
 import os
 from time import sleep
 from json.decoder import JSONDecodeError
 from enum import Enum
+
+_default_path = get_default_path()
 
 
 class Files(str, Enum):
@@ -22,27 +24,12 @@ class Files(str, Enum):
   FOREX_LOCK = 'forex.lock'
 
 
-def write_file(
-    file_name: str,
-    text: str = '',
-    mode: str = 'w',
-    file_path: Path = Path()
-) -> None:
-  """Write a file.
-
-  file_path: "data_path" as default value.
-  """
-  file_path = file_path if file_path != Path() else data_path()
-  with open(file=file_path / file_name, mode=mode) as f:
-    f.write(str(text))
-
-
-def file_exists(file: str, path: Path = Path()) -> bool:
+def file_exists(file: str, file_path: Path = _default_path) -> bool:
   """Return True if the file exists.
 
   file_path: "data_path" as default value.
   """
-  path = path if path != Path() else data_path()
+  path = file_path if file_path != _default_path else get_default_path()
   return exists(path / file)
 
 
@@ -51,40 +38,24 @@ def try_load_json(file_path: Path) -> ty.Dict[str, ty.Dict]:
   for _ in range(5):
     try:
       if exists(file_path):
-        with open(file_path) as f:
+        with open(file_path, 'r') as f:
           text = f.read()
           return json.loads(text)
-    except (IOError, PermissionError, JSONDecodeError):
+    except (IOError, JSONDecodeError):
       pass
     sleep(0.1)
   return {}
 
 
-def try_read_file(file_name: str, file_path: Path = Path()) -> str:
-  """Try to read a file.
-
-  file_path: "data_path" as default value.
-  """
-  file_path = file_path if file_path != Path() else data_path()
+def try_read_file(file_name: str, file_path: Path = _default_path) -> str:
+  """Try to read a file."""
+  path = file_path if file_path != _default_path else get_default_path()
   try:
-    with open(file_path / file_name, 'r') as f:
+    with open(path / file_name, 'r') as f:
       return f.read()
-  except (IOError, PermissionError):
+  except IOError:
     pass
   return ''
-
-
-def try_remove_file(file_path: Path) -> bool:
-  """Try to remove a file."""
-  for _ in range(5):
-    if file_path.exists():
-      try:
-        os.remove(file_path)
-        return True
-      except (IOError, PermissionError, FileNotFoundError):
-        pass
-      sleep(0.1)
-  return False
 
 
 def lock(lock_name: str) -> None:
@@ -94,7 +65,7 @@ def lock(lock_name: str) -> None:
 
 def unlock(lock_name: str) -> None:
   """Remove a lock file."""
-  file_path = data_path()
+  file_path = get_default_path()
   try_remove_file(file_path / f'{lock_name}')
 
 
@@ -122,3 +93,31 @@ def increment_consecutive_times_down() -> None:
   """Increment the consecutive times down."""
   write_file(Files.CONSECUTIVE_TIMES_DOWN,
              str(get_consecutive_times_down() + 1))
+
+
+def write_file(
+    file_name: str,
+    text: str = '',
+    mode: str = 'w',
+    file_path: Path = _default_path
+) -> None:
+  """Write a file.
+
+  file_path: "data_path" as default value.
+  """
+  path = file_path if file_path != _default_path else get_default_path()
+  with open(file=path / file_name, mode=mode) as f:
+    f.write(str(text))
+
+
+def try_remove_file(file_path: Path) -> bool:
+  """Try to remove a file."""
+  for _ in range(5):
+    if file_path.exists():
+      try:
+        os.remove(file_path)
+        return True
+      except IOError:
+        pass
+      sleep(0.1)
+  return False

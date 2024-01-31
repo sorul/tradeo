@@ -1,11 +1,11 @@
 """Script of MT_Client what it sends commands to MT4/MT5."""
+import glob
 import json
 from time import sleep
 from threading import Thread, Lock
 from os.path import join, exists
 from datetime import datetime, timedelta
 from pandas import DataFrame
-import subprocess
 from .config import Config
 from .log import log
 import typing as ty
@@ -14,6 +14,13 @@ from .singleton import Singleton
 from .files import try_load_json, try_remove_file
 from .utils import stringToDateUTC, get_remaining_symbols
 from pathlib import Path
+from .order import Order, MutableOrderDetails
+
+# Typing types
+attributes_data_type = ty.Dict[str, ty.Dict]
+messages_type = ty.Dict[str, ty.List[ty.List[str]]]
+account_info_type = ty.Dict[str, ty.Union[float, str]]
+historic_data_type = ty.Dict[str, DataFrame]
 
 
 class MT_Client(metaclass=Singleton):
@@ -24,7 +31,7 @@ class MT_Client(metaclass=Singleton):
 
   def __init__(self, event_handler=None,
                sleep_delay=0.005,
-               max_retry_command_seconds=5*60
+               max_retry_command_seconds=5 * 60
                ):
     """Initialize the attributes."""
     # Parameter attributes
@@ -42,13 +49,13 @@ class MT_Client(metaclass=Singleton):
     self.command_id = 0
 
     # Data attributes
-    self.messages = {'INFO': [], 'ERROR': []}
-    self.open_orders = {}
-    self.account_info = {}
-    self.market_data = {}
-    self.bar_data = {}
-    self.historic_data = {}
-    self.historic_trades = {}
+    self.messages: messages_type = {'INFO': [], 'ERROR': []}
+    self.open_orders: attributes_data_type = {}
+    self.account_info: account_info_type = {}
+    self.market_data: attributes_data_type = {}
+    self.bar_data: attributes_data_type = {}
+    self.historic_data: historic_data_type = {}
+    self.historic_trades: attributes_data_type = {}
 
     # State attributes
     self.ACTIVE = True
@@ -115,7 +122,7 @@ class MT_Client(metaclass=Singleton):
       if self.START:
         self.check_messages()
 
-  def check_messages(self) -> ty.Dict[str, ty.List]:
+  def check_messages(self) -> messages_type:
     """Update and return the messages object."""
     data = try_load_json(self.path_messages)
 
@@ -125,21 +132,25 @@ class MT_Client(metaclass=Singleton):
         if int(millis) > self._last_messages_millis:
           self._last_messages_millis = int(millis)
 
-          message = list(message.values())
-          if 'ERROR' in message:
-            self.messages['ERROR'].append(message[1:])
+          message_content = list(message.values())
+          if 'ERROR' in message_content:
+            self.messages['ERROR'].append(message_content[1:])
           else:
-            self.messages['INFO'].append(message[1:])
+            self.messages['INFO'].append(message_content[1:])
 
     return self.messages
 
-  def get_messages(self) -> ty.Dict[str, ty.List[str]]:
+  def get_messages(self) -> messages_type:
     """Return the messages object."""
     return self.messages
 
-  def set_messages(self, data={'INFO': [], 'ERROR': []}) -> None:
+  def set_messages(self, data: messages_type) -> None:
     """Set manually the messages object."""
     self.messages = data
+
+  def clean_messages(self):
+    """Clean the messages object."""
+    self.messages = {'INFO': [], 'ERROR': []}
 
   def start_thread_check_market_data(self) -> None:
     """Start the thread to check market data."""
@@ -209,12 +220,12 @@ class MT_Client(metaclass=Singleton):
              or data_account_info != self.account_info)):
 
       new_event = False
-      for order_id, order in self.open_orders.items():
+      for order_id, _order in self.open_orders.items():
         # also triggers if a pending order got filled?
         if order_id not in data_orders.keys():
           new_event = True
 
-      for order_id, order in data_orders.items():
+      for order_id, _order in data_orders.items():
         if order_id not in self.open_orders:
           new_event = True
 
@@ -283,8 +294,8 @@ class MT_Client(metaclass=Singleton):
     last_date_from_df = stringToDateUTC(
         str_date=df.index[-1], timezone=Config.broker_timezone)
 
-    return (last_date_from_df >= start_range and
-            last_date_from_df < end_range)
+    return (last_date_from_df >= start_range
+            and last_date_from_df < end_range)
 
   def start_thread_check_historic_trades(self) -> None:
     """Start the thread to check historic trades."""
@@ -298,7 +309,7 @@ class MT_Client(metaclass=Singleton):
     self.historic_trades = try_load_json(self.path_historic_trades)
     return self.historic_trades
 
-  def subscribe_symbols(self, symbols) -> None:
+  def subscribe_symbols(self, symbols: ty.List[str]) -> None:
     """To send a SUBSCRIBE_SYMBOLS command to subscribe to market (tick) data.
 
     Args:
@@ -314,7 +325,10 @@ class MT_Client(metaclass=Singleton):
     """
     self.send_command('SUBSCRIBE_SYMBOLS', ','.join(symbols))
 
-  def subscribe_symbols_bar_data(self, symbols=[['EURUSD', 'M1']]) -> None:
+  def subscribe_symbols_bar_data(
+      self,
+      symbols: ty.List[ty.List[str]]
+  ) -> None:
     """To send a SUBSCRIBE_SYMBOLS_BAR_DATA command to subscribe to bar data.
 
     Kwargs:
@@ -334,19 +348,16 @@ class MT_Client(metaclass=Singleton):
     self.send_command('SUBSCRIBE_SYMBOLS_BAR_DATA',
                       ','.join(str(p) for p in data))
 
-  def get_historic_data(self,
-                        symbol='EURUSD',
-                        time_frame='D1',
-                        start=(datetime.utcnow() -
-                               timedelta(days=30)).timestamp(),
-                        end=datetime.utcnow().timestamp()) -> None:
+  def get_historic_data(
+      self,
+      symbol: str,
+      time_frame: str
+  ) -> None:
     """To send a GET_HISTORIC_DATA command to request historic data.
 
     Kwargs:
         symbol (str): Symbol to get historic data.
         time_frame (str): Time frame for the requested data.
-        start (int): Start timestamp of the requested data.
-        end (int): End timestamp of the requested data.
 
     Returns:
         None
@@ -363,7 +374,7 @@ class MT_Client(metaclass=Singleton):
     data = [symbol, time_frame, int(start), int(end)]
     self.send_command('GET_HISTORIC_DATA', ','.join(str(p) for p in data))
 
-  def get_historic_trades(self, lookback_days=30) -> None:
+  def get_historic_trades(self, lookback_days: int = 30) -> None:
     """To send a GET_HISTORIC_TRADES command to request historic trades.
 
     Kwargs:
@@ -379,44 +390,20 @@ class MT_Client(metaclass=Singleton):
     """
     self.send_command('GET_HISTORIC_TRADES', str(lookback_days))
 
-  def open_order(self, symbol='EURUSD',
-                 order_type='buy',
-                 lots=0.01,
-                 price=0,
-                 stop_loss=0,
-                 take_profit=0,
-                 magic=0,
-                 comment='',
-                 expiration=0) -> None:
-    """To send an OPEN_ORDER command to open an order.
-
-    Kwargs:
-        symbol (str): Symbol for which an order should be opened.
-        order_type (str): Order type. Can be one of:
-            'buy', 'sell', 'buylimit', 'selllimit', 'buystop', 'sellstop'
-        lots (float): Volume in lots
-        price (float): Price of the (pending) order. Can be zero
-            for market orders.
-        stop_loss (float): SL as absolute price. Can be zero
-            if the order should not have an SL.
-        take_profit (float): TP as absolute price. Can be zero
-            if the order should not have a TP.
-        magic (int): Magic number
-        comment (str): Order comment
-        expiration (int): Expiration time given as timestamp in seconds.
-            Can be zero if the order should not have an expiration time.
-
-    """
-    data = [symbol, order_type, lots, price, stop_loss,
-            take_profit, magic, comment, expiration]
+  def open_order(self, order: Order) -> None:
+    """To send an OPEN_ORDER command to open an order."""
+    data = [
+        order.symbol, order.order_type, order.lots, order.price,
+        order.stop_loss, order.take_profit, order.magic, order.comment,
+        order.expiration
+    ]
     self.send_command('OPEN_ORDER', ','.join(str(p) for p in data))
 
-  def modify_order(self, ticket: int,
-                   lots=0.01,
-                   price=0,
-                   stop_loss=0,
-                   take_profit=0,
-                   expiration=0) -> None:
+  def modify_order(
+      self,
+      ticket: int,
+      mod: MutableOrderDetails
+  ) -> None:
     """To send a MODIFY_ORDER command to modify an order.
 
     Args:
@@ -432,7 +419,10 @@ class MT_Client(metaclass=Singleton):
             Can be zero if the order should not have an expiration time.
 
     """
-    data = [ticket, lots, price, stop_loss, take_profit, expiration]
+    data = [
+        ticket, mod.lots, mod.price, mod.stop_loss, mod.take_profit,
+        mod.expiration
+    ]
     self.send_command('MODIFY_ORDER', ','.join(str(p) for p in data))
 
   def close_order(self, ticket: int, lots: float = 0) -> None:
@@ -462,7 +452,7 @@ class MT_Client(metaclass=Singleton):
     """
     self.send_command('CLOSE_ORDERS_BY_SYMBOL', symbol)
 
-  def close_orders_by_magic(self, magic) -> None:
+  def close_orders_by_magic(self, magic: str) -> None:
     """To send a CLOSE_ORDERS_BY_MAGIC command to close all orders.
 
     Args:
@@ -480,12 +470,12 @@ class MT_Client(metaclass=Singleton):
     """
     self.command_id = 0
 
-    self.send_command("RESET_COMMAND_IDS", "")
+    self.send_command('RESET_COMMAND_IDS', '')
 
     # sleep to make sure it is read before other commands.
     sleep(0.5)
 
-  def send_command(self, command, content) -> None:
+  def send_command(self, command: str, content: str) -> None:
     """To send a command to the MQL side.
 
     Multiple command files are used to allow for fast execution
@@ -541,20 +531,19 @@ class MT_Client(metaclass=Singleton):
 
   def command_file_exist(self, symbol: str) -> ty.List[Path]:
     """Return the command files that match request historic data from symbol."""
-    e = f'grep "GET_HISTORIC_DATA|{symbol}" "{self.path_commands_prefix}"*'
-    r = subprocess.run(e, shell=True, capture_output=True, text=True)
-
-    # Found
-    if r.returncode == 0:
-      found_files = r.stdout.split('\n')
-      return [Path(ff.split(':<:')[0]) for ff in found_files]
-    # Not found
-    else:
-      return []
+    g = glob.glob(f'{self.path_commands_prefix}*')
+    return [
+        Path(f) for f in g if f'GET_HISTORIC_DATA|{symbol}' in open(f).read()
+    ]
 
   def get_balance(self) -> float:
     """Return the balance of the account."""
-    return float(self.account_info['balance'])
+    balance = self.account_info['balance']
+    if isinstance(balance, float):
+      return balance
+    else:
+      log.warning(f'Balance is not a float: {balance}')
+      return -1.0
 
 
 mt_client = MT_Client()

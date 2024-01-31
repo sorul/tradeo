@@ -10,6 +10,18 @@ from .log import log
 import traceback
 
 
+def handle():
+  """Handle the forex bot."""
+  if not is_locked() and check_time_viability():
+    try:
+      main()
+    except Exception:  # noqa
+      # Finish the bot
+      finish()
+      # Log the error
+      log.error(traceback.format_exc())
+
+
 def main():
   """Execute forex bot."""
   # First of all, we lock the execution of the forex bot.
@@ -22,7 +34,7 @@ def main():
   # Clean all files
   mt_client.clean_all_command_files()
   mt_client.clean_all_historic_files()
-  mt_client.set_messages()
+  mt_client.clean_messages()
   f.reset_successful_symbols_file()
 
   # Dates
@@ -44,6 +56,16 @@ def main():
 
   # TODO: Trades management
 
+  # Process the result of "get_historic_data"
+  handle_new_historic_data(utc_date, execution_time)
+
+  # Finish the main
+  finish()
+
+
+def handle_new_historic_data(
+        utc_date: datetime, execution_time: timedelta) -> None:
+  """Handle the new historic data."""
   # Initialize the remaining symbols
   rs = get_remaining_symbols()
 
@@ -69,11 +91,8 @@ def main():
   # Check if MT needs to restart
   check_mt_needs_to_restart(len(rs))
 
-  # Finish the main
-  finish()
 
-
-def _send_profit_message(local_date: datetime) -> None:
+def _send_profit_message(local_date: datetime) -> bool:
   """Get the balance of the account."""
   balance = mt_client.get_balance()
   last_balance = f.get_last_balance()
@@ -81,7 +100,10 @@ def _send_profit_message(local_date: datetime) -> None:
   emoji = '🚀' if difference >= 0 else '☔'
   message_condition = local_date.hour % 12 == 0 and local_date.minute == 5
   if message_condition:
-    log.info(f'{emoji} {balance} €')
+    log.info(f'{emoji} {difference:.2f} €')
+    return True
+  else:
+    return False
 
 
 def check_mt_needs_to_restart(n_remaining_symbols: int) -> None:
@@ -94,10 +116,15 @@ def check_mt_needs_to_restart(n_remaining_symbols: int) -> None:
     f.increment_consecutive_times_down()
 
 
+def is_locked() -> bool:
+  """Return True if the forex-bot is running."""
+  return f.file_exists(Files.FOREX_LOCK.value)
+
+
 def check_time_viability() -> bool:
   """Check if the forex bot is viable to run."""
   now_date = datetime.now(Config.broker_timezone)
-  # Monday (0) - Sunday (6)
+  # Monday (0) -> Sunday (6)
   is_weekday = now_date.weekday() in [0, 1, 2, 3]
   # TODO: When executions are performed with the real account,
   # we need to consider testing the removal of this condition.
@@ -105,24 +132,7 @@ def check_time_viability() -> bool:
   return is_weekday and is_not_on_the_hour
 
 
-def is_locked() -> bool:
-  """Return True if the forex-bot is running."""
-  return f.file_exists(Files.FOREX_LOCK.value)
-
-
 def finish() -> None:
   """Finish the forex bot."""
   mt_client.stop()
   f.unlock(Files.FOREX_LOCK)
-
-
-def handle():
-  """Handle the forex bot."""
-  if not is_locked() and check_time_viability():
-    try:
-      main()
-    except Exception:
-      # Finish the bot
-      finish()
-      # Log the error
-      log.error(traceback.format_exc())

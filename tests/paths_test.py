@@ -19,4 +19,4 @@ def test_bash_path():
 
 
 def test_tests_resources():
-  assert p.test_resources().exists()
+  assert p.test_resources_path().exists()

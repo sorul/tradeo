@@ -31,7 +31,7 @@ def test_timezone():
 
 def test_invalid_date():
   str_date = 'invalid'
-  with pytest.raises(ValueError):
+  with pytest.raises(ValueError, match='does not match format'):
     utils.stringToDateUTC(str_date)
 
 

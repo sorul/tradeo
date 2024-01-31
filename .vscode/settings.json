@@ -1,7 +1,7 @@
 {
   "flake8.args": [
     "--config",
-    "${workspaceFolder:tradingbot}/config/tox.ini",
+    "${workspaceFolder}/config/tox.ini",
   ],
   "python.testing.pytestArgs": [
     "tests"
@@ -11,7 +11,7 @@
   "cSpell.customDictionaries": {
     "custom-dictionary-workspace": {
       "name": "custom-dictionary-workspace",
-      "path": "${workspaceFolder:tradingbot}/.cspell/custom-dictionary-workspace.txt",
+      "path": "${workspaceFolder}/.cspell/custom-dictionary-workspace.txt",
       "addWords": true,
       "scope": "workspace"
     }
