@@ -1,7 +1,7 @@
 """Common methods in trading strategies."""
 from typing import List, Tuple
 from pandas import Series, DataFrame
-from .operation import Operation as op
+from .order_type import OrderType as ot
 
 
 def get_pivots(
@@ -145,7 +145,7 @@ def three_bar_reversal(data: DataFrame, operation: str) -> bool:
   highs = list(data.high)
   lows = list(data.low)
   closes = list(data.close)
-  if operation == op.BUY:
+  if operation == ot.BUY:
     return opens[-3] > closes[-3] and opens[-2] > closes[-2] and \
         opens[-1] < closes[-1] and lows[-3] > lows[-2] and \
         lows[-2] < lows[-1] and opens[-3] > highs[-2] and closes[-1] > highs[-2]
@@ -165,7 +165,7 @@ def pinbar_pattern(data: DataFrame, operation: str) -> bool:
   lows = list(data.low)
   closes = list(data.close)
   opens = list(data.open)
-  if operation == op.BUY:
+  if operation == ot.BUY:
     upper_third = highs[-1] - (highs[-1] - lows[-1]) / 3
     body = abs(opens[-1] - closes[-1])
     lower_wick = opens[-1] - lows[-1]
@@ -189,7 +189,7 @@ def harami_pattern(data: DataFrame, operation: str) -> bool:
   lows = list(data.low)
   closes = list(data.close)
   opens = list(data.open)
-  if operation == op.BUY:
+  if operation == ot.BUY:
     return opens[-2] > closes[-2] and opens[-1] < closes[-1] and \
         highs[-1] < highs[-2] and lows[-1] > lows[-2]
   else:

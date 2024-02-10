@@ -54,6 +54,9 @@ def main():
   # Send commands to obtain the historic data
   [mt_client.get_historic_data(s, Config.timeframe) for s in Config.symbols]
 
+  # Send commands to obtain bid/ask
+  mt_client.subscribe_symbols(Config.symbols)
+
   # TODO: Trades management
 
   # Process the result of "get_historic_data"

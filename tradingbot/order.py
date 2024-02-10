@@ -1,10 +1,11 @@
 """Class to hold order data."""
+from .order_type import OrderType
 
 
 class OrderPrice:
   """Class to hold order price."""
 
-  def __init__(self, price, stop_loss, take_profit):
+  def __init__(self, price: float, stop_loss: float, take_profit: float):
     """Initialize the attributes."""
     self.price = price
     self.stop_loss = stop_loss
@@ -19,7 +20,7 @@ class MutableOrderDetails:
       prices: OrderPrice,
       symbol: str,
       lots: float,
-      expiration: int
+      expiration: int = 0
   ):
     """Initialize the attributes."""
     self._prices = prices
@@ -46,7 +47,7 @@ class MutableOrderDetails:
 class ImmutableOrderDetails:
   """Class to hold order metadata."""
 
-  def __init__(self, order_type, magic, comment):
+  def __init__(self, order_type: OrderType, magic: str, comment: str):
     """Initialize the attributes."""
     self.order_type = order_type
     self.magic = magic
@@ -66,7 +67,8 @@ class Order:
       if the order should not have an SL.
   take_profit (float): TP as absolute price. Can be zero
       if the order should not have a TP.
-  magic (int): Magic number
+  magic (int): Used to identify the order.
+      Could be used to specify the timestamp as well.
   comment (str): Order comment
   expiration (int): Expiration time given as timestamp in seconds.
       Can be zero if the order should not have an expiration time.
@@ -75,12 +77,14 @@ class Order:
 
   def __init__(
       self,
-      details: MutableOrderDetails,
-      metadata: ImmutableOrderDetails
+      mutable_details: MutableOrderDetails,
+      immutable_details: ImmutableOrderDetails,
+      ticket: int = 0
   ):
     """Initialize the attributes."""
-    self._details = details
-    self._metadata = metadata
+    self._details = mutable_details
+    self._metadata = immutable_details
+    self._ticket = ticket  # it would not be available until the order be filled
 
   @property
   def symbol(self) -> str:
@@ -88,7 +92,7 @@ class Order:
     return self._details.symbol
 
   @property
-  def order_type(self) -> str:
+  def order_type(self) -> OrderType:
     """Get the order type."""
     return self._metadata.order_type
 
@@ -126,3 +130,14 @@ class Order:
   def expiration(self) -> int:
     """Get the expiration."""
     return self._details.expiration
+
+  @property
+  def ticket(self) -> int:
+    """Get the ticket."""
+    return self._ticket
+
+  def risk_benefit(self) -> float:
+    """Get the risk benefit."""
+    a = abs(self.take_profit - self.price)
+    b = abs(self.price - self.stop_loss)
+    return a / b if b > 0 else 0

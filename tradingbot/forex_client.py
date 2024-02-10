@@ -14,7 +14,8 @@ from .singleton import Singleton
 from .files import try_load_json, try_remove_file
 from .utils import stringToDateUTC, get_remaining_symbols
 from pathlib import Path
-from .order import Order, MutableOrderDetails
+from .order import Order, MutableOrderDetails, ImmutableOrderDetails, OrderPrice
+from order_type import OrderType
 
 # Typing types
 attributes_data_type = ty.Dict[str, ty.Dict]
@@ -176,6 +177,19 @@ class MT_Client(metaclass=Singleton):
 
     return self.market_data
 
+  def get_bid_ask(self, symbol: str) -> ty.Tuple[float, float]:
+    """Return the bid and ask price of a symbol.
+
+    Bid: sell price
+    Ask: buy price
+    """
+    try:
+      bid_ask = self.market_data[symbol]
+      return bid_ask['bid'], bid_ask['ask']
+    except KeyError:
+      log.warning(f'Symbol {symbol} not found in market data.')
+      return 0, 0
+
   def start_thread_check_bar_data(self) -> None:
     """Start the thread to check bar data."""
     while self.ACTIVE:
@@ -240,6 +254,17 @@ class MT_Client(metaclass=Singleton):
         pass
 
     return self.open_orders
+
+  def get_open_orders(self) -> ty.List[Order]:
+    """Return a list of open Order objects."""
+    return [
+        Order(
+            MutableOrderDetails(
+                o['open_price'], o['symbol'], o['lots']),
+            ImmutableOrderDetails(
+                OrderType(o['type']), o['magic'], o['comment']), ticket=int(t))
+        for t, o in self.open_orders.items()
+    ]
 
   def start_thread_check_historic_data(self) -> None:
     """Start the thread to check historic data."""
@@ -425,6 +450,23 @@ class MT_Client(metaclass=Singleton):
     ]
     self.send_command('MODIFY_ORDER', ','.join(str(p) for p in data))
 
+  def place_break_even(self, order: Order, break_even: float) -> None:
+    """Modify the order to place a break even."""
+    self.modify_order(
+        order.ticket,
+        MutableOrderDetails(
+            prices=OrderPrice(
+                price=break_even,
+                stop_loss=order.stop_loss,
+                take_profit=order.take_profit
+            ),
+            symbol=order.symbol,
+            lots=order.lots,
+            expiration=order.expiration
+        )
+    )
+    log.debug(f'Break even placed in {order.magic}')
+
   def close_order(self, ticket: int, lots: float = 0) -> None:
     """To send a CLOSE_ORDER command to close an order.
 
@@ -544,6 +586,11 @@ class MT_Client(metaclass=Singleton):
     else:
       log.warning(f'Balance is not a float: {balance}')
       return -1.0
+
+  @staticmethod
+  def get_pip(symbol: str) -> float:
+    """Return the pip value for symbol."""
+    return 0.01 if 'JPY' in symbol else 0.0001
 
 
 mt_client = MT_Client()

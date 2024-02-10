@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## ** V0.4.0  (25/01/2024) **
+- feat:
+  - strategy abstract class
+  - common useful methods in trading
+
 ## ** V0.3.0  (25/01/2024) **
 - feat:
   - forex main to handle incoming historic data
