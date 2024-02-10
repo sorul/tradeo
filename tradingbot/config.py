@@ -11,6 +11,7 @@ class Config:
   """Class to manage config."""
 
   load_dotenv(dotenv_path=config_path() / 'env' / '.env.demo')
+  load_dotenv(dotenv_path=config_path() / 'env' / '.env.setup')
 
   # Timezone Configuration
   local_timezone = pytz.timezone(
@@ -20,8 +21,10 @@ class Config:
   utc_timezone = pytz.utc
 
   # Paths configuration
+  user = os.environ['USER']
   default_mt_files_path = Path(
-      '/home/pi/.wine/drive_c/Program Files/MetaTrader/MQL5/Files')
+      f'/home/{user}/.wine/drive_c/Program Files/MetaTrader/MQL5/Files'
+  )
   mt_files_path = Path(os.getenv('MT_FILES_PATH') or default_mt_files_path)
 
   # Trading configuration
