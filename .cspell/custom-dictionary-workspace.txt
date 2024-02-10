@@ -13,11 +13,13 @@ GBPCAD
 GBPNZD
 GBPUSD
 gethostname
+harami
 levelname
 lookback
 metatrader
 millis
 papertrailapp
+pinbar
 pytz
 raspberrypi
 selllimit
