@@ -10,13 +10,20 @@ import json
 from datetime import datetime
 import pytz
 from freezegun import freeze_time
-from tradingbot.paths import test_resources_path
+from tradingbot.paths import resources_test_path
 from os.path import join
+from tradingbot.order import (
+    Order,
+    MutableOrderDetails,
+    ImmutableOrderDetails,
+    OrderPrice
+)
+from tradingbot.order_type import OrderType
 
 
 def test_set_agent_paths():
   mock_config = MagicMock()
-  mock_config.mt_files_path = test_resources_path()
+  mock_config.mt_files_path = resources_test_path()
 
   with patch('tradingbot.forex_client.Config', mock_config):
     path_file = join(mock_config.mt_files_path, mt_client.prefix_files_path)
@@ -52,7 +59,7 @@ def test_check_messages(tmp_path):
 
   # Copy the Messages.json file to the temporary folder
   messages_path = tmp_path / 'Messages.json'
-  original_messages_path = Path(f'{test_resources_path()}/Messages.json')
+  original_messages_path = Path(f'{resources_test_path()}/Messages.json')
   shutil.copyfile(original_messages_path, messages_path)
 
   mt_client.path_messages = messages_path
@@ -90,7 +97,7 @@ def test_check_market_data(tmp_path):
 
   # Copy the Market_Data.json file to the temporary folder
   market_data_path = tmp_path / 'Market_Data.json'
-  original_market_data_path = Path(f'{test_resources_path()}/Market_Data.json')
+  original_market_data_path = Path(f'{resources_test_path()}/Market_Data.json')
   shutil.copyfile(original_market_data_path, market_data_path)
 
   mt_client.path_market_data = market_data_path
@@ -137,7 +144,7 @@ def test_check_bar_data(tmp_path):
 
   # Copy the Bar_Data.json file to the temporary folder
   bar_data_path = tmp_path / 'Bar_Data.json'
-  original_bar_data_path = Path(f'{test_resources_path()}/Bar_Data.json')
+  original_bar_data_path = Path(f'{resources_test_path()}/Bar_Data.json')
   shutil.copyfile(original_bar_data_path, bar_data_path)
 
   mt_client.path_bar_data = bar_data_path
@@ -182,13 +189,13 @@ def test_check_open_orders(tmp_path):
 
   # Copy the Orders.json file to the temporary folder
   orders_path = tmp_path / 'Orders.json'
-  original_orders_path = Path(f'{test_resources_path()}/Orders.json')
+  original_orders_path = Path(f'{resources_test_path()}/Orders.json')
   shutil.copyfile(original_orders_path, orders_path)
 
   # Copy the Orders_Stored.json file to the temporary folder
   orders_stored_path = tmp_path / 'Orders_Stored.json'
   original_orders_stored_path = Path(
-      f'{test_resources_path()}/Orders_Stored.json')
+      f'{resources_test_path()}/Orders_Stored.json')
   shutil.copyfile(original_orders_stored_path, orders_stored_path)
 
   mt_client.path_orders = orders_path
@@ -209,7 +216,7 @@ def test_check_open_orders(tmp_path):
           'TP': 0.0,
           'pnl': -0.59,
           'swap': 0.0,
-          'comment': 'KAMIKAZE'
+          'comment': 'this is a comment'
       }
   }
   assert_account_data = {
@@ -263,7 +270,7 @@ def test_check_historic_data(tmp_path):
   symbol = 'USDJPY'
 
   mt_client.path_historic_data = tmp_path
-  mt_client.path_historic_data = test_resources_path()
+  mt_client.path_historic_data = resources_test_path()
 
   data = mt_client.check_historic_data(symbol)
   mock_data = {
@@ -323,7 +330,7 @@ def test_check_historic_trades(tmp_path):
   # Copy the Bar_Data.json file to the temporary folder
   historic_trades_path = tmp_path / 'Historic_Trades.json'
   original_historic_trades_path = Path(
-      f'{test_resources_path()}/Historic_Trades.json')
+      f'{resources_test_path()}/Historic_Trades.json')
   shutil.copyfile(original_historic_trades_path, historic_trades_path)
 
   mt_client.path_historic_trades = historic_trades_path
@@ -442,7 +449,7 @@ def test_clean_all_historic_files(tmp_path):
 
 
 def test_command_file_exist():
-  mt_client.path_commands_prefix = Path(f'{test_resources_path()}/Commands_')
+  mt_client.path_commands_prefix = Path(f'{resources_test_path()}/Commands_')
 
   assert mt_client.command_file_exist('GBPNZD')
   assert not mt_client.command_file_exist('EURUSD')
@@ -453,3 +460,84 @@ def test_clean_messages():
   mt_client.messages = m  # type: ignore
   mt_client.clean_messages()
   assert mt_client.messages == {'INFO': [], 'ERROR': []}
+
+
+def test_get_bid_ask(tmp_path):
+  market_data_path = tmp_path / 'Market_Data.json'
+  original_market_data_path = Path(f'{resources_test_path()}/Market_Data.json')
+  shutil.copyfile(original_market_data_path, market_data_path)
+  mt_client.path_market_data = market_data_path
+  mt_client.check_market_data()
+
+  bid, ask = mt_client.get_bid_ask('EURUSD')
+  assert isinstance(bid, float)
+  assert isinstance(ask, float)
+  assert bid != 0
+  assert ask != 0
+
+  bid, ask = mt_client.get_bid_ask('DUMMY_SYMBOL')
+  assert bid == 0
+  assert ask == 0
+
+
+def test_get_open_orders():
+  mt_client.open_orders = {
+      '2023993175': {
+          'magic': 1705617043,
+          'symbol': 'AUDUSD',
+          'lots': 0.01,
+          'type': 'buy',
+          'open_price': 0.65754,
+          'open_time': '2024.01.19 00:30:43',
+          'SL': 0.65443,
+          'TP': 0.00000,
+          'pnl': -0.59,
+          'swap': 0.00,
+          'comment': 'this is a comment'
+      }
+  }
+  order = Order(
+      MutableOrderDetails(
+          prices=OrderPrice(
+              price=0.65754,
+              stop_loss=0.65443,
+              take_profit=0.00000
+          ), symbol='AUDUSD', lots=0.01
+      ),
+      ImmutableOrderDetails(
+          order_type=OrderType.BUY,
+          magic='1705617043',
+          comment='this is a comment'
+      ),
+      ticket=2023993175
+  )
+  orders = mt_client.get_open_orders()
+  assert len(orders) == 1
+  assert orders[0] == order
+
+
+@patch('tradingbot.log.log.debug')
+def test_place_break_even(mock_debug, tmp_path):
+  mt_client.path_commands_prefix = tmp_path
+  order = Order(
+      MutableOrderDetails(
+          prices=OrderPrice(
+              price=0.65754,
+              stop_loss=0.65443,
+              take_profit=0.00000
+          ), symbol='AUDUSD', lots=0.01
+      ),
+      ImmutableOrderDetails(
+          order_type=OrderType.BUY,
+          magic='1705617043',
+          comment='this is a comment'
+      ),
+      ticket=2023993175
+  )
+  mt_client.place_break_even(order)
+  mock_debug.assert_called_with(f'Break even placed in {order.magic}')
+
+
+def test_get_pip():
+  assert mt_client.get_pip('GBPUSD') == 0.0001
+  assert mt_client.get_pip('USDJPY') == 0.01

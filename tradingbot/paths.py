@@ -12,7 +12,7 @@ def bash_path() -> Path:
   return root_project() / 'bash'
 
 
-def test_resources_path() -> Path:
+def resources_test_path() -> Path:
   """Return the test resources path."""
   return root_project() / 'tests' / 'resources'
 
