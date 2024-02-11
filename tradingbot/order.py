@@ -82,54 +82,58 @@ class Order:
       ticket: int = 0
   ):
     """Initialize the attributes."""
-    self._details = mutable_details
-    self._metadata = immutable_details
+    self._mutable_details = mutable_details
+    self.immutable_details = immutable_details
     self._ticket = ticket  # it would not be available until the order be filled
+
+  def __eq__(self, __value: object) -> bool:
+    """Check if the order is equal to another order."""
+    return isinstance(__value, Order) and self.ticket == __value.ticket
 
   @property
   def symbol(self) -> str:
     """Get the symbol."""
-    return self._details.symbol
+    return self._mutable_details.symbol
 
   @property
   def order_type(self) -> OrderType:
     """Get the order type."""
-    return self._metadata.order_type
+    return self.immutable_details.order_type
 
   @property
   def lots(self) -> float:
     """Get the lots."""
-    return self._details.lots
+    return self._mutable_details.lots
 
   @property
   def price(self) -> float:
     """Get the price."""
-    return self._details.price
+    return self._mutable_details.price
 
   @property
   def stop_loss(self) -> float:
     """Get the stop loss."""
-    return self._details.stop_loss
+    return self._mutable_details.stop_loss
 
   @property
   def take_profit(self) -> float:
     """Get the take profit."""
-    return self._details.take_profit
+    return self._mutable_details.take_profit
 
   @property
   def magic(self) -> str:
     """Get the magic number."""
-    return self._metadata.magic
+    return self.immutable_details.magic
 
   @property
   def comment(self) -> str:
     """Get the comment."""
-    return self._metadata.comment
+    return self.immutable_details.comment
 
   @property
   def expiration(self) -> int:
     """Get the expiration."""
-    return self._details.expiration
+    return self._mutable_details.expiration
 
   @property
   def ticket(self) -> int:

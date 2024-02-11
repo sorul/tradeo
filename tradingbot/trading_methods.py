@@ -31,15 +31,16 @@ def get_pivots(
     return m, i
 
   pivots = []  # [0] most recent
+  data_list = list(data)
   size = left + right + 1
   a = -1 * (size + 1)
   b = -1
-  d = data[a + 1:]
+  d = data_list[a + 1:]
   m, i = getMax(d) if max_min == 'max' else getMin(d)
   if i == left and len(d) - 1 - i == right:
     pivots.append((m, len(d) - i - 1))
   while len(pivots) < n_pivot:
-    d = data[a:b]
+    d = data_list[a:b]
     if len(d) == size:
       m, i = getMax(d) if max_min == 'max' else getMin(d)
       if i == left and len(d) - 1 - i == right:
@@ -169,14 +170,24 @@ def pinbar_pattern(data: DataFrame, operation: str) -> bool:
     upper_third = highs[-1] - (highs[-1] - lows[-1]) / 3
     body = abs(opens[-1] - closes[-1])
     lower_wick = opens[-1] - lows[-1]
-    return opens[-1] >= upper_third and closes[-1] > upper_third and \
+    return (
+        opens[-1] >= upper_third
+    ) and (
+        closes[-1] > upper_third
+    ) and (
         lower_wick >= body * 3
+    )
   else:
     lower_third = lows[-1] + (highs[-1] - lows[-1]) / 3
     body = abs(opens[-1] - closes[-1])
     upper_wick = highs[-1] - closes[-1]
-    return opens[-1] <= lower_third and closes[-1] < lower_third and \
+    return (
+        opens[-1] <= lower_third
+    ) and (
+        closes[-1] < lower_third
+    ) and (
         upper_wick >= body * 3
+    )
 
 
 def harami_pattern(data: DataFrame, operation: str) -> bool:

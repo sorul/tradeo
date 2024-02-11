@@ -15,7 +15,7 @@ def test_get_pivots():
       data_with_max_pivot, left, right, n_pivot, max_min)
 
   assert len(max_pivots) == 1
-  assert data_with_max_pivot[max_pivots[0][1]] == max_pivots[0][0]
+  assert data_with_max_pivot.iloc[max_pivots[0][1]] == max_pivots[0][0]
 
   data_with_min_pivot = Series([20, 10, 1, 10, 20])
   left = 2
@@ -24,11 +24,11 @@ def test_get_pivots():
   max_min = 'min'
 
   # max_pivots -> [[10, -3]]
-  max_pivots = tm.get_pivots(
+  min_pivots = tm.get_pivots(
       data_with_min_pivot, left, right, n_pivot, max_min)
 
-  assert len(max_pivots) == 1
-  assert data_with_min_pivot[max_pivots[0][1]] == max_pivots[0][0]
+  assert len(min_pivots) == 1
+  assert data_with_min_pivot.iloc[min_pivots[0][1]] == min_pivots[0][0]
 
 
 def test_EMA():

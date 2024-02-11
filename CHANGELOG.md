@@ -1,7 +1,11 @@
 # CHANGELOG
 
-## ** V0.4.0  (25/01/2024) **
+## ** V0.4.0  (11/02/2024) **
 - feat:
+  - strategy abstract class
+  - common useful methods in trading
+  - new methods in forex_client: get_bid_ask, place_break_even and get_pip
+- test:
   - strategy abstract class
   - common useful methods in trading
 

@@ -15,7 +15,7 @@ from .files import try_load_json, try_remove_file
 from .utils import stringToDateUTC, get_remaining_symbols
 from pathlib import Path
 from .order import Order, MutableOrderDetails, ImmutableOrderDetails, OrderPrice
-from order_type import OrderType
+from .order_type import OrderType
 
 # Typing types
 attributes_data_type = ty.Dict[str, ty.Dict]
@@ -260,7 +260,12 @@ class MT_Client(metaclass=Singleton):
     return [
         Order(
             MutableOrderDetails(
-                o['open_price'], o['symbol'], o['lots']),
+                OrderPrice(
+                    o['open_price'],
+                    o['SL'],
+                    o['TP']
+                ), o['symbol'], o['lots']
+            ),
             ImmutableOrderDetails(
                 OrderType(o['type']), o['magic'], o['comment']), ticket=int(t))
         for t, o in self.open_orders.items()
@@ -450,8 +455,11 @@ class MT_Client(metaclass=Singleton):
     ]
     self.send_command('MODIFY_ORDER', ','.join(str(p) for p in data))
 
-  def place_break_even(self, order: Order, break_even: float) -> None:
+  def place_break_even(self, order: Order) -> None:
     """Modify the order to place a break even."""
+    pip = mt_client.get_pip(order.symbol)
+    buy = order.order_type == OrderType.BUY
+    break_even = order.price + pip if buy else order.price - pip
     self.modify_order(
         order.ticket,
         MutableOrderDetails(
