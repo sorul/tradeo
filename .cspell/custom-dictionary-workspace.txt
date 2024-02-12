@@ -18,6 +18,8 @@ levelname
 lookback
 metatrader
 millis
+ohlc
+OHLC
 papertrailapp
 pinbar
 pytz

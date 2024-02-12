@@ -7,6 +7,7 @@ from datetime import datetime
 from tradingbot.config import Config
 from tradingbot.log import log
 from tradingbot.order_type import OrderType
+from tradingbot.ohlc import OHLC
 
 
 class Strategy(ABC):
@@ -18,7 +19,12 @@ class Strategy(ABC):
     self.strategy_name = strategy_name
 
   @abstractmethod
-  def indicator(self) -> Union[Order, None]:
+  def indicator(
+          self,
+          ohlc: OHLC,
+          symbol: str,
+          date: datetime
+  ) -> Union[Order, None]:
     """Return an order if the strategy is triggered."""
 
   @staticmethod
@@ -92,8 +98,8 @@ class Strategy(ABC):
         and order.stop_loss > order.price
     )
     break_even_placed_sell = (
-      order.order_type == OrderType.SELL
-      and order.stop_loss < order.price
+        order.order_type == OrderType.SELL
+        and order.stop_loss < order.price
     )
     break_even_placed = break_even_placed_buy or break_even_placed_sell
 

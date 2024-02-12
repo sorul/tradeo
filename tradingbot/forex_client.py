@@ -12,7 +12,7 @@ import typing as ty
 from random import randrange
 from .singleton import Singleton
 from .files import try_load_json, try_remove_file
-from .utils import stringToDateUTC, get_remaining_symbols
+from .utils import string_to_date_utc, get_remaining_symbols
 from pathlib import Path
 from .order import Order, MutableOrderDetails, ImmutableOrderDetails, OrderPrice
 from .order_type import OrderType
@@ -321,7 +321,7 @@ class MT_Client(metaclass=Singleton):
     rounded_now_date = now_date - td
     start_range = rounded_now_date
     end_range = rounded_now_date + timedelta(minutes=5)
-    last_date_from_df = stringToDateUTC(
+    last_date_from_df = string_to_date_utc(
         str_date=df.index[-1], timezone=Config.broker_timezone)
 
     return (last_date_from_df >= start_range

@@ -15,7 +15,7 @@ from pytz.tzinfo import DstTzInfo, StaticTzInfo
 timezone_type = ty.Union[DstTzInfo, BaseTzInfo, StaticTzInfo]
 
 
-def stringToDateUTC(
+def string_to_date_utc(
     str_date: str,
     date_format: str = '%Y.%m.%d %H:%M',
     timezone: timezone_type = Config.utc_timezone
@@ -56,3 +56,10 @@ def reboot_mt():
   subprocess.Popen(['/usr/bin/sh', join(scripts_path, 'launch-mt5.sh')])
   sleep(60)
   unlock(f.FOREX_LOCK)
+
+
+def create_magic_number() -> str:
+  """Create a magic number based on the current date and time."""
+  return str(
+      round(datetime.now(Config.utc_timezone).timestamp())
+  ).replace('.', '')

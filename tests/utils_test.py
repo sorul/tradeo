@@ -10,14 +10,14 @@ from unittest.mock import patch
 def test_basic():
   str_date = '2023.01.01 12:00'
   expected = datetime(2023, 1, 1, 12, 0, tzinfo=pytz.utc)
-  result = utils.stringToDateUTC(str_date)
+  result = utils.string_to_date_utc(str_date)
   assert result == expected
 
 
 def test_different_format():
   str_date = '01/01/2023 12:00 PM'
   expected = datetime(2023, 1, 1, 12, 0, tzinfo=pytz.utc)
-  result = utils.stringToDateUTC(str_date, '%m/%d/%Y %I:%M %p')
+  result = utils.string_to_date_utc(str_date, '%m/%d/%Y %I:%M %p')
   assert result == expected
 
 
@@ -25,14 +25,14 @@ def test_timezone():
   str_date = '2023.01.01 12:00'
   ny_timezone = pytz.timezone('America/New_York')
   expected = datetime(2023, 1, 1, 17, 0, tzinfo=pytz.utc)
-  result = utils.stringToDateUTC(str_date, timezone=ny_timezone)
+  result = utils.string_to_date_utc(str_date, timezone=ny_timezone)
   assert result == expected
 
 
 def test_invalid_date():
   str_date = 'invalid'
   with pytest.raises(ValueError, match='does not match format'):
-    utils.stringToDateUTC(str_date)
+    utils.string_to_date_utc(str_date)
 
 
 def test_get_script_name():

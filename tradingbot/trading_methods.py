@@ -1,11 +1,13 @@
 """Common methods in trading strategies."""
 from typing import List, Tuple
-from pandas import Series, DataFrame
+from pandas import Series
 from .order_type import OrderType as ot
+from numpy import ndarray
+from .ohlc import OHLC
 
 
 def get_pivots(
-        data: Series,
+        data: ndarray,
         left: int,
         right: int,
         n_pivot: int,
@@ -55,13 +57,13 @@ def get_pivots(
 
 
 def EMA(
-    price_closes: Series,
+    data: ndarray,
     lookback: int,
     smoothing: int = 2
 ) -> List[float]:
   """Exponential Moving Average."""
-  ema = [sum(price_closes[:lookback]) / lookback]
-  for price in price_closes[lookback:]:
+  ema = [sum(data[:lookback]) / lookback]
+  for price in data[lookback:]:
     ema.append(
         (price * (smoothing / (1 + lookback)))
         + ema[-1] * (1 - (smoothing / (1 + lookback)))
@@ -69,9 +71,9 @@ def EMA(
   return ema
 
 
-def RSI(price_closes: Series, lookback: int) -> List[float]:
+def RSI(data: ndarray, lookback: int) -> List[float]:
   """Relative Strength Index."""
-  ret = price_closes.diff()
+  ret = Series(data).diff()
   up = []
   down = []
   for i in range(len(ret)):
@@ -90,12 +92,12 @@ def RSI(price_closes: Series, lookback: int) -> List[float]:
 
 
 def SAR(  # noqa
-  data: DataFrame,
+  data: OHLC,
   af: float = 0.02,
   maxi: float = 0.2
 ) -> List[float]:
   """Calculate Simple Average Reversion."""
-  high, low = data['high'], data['low']
+  high, low = data.high, data.low
   sig0, xpt0, af0 = True, high[0], af
   sar = [low[0] - (high - low).std()]
   for i in range(1, len(data)):
@@ -124,7 +126,7 @@ def SAR(  # noqa
   return sar
 
 
-def confirmation_pattern(data: DataFrame, operation: str) -> bool:
+def confirmation_pattern(data: OHLC, operation: str) -> bool:
   """Return True if different patterns are detected.
 
   https://s3.tradingview.com/z/zk1YPPgw_big.png
@@ -136,16 +138,16 @@ def confirmation_pattern(data: DataFrame, operation: str) -> bool:
   return c1 or c2 or c3
 
 
-def three_bar_reversal(data: DataFrame, operation: str) -> bool:
+def three_bar_reversal(data: OHLC, operation: str) -> bool:
   """Envelope Pattern.
 
   docs/images/buy_three_bar_reversal.png
   docs/images/sell_three_bar_reversal.png
   """
-  opens = list(data.open)
-  highs = list(data.high)
-  lows = list(data.low)
-  closes = list(data.close)
+  opens = data.open
+  highs = data.high
+  lows = data.low
+  closes = data.close
   if operation == ot.BUY:
     return opens[-3] > closes[-3] and opens[-2] > closes[-2] and \
         opens[-1] < closes[-1] and lows[-3] > lows[-2] and \
@@ -156,16 +158,16 @@ def three_bar_reversal(data: DataFrame, operation: str) -> bool:
         lows[-3] < lows[-2] and closes[-1] < lows[-2]
 
 
-def pinbar_pattern(data: DataFrame, operation: str) -> bool:
+def pinbar_pattern(data: OHLC, operation: str) -> bool:
   """Pin-Bar Pattern.
 
   docs/images/buy_pinbar.png
   docs/images/sell_pinbar.png
   """
-  highs = list(data.high)
-  lows = list(data.low)
-  closes = list(data.close)
-  opens = list(data.open)
+  opens = data.open
+  highs = data.high
+  lows = data.low
+  closes = data.close
   if operation == ot.BUY:
     upper_third = highs[-1] - (highs[-1] - lows[-1]) / 3
     body = abs(opens[-1] - closes[-1])
@@ -190,16 +192,16 @@ def pinbar_pattern(data: DataFrame, operation: str) -> bool:
     )
 
 
-def harami_pattern(data: DataFrame, operation: str) -> bool:
+def harami_pattern(data: OHLC, operation: str) -> bool:
   """Harami Pattern.
 
   docs/images/buy_harami.png
   docs/images/sell_harami.png
   """
-  highs = list(data.high)
-  lows = list(data.low)
-  closes = list(data.close)
-  opens = list(data.open)
+  opens = data.open
+  highs = data.high
+  lows = data.low
+  closes = data.close
   if operation == ot.BUY:
     return opens[-2] > closes[-2] and opens[-1] < closes[-1] and \
         highs[-1] < highs[-2] and lows[-1] > lows[-2]

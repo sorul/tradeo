@@ -5,7 +5,12 @@ from .order_type import OrderType
 class OrderPrice:
   """Class to hold order price."""
 
-  def __init__(self, price: float, stop_loss: float, take_profit: float):
+  def __init__(
+      self,
+      price: float = 0,
+      stop_loss: float = 0,
+      take_profit: float = 0
+  ):
     """Initialize the attributes."""
     self.price = price
     self.stop_loss = stop_loss
@@ -19,7 +24,7 @@ class MutableOrderDetails:
       self,
       prices: OrderPrice,
       symbol: str,
-      lots: float,
+      lots: float = 0.01,
       expiration: int = 0
   ):
     """Initialize the attributes."""

@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## ** V0.5.0  (12/02/2024) **
+- feat:
+  - new ema strategy
+- test:
+  - ema strategy
+
 ## ** V0.4.0  (11/02/2024) **
 - feat:
   - strategy abstract class
