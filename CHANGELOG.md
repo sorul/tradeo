@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## ** V0.5.1  (12/02/2024) **
+- fix:
+  - "symbol" variable relocate in ImmutableOrderDetails class
+
 ## ** V0.5.0  (12/02/2024) **
 - feat:
   - new ema strategy

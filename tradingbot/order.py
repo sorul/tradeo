@@ -23,13 +23,11 @@ class MutableOrderDetails:
   def __init__(
       self,
       prices: OrderPrice,
-      symbol: str,
       lots: float = 0.01,
       expiration: int = 0
   ):
     """Initialize the attributes."""
     self._prices = prices
-    self.symbol = symbol
     self.lots = lots
     self.expiration = expiration
 
@@ -52,8 +50,10 @@ class MutableOrderDetails:
 class ImmutableOrderDetails:
   """Class to hold order metadata."""
 
-  def __init__(self, order_type: OrderType, magic: str, comment: str):
+  def __init__(
+          self, symbol: str, order_type: OrderType, magic: str, comment: str):
     """Initialize the attributes."""
+    self.symbol = symbol
     self.order_type = order_type
     self.magic = magic
     self.comment = comment
@@ -88,7 +88,7 @@ class Order:
   ):
     """Initialize the attributes."""
     self._mutable_details = mutable_details
-    self.immutable_details = immutable_details
+    self._immutable_details = immutable_details
     self._ticket = ticket  # it would not be available until the order be filled
 
   def __eq__(self, __value: object) -> bool:
@@ -98,12 +98,12 @@ class Order:
   @property
   def symbol(self) -> str:
     """Get the symbol."""
-    return self._mutable_details.symbol
+    return self._immutable_details.symbol
 
   @property
   def order_type(self) -> OrderType:
     """Get the order type."""
-    return self.immutable_details.order_type
+    return self._immutable_details.order_type
 
   @property
   def lots(self) -> float:
@@ -128,12 +128,12 @@ class Order:
   @property
   def magic(self) -> str:
     """Get the magic number."""
-    return self.immutable_details.magic
+    return self._immutable_details.magic
 
   @property
   def comment(self) -> str:
     """Get the comment."""
-    return self.immutable_details.comment
+    return self._immutable_details.comment
 
   @property
   def expiration(self) -> int:

@@ -54,8 +54,12 @@ class EMA_strategy(Strategy):
               OrderPrice(
                   take_profit=ema_20[-1] + 20 * pip,
                   stop_loss=ema_50[-1] - 10 * pip
-              ), symbol),
-          ImmutableOrderDetails(OrderType.BUY, magic, self.strategy_name),
+              )),
+          ImmutableOrderDetails(
+              symbol=symbol,
+              order_type=OrderType.BUY,
+              magic=magic,
+              comment=self.strategy_name)
       )
     elif lower_tendency:
       return Order(
@@ -63,8 +67,12 @@ class EMA_strategy(Strategy):
               OrderPrice(
                   take_profit=ema_20[-1] - 20 * pip,
                   stop_loss=ema_50[-1] + 10 * pip
-              ), symbol),
-          ImmutableOrderDetails(OrderType.SELL, magic, self.strategy_name),
+              )),
+          ImmutableOrderDetails(
+              symbol=symbol,
+              order_type=OrderType.SELL,
+              magic=magic,
+              comment=self.strategy_name)
       )
 
     return None

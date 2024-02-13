@@ -502,9 +502,10 @@ def test_get_open_orders():
               price=0.65754,
               stop_loss=0.65443,
               take_profit=0.00000
-          ), symbol='AUDUSD', lots=0.01
+          ), lots=0.01
       ),
       ImmutableOrderDetails(
+          symbol='AUDUSD',
           order_type=OrderType.BUY,
           magic='1705617043',
           comment='this is a comment'
@@ -514,6 +515,13 @@ def test_get_open_orders():
   orders = mt_client.get_open_orders()
   assert len(orders) == 1
   assert orders[0] == order
+  assert order.price == 0.65754
+  assert order.stop_loss == 0.65443
+  assert order.take_profit == 0.00000
+  assert order.magic == '1705617043'
+  assert order.comment == 'this is a comment'
+  assert order.symbol == 'AUDUSD'
+  assert order.lots == 0.01
 
 
 @patch('tradingbot.log.log.debug')
@@ -525,9 +533,10 @@ def test_place_break_even(mock_debug, tmp_path):
               price=0.65754,
               stop_loss=0.65443,
               take_profit=0.00000
-          ), symbol='AUDUSD', lots=0.01
+          ), lots=0.01
       ),
       ImmutableOrderDetails(
+          symbol='AUDUSD',
           order_type=OrderType.BUY,
           magic='1705617043',
           comment='this is a comment'

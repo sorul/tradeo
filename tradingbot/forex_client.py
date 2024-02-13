@@ -261,13 +261,17 @@ class MT_Client(metaclass=Singleton):
         Order(
             MutableOrderDetails(
                 OrderPrice(
-                    o['open_price'],
-                    o['SL'],
-                    o['TP']
-                ), o['symbol'], o['lots']
+                    price=o['open_price'],
+                    stop_loss=o['SL'],
+                    take_profit=o['TP']
+                ), lots=o['lots']
             ),
             ImmutableOrderDetails(
-                OrderType(o['type']), o['magic'], o['comment']), ticket=int(t))
+                symbol=o['symbol'],
+                order_type=OrderType(o['type']),
+                magic=o['magic'],
+                comment=o['comment']
+            ), ticket=int(t))
         for t, o in self.open_orders.items()
     ]
 
@@ -468,7 +472,6 @@ class MT_Client(metaclass=Singleton):
                 stop_loss=order.stop_loss,
                 take_profit=order.take_profit
             ),
-            symbol=order.symbol,
             lots=order.lots,
             expiration=order.expiration
         )

@@ -22,9 +22,10 @@ def test_check_order_viability():
               price=2,
               stop_loss=1,
               take_profit=4
-          ), symbol='EURUSD', lots=0.01
+          ), lots=0.01
       ),
       ImmutableOrderDetails(
+          symbol='EURUSD',
           order_type=OrderType.BUY,
           magic='123456789',
           comment=''
@@ -49,9 +50,10 @@ def test_handle_limit_orders(mock_debug, tmp_path):
               price=2,
               stop_loss=1,
               take_profit=4
-          ), symbol='EURUSD', lots=0.01
+          ), lots=0.01
       ),
       ImmutableOrderDetails(
+          symbol='EURUSD',
           order_type=OrderType.BUY,
           magic='9999999999',
           comment=''
@@ -75,9 +77,10 @@ def test_handle_filled_orders(mock_debug, tmp_path):
               price=2,
               stop_loss=1,
               take_profit=4
-          ), symbol='EURUSD', lots=0.01
+          ), lots=0.01
       ),
       ImmutableOrderDetails(
+          symbol='EURUSD',
           order_type=OrderType.BUY,
           magic='9999999999',
           comment=''
@@ -107,9 +110,10 @@ def test_check_if_break_even_can_be_placed(tmp_path):
               price=2,
               stop_loss=1,
               take_profit=4
-          ), symbol='EURUSD', lots=0.01
+          ), lots=0.01
       ),
       ImmutableOrderDetails(
+          symbol='EURUSD',
           order_type=OrderType.BUY,
           magic='9999999999',
           comment=''
