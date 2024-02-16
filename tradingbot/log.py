@@ -15,7 +15,7 @@ class ContextFilter(logging.Filter):
 
   hostname = socket.gethostname()
 
-  def filter(self, record): # noqa
+  def filter(self, record):  # noqa
     """Add the hostname 'e.g. raspberrypi' to the log record."""
     record.hostname = ContextFilter.hostname
     return True  # No filtering
@@ -29,7 +29,8 @@ class Log(metaclass=Singleton):
     self.logger = logging.getLogger()
     self.logger.setLevel(Config.log_level)
 
-    self.syslog = SysLogHandler(address=('logs2.papertrailapp.com', 43931))
+    self.syslog = SysLogHandler(
+        address=(Config.syslog_address, Config.syslog_port))
 
     self.syslog.addFilter(ContextFilter())
     self.formatter = logging.Formatter(

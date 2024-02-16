@@ -28,4 +28,5 @@ selllimit
 sellstop
 tradingbot
 USDCAD
+USDCHF
 USDJPY

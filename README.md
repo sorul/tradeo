@@ -19,6 +19,8 @@ export TB_LOOKBACK_DAYS=10
 
 # Logging configuration
 export TB_LOG_LEVEL=INFO
+export TB_SYSLOG_ADDRESS=logs2.papertrailapp.com
+export TB_SYSLOG_PORT=43931
 
 # Metatrader configuration
 export TB_WINE_PATH=/usr/local/bin/wine
@@ -30,7 +32,7 @@ export TB_MT_FILES_PATH="${TB_WINE_HOME}/drive_c/Program Files/MetaTrader/MQL5/F
 
 The different possibilities for exporting environment variables depend on
 the user's preference. For example, we can place all the variables in a
-".env.forex" file and then execute the command using Poetry.:
+".env.forex" file and then execute the command using Poetry:
 
 ```bash
 source .env.forex

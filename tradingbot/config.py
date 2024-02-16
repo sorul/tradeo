@@ -28,6 +28,8 @@ class Config:
   lookback_days = float(os.getenv('TB_LOOKBACK_DAYS') or 10)
 
   # Logging configuration
+  syslog_address = os.getenv('TB_SYSLOG_ADDRESS') or 'logs2.papertrailapp.com'
+  syslog_port = int(os.getenv('TB_SYSLOG_PORT') or 43931)
   ll = os.getenv('TB_LOG_LEVEL') or 'INFO'
   if ll == 'INFO':
     log_level = logging.INFO
