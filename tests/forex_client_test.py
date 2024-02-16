@@ -1,5 +1,4 @@
 from pathlib import Path
-import pytest
 from unittest.mock import patch, MagicMock
 from tradingbot.forex_client import MT_Client, mt_client
 from tradingbot.config import Config
@@ -44,15 +43,6 @@ def test_set_agent_paths():
     assert mt_client.path_messages_stored == Path(join(
         path_file, 'Messages_Stored.json'))
     assert mt_client.path_commands_prefix == Path(join(path_file, 'Commands_'))
-
-
-def test_set_agent_paths_missing_dir():
-  original_mt_path = Config.mt_files_path
-  Config.mt_files_path = Path('invalid/path')
-  mt_client = MT_Client()
-  with pytest.raises(SystemExit):
-    mt_client.set_agent_paths()
-  Config.mt_files_path = original_mt_path
 
 
 def test_check_messages(tmp_path):

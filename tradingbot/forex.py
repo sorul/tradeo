@@ -1,4 +1,4 @@
-"""Script to handle the forex bot."""
+"""This script is one of the possible entry points of the project."""
 from datetime import datetime, timedelta
 from .config import Config
 from .files import Files
@@ -11,7 +11,7 @@ import traceback
 
 
 def handle():
-  """Handle the forex bot."""
+  """Entry point of the forex bot."""
   if not is_locked() and check_time_viability():
     try:
       main()
@@ -128,7 +128,7 @@ def check_time_viability() -> bool:
   """Check if the forex bot is viable to run."""
   now_date = datetime.now(Config.broker_timezone)
   # Monday (0) -> Sunday (6)
-  is_weekday = now_date.weekday() in [0, 1, 2, 3]
+  is_weekday = now_date.weekday() in [0, 1, 2, 3, 4]
   # TODO: When executions are performed with the real account,
   # we need to consider testing the removal of this condition.
   is_not_on_the_hour = now_date.minute != 0

@@ -64,7 +64,7 @@ def test_send_profit_message(mock_data_path, tmp_path):
   mock_data_path.return_value = tmp_path
 
   # Create the file with some content
-  with open(tmp_path / Files.LAST_BALANCE, 'w') as file:
+  with open(tmp_path / Files.LAST_BALANCE.value, 'w') as file:
     file.write('20')
 
   # Sends a message

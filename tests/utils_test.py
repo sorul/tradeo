@@ -61,8 +61,8 @@ def test_get_remaining_symbols(mock_data_path, tmp_path):
   mock_data_path.return_value = tmp_path
 
   with open(tmp_path / f.SUCCESSFUL_SYMBOLS.value, 'w') as file:
-    file.write('EURUSD\nUSDJPY\nGBPUSD')
+    file.write('EURUSD\nUSDJPY')
 
   result = utils.get_remaining_symbols()
-  assert len(result) == len(Config.symbols) - 3
+  assert len(result) == len(Config.symbols) - 2
   assert 'EURUSD' not in result

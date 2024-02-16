@@ -92,15 +92,15 @@ def test_reset_successful_symbols_file(mock_default_path, tmp_path):
 
   # Create the file with some content
   mock_text = 'EURUSD\nUSDJPY\nGBPUSD'
-  with open(tmp_path / Files.SUCCESSFUL_SYMBOLS, 'w') as file:
+  with open(tmp_path / Files.SUCCESSFUL_SYMBOLS.value, 'w') as file:
     file.write(mock_text)
 
-  assert f.try_read_file(Files.SUCCESSFUL_SYMBOLS) == mock_text
+  assert f.try_read_file(Files.SUCCESSFUL_SYMBOLS.value) == mock_text
 
   # Call to the function to test
   f.reset_successful_symbols_file()
 
-  assert f.try_read_file(Files.SUCCESSFUL_SYMBOLS) == ''
+  assert f.try_read_file(Files.SUCCESSFUL_SYMBOLS.value) == ''
 
 
 @patch('tradingbot.files.get_default_path')
@@ -111,15 +111,15 @@ def test_reset_consecutive_times_down_file(mock_default_path, tmp_path):
 
   # Create the file with some content
   mock_text = '10'
-  with open(tmp_path / Files.CONSECUTIVE_TIMES_DOWN, 'w') as file:
+  with open(tmp_path / Files.CONSECUTIVE_TIMES_DOWN.value, 'w') as file:
     file.write(mock_text)
 
-  assert f.try_read_file(Files.CONSECUTIVE_TIMES_DOWN) == mock_text
+  assert f.try_read_file(Files.CONSECUTIVE_TIMES_DOWN.value) == mock_text
 
   # Call to the function to test
   f.reset_consecutive_times_down_file()
 
-  assert f.try_read_file(Files.CONSECUTIVE_TIMES_DOWN) == '0'
+  assert f.try_read_file(Files.CONSECUTIVE_TIMES_DOWN.value) == '0'
 
 
 @patch('tradingbot.files.get_default_path')
@@ -129,7 +129,7 @@ def test_get_last_balance(mock_default_path, tmp_path):
   mock_default_path.return_value = tmp_path
 
   # Create the file with some content
-  with open(tmp_path / Files.LAST_BALANCE, 'w') as file:
+  with open(tmp_path / Files.LAST_BALANCE.value, 'w') as file:
     file.write('100')
 
   # Call to the function to test
@@ -143,7 +143,7 @@ def test_get_consecutive_times_down(mock_default_path, tmp_path):
   mock_default_path.return_value = tmp_path
 
   # Create the file with some content
-  with open(tmp_path / Files.CONSECUTIVE_TIMES_DOWN, 'w') as file:
+  with open(tmp_path / Files.CONSECUTIVE_TIMES_DOWN.value, 'w') as file:
     file.write('10')
 
   # Call to the function to test
@@ -157,7 +157,7 @@ def test_increment_consecutive_times_down(mock_default_path, tmp_path):
   mock_default_path.return_value = tmp_path
 
   # Create the file with some content
-  with open(tmp_path / Files.CONSECUTIVE_TIMES_DOWN, 'w') as file:
+  with open(tmp_path / Files.CONSECUTIVE_TIMES_DOWN.value, 'w') as file:
     file.write('10')
 
   # Call to the function to test

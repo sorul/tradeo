@@ -89,7 +89,6 @@ class MT_Client(metaclass=Singleton):
           join(mt_files_path, self.prefix_files_path, 'Commands_'))
     else:
       log.error(f'mt_files_path: {mt_files_path} does not exist!')
-      exit()
 
   @staticmethod
   def start_thread(target: ty.Callable) -> Thread:
@@ -591,7 +590,7 @@ class MT_Client(metaclass=Singleton):
 
   def get_balance(self) -> float:
     """Return the balance of the account."""
-    balance = self.account_info['balance']
+    balance = self.account_info.get('balance')
     if isinstance(balance, float):
       return balance
     else:
