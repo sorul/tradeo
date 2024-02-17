@@ -21,7 +21,7 @@
 
 ## ** V0.3.0  (25/01/2024) **
 - feat:
-  - forex main to handle incoming historic data
+  - forex main to handle incoming historical data
   - support methods
 - test
   - forex main

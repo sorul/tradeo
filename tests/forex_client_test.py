@@ -35,9 +35,9 @@ def test_set_agent_paths():
     assert mt_client.path_market_data == Path(
         join(path_file, 'Market_Data.json'))
     assert mt_client.path_bar_data == Path(join(path_file, 'Bar_Data.json'))
-    assert mt_client.path_historic_data == Path(join(path_file))
-    assert mt_client.path_historic_trades == Path(join(
-        path_file, 'Historic_Trades.json'))
+    assert mt_client.path_historical_data == Path(join(path_file))
+    assert mt_client.path_historical_trades == Path(join(
+        path_file, 'Historical_Trades.json'))
     assert mt_client.path_orders_stored == Path(join(
         path_file, 'Orders_Stored.json'))
     assert mt_client.path_messages_stored == Path(join(
@@ -255,12 +255,10 @@ def test_check_open_orders(tmp_path):
   assert mt_client.account_info == data['account_info']
 
 
-def test_check_historical_data(tmp_path):
+def test_check_historical_data():
 
   symbol = 'USDJPY'
-
-  mt_client.path_historic_data = tmp_path
-  mt_client.path_historic_data = resources_test_path()
+  mt_client.path_historical_data = resources_test_path()
 
   data = mt_client.check_historical_data(symbol)
   mock_data = {
@@ -286,10 +284,10 @@ def test_check_historical_data(tmp_path):
 
   # Assertions
   assert data == mock_data
-  assert mt_client.historic_data[symbol].equals(mock_df)
+  assert mt_client.historical_data[symbol].equals(mock_df)
 
 
-def test_is_historic_data_up_to_date_true():
+def test_is_historical_data_up_to_date_true():
   tz = pytz.timezone(str(Config.utc_timezone))
   Config.broker_timezone = tz
   df = DataFrame(
@@ -318,12 +316,12 @@ def test_is_historic_data_up_to_date_true():
 def test_check_historical_trades(tmp_path):
 
   # Copy the Bar_Data.json file to the temporary folder
-  historic_trades_path = tmp_path / 'Historic_Trades.json'
-  original_historic_trades_path = Path(
-      f'{resources_test_path()}/Historic_Trades.json')
-  shutil.copyfile(original_historic_trades_path, historic_trades_path)
+  historical_trades_path = tmp_path / 'Historical_Trades.json'
+  original_historical_trades_path = Path(
+      f'{resources_test_path()}/Historical_Trades.json')
+  shutil.copyfile(original_historical_trades_path, historical_trades_path)
 
-  mt_client.path_historic_trades = historic_trades_path
+  mt_client.path_historical_trades = historical_trades_path
 
   # Call for the first time to read data
   mt_client.check_historical_trades()
@@ -344,15 +342,15 @@ def test_check_historical_trades(tmp_path):
       }
   }
 
-  assert mt_client.historic_trades == assert_data
+  assert mt_client.historical_trades == assert_data
 
   # Does not change on second call
   mt_client.check_historical_trades()
 
-  assert mt_client.historic_trades == assert_data
+  assert mt_client.historical_trades == assert_data
 
   # Write new data
-  data = try_load_json(historic_trades_path)
+  data = try_load_json(historical_trades_path)
   data['2015257379'] = {
       'magic': 1696018343,
       'symbol': 'EURUSD',
@@ -366,13 +364,13 @@ def test_check_historical_trades(tmp_path):
       'swap': 0.00,
       'comment': '[sl 1.65410]'
   }
-  with open(historic_trades_path, 'w') as f:
+  with open(historical_trades_path, 'w') as f:
     f.write(json.dumps(data))
 
   # Now it does change
   mt_client.check_historical_trades()
 
-  assert mt_client.historic_trades == data
+  assert mt_client.historical_trades == data
 
 
 def test_send_command(tmp_path):
@@ -416,13 +414,13 @@ def test_clean_all_command_files(tmp_path):
   assert not file2.exists()
 
 
-def test_clean_all_historic_files(tmp_path):
+def test_clean_all_historical_files(tmp_path):
 
-  mt_client.path_historic_data = tmp_path
+  mt_client.path_historical_data = tmp_path
 
   # Create some files
-  file1 = Path(join(tmp_path, 'Historic_Data_EURUSD.json'))
-  file2 = Path(join(tmp_path, 'Historic_Data_USDJPY.json'))
+  file1 = Path(join(tmp_path, 'Historical_Data_EURUSD.json'))
+  file2 = Path(join(tmp_path, 'Historical_Data_USDJPY.json'))
   file1.touch()
   file2.touch()
 
@@ -431,7 +429,7 @@ def test_clean_all_historic_files(tmp_path):
   assert file2.exists()
 
   # Clean them
-  mt_client.clean_all_historic_files()
+  mt_client.clean_all_historical_files()
 
   # Check they are gone
   assert not file1.exists()

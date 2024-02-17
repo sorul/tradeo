@@ -33,7 +33,7 @@ def main():
 
   # Clean all files
   mt_client.clean_all_command_files()
-  mt_client.clean_all_historic_files()
+  mt_client.clean_all_historical_files()
   mt_client.clean_messages()
   f.reset_successful_symbols_file()
 
@@ -51,24 +51,24 @@ def main():
   # Send profit message
   _send_profit_message(local_date)
 
-  # Send commands to obtain the historic data
-  [mt_client.get_historic_data(s, Config.timeframe) for s in Config.symbols]
+  # Send commands to obtain the historical data
+  [mt_client.get_historical_data(s, Config.timeframe) for s in Config.symbols]
 
   # Send commands to obtain bid/ask
   mt_client.subscribe_symbols(Config.symbols)
 
   # TODO: Trades management
 
-  # Process the result of "get_historic_data"
-  handle_new_historic_data(utc_date, execution_time)
+  # Process the result of "get_historical_data"
+  handle_new_historical_data(utc_date, execution_time)
 
   # Finish the main
   finish()
 
 
-def handle_new_historic_data(
+def handle_new_historical_data(
         utc_date: datetime, execution_time: timedelta) -> None:
-  """Handle the new historic data."""
+  """Handle the new historical data."""
   # Initialize the remaining symbols
   rs = get_remaining_symbols()
 

@@ -17,6 +17,14 @@ export TB_SYMBOLS=EURUSD,USDCAD,USDCHF
 export TB_TIMEFRAME=M5
 export TB_LOOKBACK_DAYS=10
 
+# Forex-Client configuration
+export TB_CHECK_MESSAGES_THREAD=true
+export TB_CHECK_MARKET_DATA_THREAD=false
+export TB_CHECK_BAR_DATA_THREAD=false
+export TB_CHECK_OPEN_ORDERS_THREAD=true
+export TB_CHECK_HISTORICAL_DATA_THREAD=true
+export TB_CHECK_HISTORICAL_TRADES_THREAD=false
+
 # Logging configuration
 export TB_LOG_LEVEL=INFO
 export TB_SYSLOG_ADDRESS=logs2.papertrailapp.com
