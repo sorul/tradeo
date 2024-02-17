@@ -101,7 +101,19 @@ class MT_Client(metaclass=Singleton):
     """Start the threads."""
     self.START = True
     self.reset_command_ids()
-    self.start_thread(self.check_open_orders)
+    # Start the demand threads
+    if Config.check_messages_thread:
+      self.start_thread(self.start_thread_check_messages)
+    if Config.check_market_data_thread:
+      self.start_thread(self.start_thread_check_market_data)
+    if Config.check_bar_data_thread:
+      self.start_thread(self.start_thread_check_bar_data)
+    if Config.check_open_orders_thread:
+      self.start_thread(self.start_thread_check_open_orders)
+    if Config.check_historical_data_thread:
+      self.start_thread(self.start_thread_check_historical_data)
+    if Config.check_historical_trades_thread:
+      self.start_thread(self.start_thread_check_historical_trades)
 
   def stop(self) -> None:
     """Stop the threads."""
@@ -274,17 +286,17 @@ class MT_Client(metaclass=Singleton):
         for t, o in self.open_orders.items()
     ]
 
-  def start_thread_check_historic_data(self) -> None:
+  def start_thread_check_historical_data(self) -> None:
     """Start the thread to check historic data."""
     while self.ACTIVE:
       sleep(self.sleep_delay)
       if self.START:
-        self.check_historic_data()
+        self.check_historical_data()
 
-  def check_historic_data(
+  def check_historical_data(
           self, symbol: ty.Union[str, None] = None) -> ty.Dict:
     """Update historic_data, trigger event if needed and return that data."""
-    # "symbol" is None when it comes from "start_thread_check_historic_data"
+    # "symbol" is None when it comes from "start_thread_check_historical_data"
     # In this case, we need to get a random remaining symbol
     if symbol is None:
       remaining_symbols = get_remaining_symbols()
@@ -302,7 +314,7 @@ class MT_Client(metaclass=Singleton):
       self.historic_data[symbol] = df
 
       # The date and time corresponding to the last load are calculated
-      if self._is_historic_data_up_to_date(df):
+      if self._is_historical_data_up_to_date(df):
         log.info(f'{symbol} -> {(df.index[0], df.index[-1])}')
 
         # TODO: call to event handler
@@ -315,7 +327,7 @@ class MT_Client(metaclass=Singleton):
     return data
 
   @staticmethod
-  def _is_historic_data_up_to_date(df: DataFrame) -> bool:
+  def _is_historical_data_up_to_date(df: DataFrame) -> bool:
     """Check if the historic data is up to date."""
     now_date = datetime.now(Config.utc_timezone)
     td = timedelta(minutes=now_date.minute % 5,
@@ -330,14 +342,14 @@ class MT_Client(metaclass=Singleton):
     return (last_date_from_df >= start_range
             and last_date_from_df < end_range)
 
-  def start_thread_check_historic_trades(self) -> None:
+  def start_thread_check_historical_trades(self) -> None:
     """Start the thread to check historic trades."""
     while self.ACTIVE:
       sleep(self.sleep_delay)
       if self.START:
-        self.check_historic_trades()
+        self.check_historical_trades()
 
-  def check_historic_trades(self) -> ty.Dict:
+  def check_historical_trades(self) -> ty.Dict:
     """Update and return the historic trades object."""
     self.historic_trades = try_load_json(self.path_historic_trades)
     return self.historic_trades

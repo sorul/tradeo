@@ -80,7 +80,7 @@ def handle_new_historic_data(
     next_symbol = rs[randrange(len(rs))]
 
     # Check if JSON data is available to trigger the event
-    mt_client.check_historic_data(next_symbol)
+    mt_client.check_historical_data(next_symbol)
 
     # Update the remaining symbols
     rs = get_remaining_symbols()

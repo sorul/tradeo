@@ -255,14 +255,14 @@ def test_check_open_orders(tmp_path):
   assert mt_client.account_info == data['account_info']
 
 
-def test_check_historic_data(tmp_path):
+def test_check_historical_data(tmp_path):
 
   symbol = 'USDJPY'
 
   mt_client.path_historic_data = tmp_path
   mt_client.path_historic_data = resources_test_path()
 
-  data = mt_client.check_historic_data(symbol)
+  data = mt_client.check_historical_data(symbol)
   mock_data = {
       'USDJPY_M5': {
           '2024.01.09 08:30': {
@@ -304,18 +304,18 @@ def test_is_historic_data_up_to_date_true():
   )
   d = datetime(2024, 1, 20, 1, 5)
   with freeze_time(tz.localize(d)):
-    assert MT_Client._is_historic_data_up_to_date(df)
+    assert MT_Client._is_historical_data_up_to_date(df)
 
   d = datetime(2024, 1, 20, 1, 8)
   with freeze_time(tz.localize(d)):
-    assert MT_Client._is_historic_data_up_to_date(df)
+    assert MT_Client._is_historical_data_up_to_date(df)
 
   d = datetime(2024, 1, 20, 1, 10)
   with freeze_time(tz.localize(d)):
-    assert not MT_Client._is_historic_data_up_to_date(df)
+    assert not MT_Client._is_historical_data_up_to_date(df)
 
 
-def test_check_historic_trades(tmp_path):
+def test_check_historical_trades(tmp_path):
 
   # Copy the Bar_Data.json file to the temporary folder
   historic_trades_path = tmp_path / 'Historic_Trades.json'
@@ -326,7 +326,7 @@ def test_check_historic_trades(tmp_path):
   mt_client.path_historic_trades = historic_trades_path
 
   # Call for the first time to read data
-  mt_client.check_historic_trades()
+  mt_client.check_historical_trades()
 
   assert_data = {
       '2015257378': {
@@ -347,7 +347,7 @@ def test_check_historic_trades(tmp_path):
   assert mt_client.historic_trades == assert_data
 
   # Does not change on second call
-  mt_client.check_historic_trades()
+  mt_client.check_historical_trades()
 
   assert mt_client.historic_trades == assert_data
 
@@ -370,7 +370,7 @@ def test_check_historic_trades(tmp_path):
     f.write(json.dumps(data))
 
   # Now it does change
-  mt_client.check_historic_trades()
+  mt_client.check_historical_trades()
 
   assert mt_client.historic_trades == data
 
