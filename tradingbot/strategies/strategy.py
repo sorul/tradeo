@@ -7,7 +7,7 @@ from tradingbot.config import Config
 from tradingbot.log import log
 from tradingbot.order_type import OrderType
 from tradingbot.ohlc import OHLC
-from tradingbot.forex_client import MT_Client
+from tradingbot.mt_client import MT_Client
 
 
 class Strategy(ABC):

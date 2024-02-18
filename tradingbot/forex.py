@@ -1,6 +1,6 @@
 """This script is one of the possible entry points of the project."""
 from datetime import datetime, timedelta
-from tradingbot.forex_client import MT_Client
+from tradingbot.mt_client import MT_Client
 from .config import Config
 from .files import Files
 from . import files as f

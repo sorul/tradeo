@@ -1,6 +1,6 @@
 from pathlib import Path
 from unittest.mock import patch, MagicMock
-from tradingbot.forex_client import MT_Client
+from tradingbot.mt_client import MT_Client
 from tradingbot.config import Config
 import shutil
 from pandas import DataFrame
@@ -25,7 +25,7 @@ def test_set_agent_paths():
   mock_config = Config
   mock_config.mt_files_path = resources_test_path()
 
-  with patch('tradingbot.forex_client.Config', mock_config):
+  with patch('tradingbot.mt_client.Config', mock_config):
     mt_client = MT_Client()
     path_file = join(mock_config.mt_files_path, mt_client.prefix_files_path)
 

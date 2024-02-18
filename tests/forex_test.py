@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from tradingbot.config import Config
 from unittest.mock import patch
-from tradingbot.forex_client import MT_Client
+from tradingbot.mt_client import MT_Client
 import pytz
 
 

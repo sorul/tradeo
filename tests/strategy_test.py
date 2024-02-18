@@ -11,7 +11,7 @@ from tradingbot.order_type import OrderType
 from datetime import datetime
 from tradingbot.config import Config
 from tradingbot.paths import resources_test_path
-from tradingbot.forex_client import MT_Client
+from tradingbot.mt_client import MT_Client
 from pathlib import Path
 from freezegun import freeze_time
 import pytz
