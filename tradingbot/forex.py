@@ -1,15 +1,16 @@
 """This script is one of the possible entry points of the project."""
 from datetime import datetime, timedelta
+from tradingbot.forex_client import MT_Client
 from .config import Config
 from .files import Files
 from . import files as f
 from .utils import get_remaining_symbols, reboot_mt
-from .forex_client import MT_Client
 from random import randrange
 from .log import log
 import traceback
-
-mt_client = MT_Client()
+from tradingbot.event_handlers.event_handler_factory import (
+    event_handler_factory
+)
 
 
 def handle():
@@ -31,6 +32,7 @@ def main():
   f.lock(Files.FOREX_LOCK)
 
   # Start the MT Client
+  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
   mt_client.start()
 
   # Clean all files
@@ -82,6 +84,7 @@ def handle_new_historical_data(
     next_symbol = rs[randrange(len(rs))]
 
     # Check if JSON data is available to trigger the event
+    mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
     mt_client.check_historical_data(next_symbol)
 
     # Update the remaining symbols
@@ -99,6 +102,7 @@ def handle_new_historical_data(
 
 def _send_profit_message(local_date: datetime) -> bool:
   """Get the balance of the account."""
+  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
   balance = mt_client.get_balance()
   last_balance = f.get_last_balance()
   difference = balance - last_balance
@@ -139,5 +143,6 @@ def check_time_viability() -> bool:
 
 def finish() -> None:
   """Finish the forex bot."""
+  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
   mt_client.stop()
   f.unlock(Files.FOREX_LOCK)

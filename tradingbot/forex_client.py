@@ -1,6 +1,4 @@
 """Script of MT_Client what it sends commands to MT4/MT5."""
-from tradingbot.event_handlers.event_handler_factory import (
-    event_handler_factory)
 import glob
 import json
 from time import sleep
@@ -22,9 +20,9 @@ from .utils import (
 from pathlib import Path
 from .order import Order, MutableOrderDetails, ImmutableOrderDetails, OrderPrice
 from .order_type import OrderType
-from tradingbot.event_handlers.event_handler import EventHandler
 from .ohlc import OHLC
 from .trading_methods import get_pip
+from tradingbot.event_handlers.event_handler import EventHandler
 
 
 # Typing types
@@ -40,7 +38,8 @@ class MT_Client(metaclass=Singleton):
   This includes all of the functions needed for communication with MT4/MT5.
   """
 
-  def __init__(self, event_handler: EventHandler,
+  def __init__(self,
+               event_handler: EventHandler,
                sleep_delay: float = 0.005,
                max_retry_command_seconds: int = 5 * 60
                ):
@@ -634,6 +633,3 @@ class MT_Client(metaclass=Singleton):
     else:
       log.warning(f'Balance is not a float: {balance}')
       return -1.0
-
-
-mt_client = MT_Client(event_handler_factory(Config.event_handler_class))

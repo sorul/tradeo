@@ -10,6 +10,7 @@ from tradingbot.order import (Order,
 from tradingbot.trading_methods import EMA, get_pivots, get_pip
 from tradingbot.ohlc import OHLC
 from tradingbot.utils import create_magic_number
+from datetime import datetime
 
 
 class EMA_strategy(Strategy):
@@ -23,8 +24,12 @@ class EMA_strategy(Strategy):
       self,
       ohlc: OHLC,
       symbol: str,
+      now_date: datetime
   ) -> Union[Order, None]:
     """Return an order if the strategy is triggered."""
+    # This strategy does not use the date
+    _ = now_date
+
     # Calculate the EMAs
     ema_20 = EMA(ohlc.close, 20)
     ema_50 = EMA(ohlc.close, 50)
@@ -33,7 +38,6 @@ class EMA_strategy(Strategy):
     p = get_pivots(ohlc.high, left=6, right=3, n_pivot=2, max_min='max')
     max_pivot_1 = p[0][0]  # most recent
     max_pivot_2 = p[1][0]
-
     p = get_pivots(ohlc.low, left=6, right=3, n_pivot=2, max_min='min')
     min_pivot_1 = p[0][0]  # most recent
     min_pivot_2 = p[1][0]
@@ -55,10 +59,8 @@ class EMA_strategy(Strategy):
                   stop_loss=ema_50[-1] - 10 * pip
               )),
           ImmutableOrderDetails(
-              symbol=symbol,
-              order_type=OrderType.BUY,
-              magic=magic,
-              comment=self.strategy_name)
+              symbol=symbol, order_type=OrderType.BUY,
+              magic=magic, comment=self.strategy_name)
       )
     elif lower_tendency:
       return Order(
@@ -68,10 +70,8 @@ class EMA_strategy(Strategy):
                   stop_loss=ema_50[-1] + 10 * pip
               )),
           ImmutableOrderDetails(
-              symbol=symbol,
-              order_type=OrderType.SELL,
-              magic=magic,
-              comment=self.strategy_name)
+              symbol=symbol, order_type=OrderType.SELL,
+              magic=magic, comment=self.strategy_name)
       )
 
     return None

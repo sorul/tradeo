@@ -36,6 +36,7 @@ class Config:
   symbols = (os.getenv('TB_SYMBOLS') or 'EURUSD,USDJPY,USDCAD').split(',')
   timeframe = os.getenv('TB_TIMEFRAME') or 'M5'
   lookback_days = int(os.getenv('TB_LOOKBACK_DAYS') or 10)
+  strategies = (os.getenv('TB_STRATEGIES') or 'EMA_strategy').split(',')
 
   # Logging configuration
   syslog_address = os.getenv('TB_SYSLOG_ADDRESS') or 'logs2.papertrailapp.com'
