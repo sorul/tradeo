@@ -1,4 +1,6 @@
 """Script of MT_Client what it sends commands to MT4/MT5."""
+from tradingbot.event_handlers.event_handler_factory import (
+    event_handler_factory)
 import glob
 import json
 from time import sleep
@@ -12,10 +14,18 @@ import typing as ty
 from random import randrange
 from .singleton import Singleton
 from .files import try_load_json, try_remove_file
-from .utils import string_to_date_utc, get_remaining_symbols
+from .utils import (
+    string_to_date_utc,
+    get_remaining_symbols,
+    add_successful_symbol
+)
 from pathlib import Path
 from .order import Order, MutableOrderDetails, ImmutableOrderDetails, OrderPrice
 from .order_type import OrderType
+from tradingbot.event_handlers.event_handler import EventHandler
+from .ohlc import OHLC
+from .trading_methods import get_pip
+
 
 # Typing types
 attributes_data_type = ty.Dict[str, ty.Dict]
@@ -30,9 +40,9 @@ class MT_Client(metaclass=Singleton):
   This includes all of the functions needed for communication with MT4/MT5.
   """
 
-  def __init__(self, event_handler=None,
-               sleep_delay=0.005,
-               max_retry_command_seconds=5 * 60
+  def __init__(self, event_handler: EventHandler,
+               sleep_delay: float = 0.005,
+               max_retry_command_seconds: int = 5 * 60
                ):
     """Initialize the attributes."""
     # Parameter attributes
@@ -150,6 +160,8 @@ class MT_Client(metaclass=Singleton):
           else:
             self.messages['INFO'].append(message_content[1:])
 
+          self.event_handler.on_message(message_content)
+
     return self.messages
 
   def get_messages(self) -> messages_type:
@@ -179,11 +191,14 @@ class MT_Client(metaclass=Singleton):
 
       if self.event_handler is not None:
         for symbol in data.keys():
-          cond1 = symbol not in self.market_data
-          cond2 = data[symbol] != self.market_data[symbol]
-          if cond1 or cond2:
-            # TODO: event handler
-            pass
+          cond = symbol not in self.market_data
+          cond = cond or data[symbol] != self.market_data.get(symbol)
+          if cond:
+            self.event_handler.on_tick(
+                symbol,
+                data[symbol]['bid'],
+                data[symbol]['ask']
+            )
       self.market_data = data
 
     return self.market_data
@@ -216,11 +231,22 @@ class MT_Client(metaclass=Singleton):
 
       if self.event_handler is not None:
         for st in data.keys():
-          cond1 = st not in self.bar_data
-          cond2 = self.bar_data[st] != self.bar_data[st]
-          if cond1 or cond2:
-            # TODO: event handler
-            pass
+          cond = st not in self.bar_data
+          cond = cond or data[st] != self.bar_data[st]
+          if cond:
+            symbol, time_frame = st.split('_')
+            self.event_handler.on_bar_data(
+                symbol,
+                time_frame,
+                data[st]['time'],
+                OHLC(DataFrame({
+                    'open': data[st]['open'],
+                    'high': data[st]['high'],
+                    'low': data[st]['low'],
+                    'close': data[st]['close'],
+                })),
+                data[st]['tick_volume']
+            )
       self.bar_data = data
 
     return self.bar_data
@@ -260,9 +286,8 @@ class MT_Client(metaclass=Singleton):
       with open(self.path_orders_stored, 'w') as f:
         f.write(json.dumps(data))
 
-      if self.event_handler is not None and new_event:
-        # TODO: event handler
-        pass
+      if new_event:
+        self.event_handler.on_order_event(self.account_info, self.open_orders)
 
     return self.open_orders
 
@@ -317,7 +342,8 @@ class MT_Client(metaclass=Singleton):
       if self._is_historical_data_up_to_date(df):
         log.info(f'{symbol} -> {(df.index[0], df.index[-1])}')
 
-        # TODO: call to event handler
+        add_successful_symbol(symbol)
+        self.event_handler.on_historical_data(symbol, OHLC(df))
 
         # We delete the command file(s) in case it hasn't been deleted.
         command_files = self.command_file_exist(symbol)
@@ -417,7 +443,7 @@ class MT_Client(metaclass=Singleton):
     start = (end - timedelta(days=Config.lookback_days)).timestamp()
     end = end.timestamp()
     data = [symbol, time_frame, int(start), int(end)]
-    self.send_command('GET_HISTORIC_DATA', ','.join(str(p) for p in data))
+    self.send_command('GET_HISTORICAL_DATA', ','.join(str(p) for p in data))
 
   def get_historical_trades(self, lookback_days: int = 30) -> None:
     """To send a GET_HISTORIC_TRADES command to request historical trades.
@@ -433,7 +459,7 @@ class MT_Client(metaclass=Singleton):
         On receiving the data the event_handler.on_historical_trades()
         function will be triggered.
     """
-    self.send_command('GET_HISTORIC_TRADES', str(lookback_days))
+    self.send_command('GET_HISTORICAL_TRADES', str(lookback_days))
 
   def open_order(self, order: Order) -> None:
     """To send an OPEN_ORDER command to open an order."""
@@ -472,7 +498,7 @@ class MT_Client(metaclass=Singleton):
 
   def place_break_even(self, order: Order) -> None:
     """Modify the order to place a break even."""
-    pip = mt_client.get_pip(order.symbol)
+    pip = get_pip(order.symbol)
     buy = order.order_type == OrderType.BUY
     break_even = order.price + pip if buy else order.price - pip
     self.modify_order(
@@ -597,7 +623,7 @@ class MT_Client(metaclass=Singleton):
     """Return the command files that match request hist. data from symbol."""
     g = glob.glob(f'{self.path_commands_prefix}*')
     return [
-        Path(f) for f in g if f'GET_HISTORIC_DATA|{symbol}' in open(f).read()
+        Path(f) for f in g if f'GET_HISTORICAL_DATA|{symbol}' in open(f).read()
     ]
 
   def get_balance(self) -> float:
@@ -609,10 +635,5 @@ class MT_Client(metaclass=Singleton):
       log.warning(f'Balance is not a float: {balance}')
       return -1.0
 
-  @staticmethod
-  def get_pip(symbol: str) -> float:
-    """Return the pip value for symbol."""
-    return 0.01 if 'JPY' in symbol else 0.0001
 
-
-mt_client = MT_Client()
+mt_client = MT_Client(event_handler_factory(Config.event_handler_class))

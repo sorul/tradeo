@@ -4,10 +4,12 @@ from .config import Config
 from .files import Files
 from . import files as f
 from .utils import get_remaining_symbols, reboot_mt
-from .forex_client import mt_client
+from .forex_client import MT_Client
 from random import randrange
 from .log import log
 import traceback
+
+mt_client = MT_Client()
 
 
 def handle():

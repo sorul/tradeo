@@ -6,8 +6,10 @@ from datetime import datetime
 from pathlib import Path
 from tradingbot.config import Config
 from unittest.mock import patch
-from tradingbot.forex_client import mt_client
+from tradingbot.forex_client import MT_Client
 import pytz
+
+mt_client = MT_Client()
 
 
 @patch('tradingbot.files.get_default_path')

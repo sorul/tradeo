@@ -1,5 +1,5 @@
 """EMA Strategy."""
-from .strategy import Strategy
+from tradingbot.strategies.strategy import Strategy
 from typing import Union
 from tradingbot.order import (Order,
                               MutableOrderDetails,
@@ -7,10 +7,9 @@ from tradingbot.order import (Order,
                               OrderPrice,
                               OrderType)
 
-from tradingbot.trading_methods import EMA, get_pivots
+from tradingbot.trading_methods import EMA, get_pivots, get_pip
 from tradingbot.ohlc import OHLC
 from tradingbot.utils import create_magic_number
-from tradingbot.forex_client import MT_Client
 
 
 class EMA_strategy(Strategy):
@@ -46,7 +45,7 @@ class EMA_strategy(Strategy):
 
     # Obtain common features
     magic = create_magic_number()
-    pip = MT_Client.get_pip(symbol)
+    pip = get_pip(symbol)
 
     if ema_20[-1] >= ema_50[-1] and upper_tendency:
       return Order(

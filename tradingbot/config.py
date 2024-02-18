@@ -56,12 +56,14 @@ class Config:
   check_messages_thread = get_bool_from_env(
       'TB_CHECK_MESSAGES_THREAD') or True
   check_market_data_thread = get_bool_from_env(
-    'TB_CHECK_MARKET_DATA_THREAD') or True
+      'TB_CHECK_MARKET_DATA_THREAD') or True
   check_bar_data_thread = get_bool_from_env(
-    'TB_CHECK_BAR_DATA_THREAD') or True
+      'TB_CHECK_BAR_DATA_THREAD') or True
   check_open_orders_thread = get_bool_from_env(
       'TB_CHECK_OPEN_ORDERS_THREAD') or True
   check_historical_data_thread = get_bool_from_env(
-    'TB_CHECK_HISTORICAL_DATA_THREAD') or True
+      'TB_CHECK_HISTORICAL_DATA_THREAD') or True
   check_historical_trades_thread = get_bool_from_env(
-    'TB_CHECK_HISTORICAL_TRADES_THREAD') or True
+      'TB_CHECK_HISTORICAL_TRADES_THREAD') or True
+  event_handler_class = os.getenv(
+      'TB_EVENT_HANDLER_CLASS') or 'BasicEventHandler'

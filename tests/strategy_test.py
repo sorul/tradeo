@@ -8,7 +8,6 @@ from tradingbot.order import (
 )
 import shutil
 from tradingbot.order_type import OrderType
-from tradingbot.forex_client import mt_client
 from datetime import datetime
 from tradingbot.config import Config
 from tradingbot.paths import resources_test_path
@@ -41,7 +40,7 @@ def test_check_order_viability():
 
 @patch('tradingbot.log.log.debug')
 def test_handle_limit_orders(mock_debug, tmp_path):
-
+  from tradingbot.forex_client import mt_client
   mt_client.path_commands_prefix = tmp_path
 
   order = Order(
@@ -69,6 +68,7 @@ def test_handle_limit_orders(mock_debug, tmp_path):
 
 @patch('tradingbot.log.log.debug')
 def test_handle_filled_orders(mock_debug, tmp_path):
+  from tradingbot.forex_client import mt_client
   mt_client.path_commands_prefix = tmp_path
 
   order = Order(
@@ -100,6 +100,7 @@ def test_check_if_break_even_can_be_placed(tmp_path):
   market_data_path = tmp_path / 'Market_Data.json'
   original_market_data_path = Path(f'{resources_test_path()}/Market_Data.json')
   shutil.copyfile(original_market_data_path, market_data_path)
+  from tradingbot.forex_client import mt_client
   mt_client.path_market_data = market_data_path
   mt_client.path_commands_prefix = tmp_path
   mt_client.check_market_data()

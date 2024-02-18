@@ -24,6 +24,7 @@ export TB_CHECK_BAR_DATA_THREAD=false
 export TB_CHECK_OPEN_ORDERS_THREAD=true
 export TB_CHECK_HISTORICAL_DATA_THREAD=true
 export TB_CHECK_HISTORICAL_TRADES_THREAD=false
+export TB_EVENT_HANDLER_CLASS=BasicEventHandler
 
 # Logging configuration
 export TB_LOG_LEVEL=INFO

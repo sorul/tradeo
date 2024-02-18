@@ -6,6 +6,11 @@ from numpy import ndarray
 from .ohlc import OHLC
 
 
+def get_pip(symbol: str) -> float:
+  """Return the pip value for symbol."""
+  return 0.01 if 'JPY' in symbol else 0.0001
+
+
 def get_pivots(
         data: ndarray,
         left: int,
