@@ -23,6 +23,8 @@ from .order_type import OrderType
 from .ohlc import OHLC
 from .trading_methods import get_pip
 from tradingbot.event_handlers.event_handler import EventHandler
+from tradingbot.event_handlers.event_handler_factory import (
+    event_handler_factory)
 
 
 # Typing types
@@ -39,7 +41,7 @@ class MT_Client(metaclass=Singleton):
   """
 
   def __init__(self,
-               event_handler: EventHandler,
+               event_handler: ty.Union[EventHandler, None] = None,
                sleep_delay: float = 0.005,
                max_retry_command_seconds: int = 5 * 60
                ):
@@ -53,7 +55,8 @@ class MT_Client(metaclass=Singleton):
     self.set_agent_paths()
 
     # Control attributes
-    self.event_handler = event_handler
+    eh = event_handler_factory(Config.event_handler_class)
+    self.event_handler = event_handler if event_handler is not None else eh
     self.lock = Lock()
     self._last_messages_millis = 0
     self.command_id = 0

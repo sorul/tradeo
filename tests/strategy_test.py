@@ -16,6 +16,8 @@ from pathlib import Path
 from tradingbot.event_handlers.event_handler_factory import (
     event_handler_factory
 )
+from freezegun import freeze_time
+import pytz
 
 
 def test_check_order_viability():
@@ -58,16 +60,18 @@ def test_handle_limit_orders(mock_debug, tmp_path):
       ImmutableOrderDetails(
           symbol='EURUSD',
           order_type=OrderType.BUY,
-          magic='9999999999',
+          magic='1999999999',
           comment=''
       )
   )
   time_threshold = 60
 
-  Strategy.handle_limit_orders(order, time_threshold)
-
-  mock_debug.assert_called_with(
-      f'Close order {order.magic} due to time threshold')
+  tz = pytz.timezone(str(Config.broker_timezone))
+  d = datetime(2024, 1, 1, 0, 0)
+  with freeze_time(tz.localize(d)):
+    Strategy.handle_limit_orders(order, time_threshold)
+    mock_debug.assert_called_with(
+        f'Close order {order.magic} due to time threshold')
 
 
 @patch('tradingbot.log.log.debug')
@@ -86,16 +90,18 @@ def test_handle_filled_orders(mock_debug, tmp_path):
       ImmutableOrderDetails(
           symbol='EURUSD',
           order_type=OrderType.BUY,
-          magic='9999999999',
+          magic='1999999999',
           comment=''
       )
   )
   time_threshold = 60
 
-  Strategy.handle_filled_orders(order, time_threshold, 0)
-
-  mock_debug.assert_called_with(
-      f'Close order {order.magic} due to time threshold')
+  tz = pytz.timezone(str(Config.broker_timezone))
+  d = datetime(2024, 1, 1, 0, 0)
+  with freeze_time(tz.localize(d)):
+    Strategy.handle_filled_orders(order, time_threshold, 0)
+    mock_debug.assert_called_with(
+        f'Close order {order.magic} due to time threshold')
 
 
 def test_check_if_break_even_can_be_placed(tmp_path):
@@ -120,7 +126,7 @@ def test_check_if_break_even_can_be_placed(tmp_path):
       ImmutableOrderDetails(
           symbol='EURUSD',
           order_type=OrderType.BUY,
-          magic='9999999999',
+          magic='1999999999',
           comment=''
       )
   )
