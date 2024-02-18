@@ -3,7 +3,7 @@ from time import sleep
 from datetime import datetime
 from .config import Config
 from .paths import data_path, bash_path
-from .files import lock, unlock
+from .files import lock, unlock, Files
 from .files import Files as f
 import subprocess
 import typing as ty
@@ -30,9 +30,16 @@ def get_script_name() -> str:
   return basename(__file__).replace('.py', '')
 
 
+def add_successful_symbol(symbol: str) -> None:
+  """Add a symbol to the successful symbols file."""
+  path = data_path().joinpath(Files.SUCCESSFUL_SYMBOLS.value)
+  with open(path, 'a') as file:
+    file.write(f'{symbol}\n')
+
+
 def get_successful_symbols() -> ty.List[str]:
   """Return the list of successful symbols."""
-  path = data_path().joinpath('successful_symbols.txt')
+  path = data_path().joinpath(Files.SUCCESSFUL_SYMBOLS.value)
   with open(path, 'r') as file:
     lines = file.readlines()
     symbols = [symbol.strip() for symbol in lines]

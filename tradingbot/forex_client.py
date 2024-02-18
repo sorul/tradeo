@@ -12,16 +12,24 @@ import typing as ty
 from random import randrange
 from .singleton import Singleton
 from .files import try_load_json, try_remove_file
-from .utils import string_to_date_utc, get_remaining_symbols
+from .utils import (
+    string_to_date_utc,
+    get_remaining_symbols,
+    add_successful_symbol
+)
 from pathlib import Path
 from .order import Order, MutableOrderDetails, ImmutableOrderDetails, OrderPrice
 from .order_type import OrderType
+from .ohlc import OHLC
+from .trading_methods import get_pip
+from tradingbot.event_handlers.event_handler import EventHandler
+
 
 # Typing types
 attributes_data_type = ty.Dict[str, ty.Dict]
 messages_type = ty.Dict[str, ty.List[ty.List[str]]]
 account_info_type = ty.Dict[str, ty.Union[float, str]]
-historic_data_type = ty.Dict[str, DataFrame]
+historical_data_type = ty.Dict[str, DataFrame]
 
 
 class MT_Client(metaclass=Singleton):
@@ -30,9 +38,10 @@ class MT_Client(metaclass=Singleton):
   This includes all of the functions needed for communication with MT4/MT5.
   """
 
-  def __init__(self, event_handler=None,
-               sleep_delay=0.005,
-               max_retry_command_seconds=5 * 60
+  def __init__(self,
+               event_handler: EventHandler,
+               sleep_delay: float = 0.005,
+               max_retry_command_seconds: int = 5 * 60
                ):
     """Initialize the attributes."""
     # Parameter attributes
@@ -55,8 +64,8 @@ class MT_Client(metaclass=Singleton):
     self.account_info: account_info_type = {}
     self.market_data: attributes_data_type = {}
     self.bar_data: attributes_data_type = {}
-    self.historic_data: historic_data_type = {}
-    self.historic_trades: attributes_data_type = {}
+    self.historical_data: historical_data_type = {}
+    self.historical_trades: attributes_data_type = {}
 
     # State attributes
     self.ACTIVE = True
@@ -74,11 +83,11 @@ class MT_Client(metaclass=Singleton):
           join(mt_files_path, self.prefix_files_path, 'Market_Data.json'))
       self.path_bar_data = Path(
           join(mt_files_path, self.prefix_files_path, 'Bar_Data.json'))
-      self.path_historic_data = Path(
+      self.path_historical_data = Path(
           join(mt_files_path, self.prefix_files_path))
-      self.path_historic_trades = Path(
+      self.path_historical_trades = Path(
           join(mt_files_path, self.prefix_files_path,
-               'Historic_Trades.json'))
+               'Historical_Trades.json'))
       self.path_orders_stored = Path(
           join(mt_files_path, self.prefix_files_path,
                'Orders_Stored.json'))
@@ -101,7 +110,19 @@ class MT_Client(metaclass=Singleton):
     """Start the threads."""
     self.START = True
     self.reset_command_ids()
-    self.start_thread(self.check_open_orders)
+    # Start the demand threads
+    if Config.check_messages_thread:
+      self.start_thread(self.start_thread_check_messages)
+    if Config.check_market_data_thread:
+      self.start_thread(self.start_thread_check_market_data)
+    if Config.check_bar_data_thread:
+      self.start_thread(self.start_thread_check_bar_data)
+    if Config.check_open_orders_thread:
+      self.start_thread(self.start_thread_check_open_orders)
+    if Config.check_historical_data_thread:
+      self.start_thread(self.start_thread_check_historical_data)
+    if Config.check_historical_trades_thread:
+      self.start_thread(self.start_thread_check_historical_trades)
 
   def stop(self) -> None:
     """Stop the threads."""
@@ -138,6 +159,8 @@ class MT_Client(metaclass=Singleton):
           else:
             self.messages['INFO'].append(message_content[1:])
 
+          self.event_handler.on_message(message_content)
+
     return self.messages
 
   def get_messages(self) -> messages_type:
@@ -167,11 +190,14 @@ class MT_Client(metaclass=Singleton):
 
       if self.event_handler is not None:
         for symbol in data.keys():
-          cond1 = symbol not in self.market_data
-          cond2 = data[symbol] != self.market_data[symbol]
-          if cond1 or cond2:
-            # TODO: event handler
-            pass
+          cond = symbol not in self.market_data
+          cond = cond or data[symbol] != self.market_data.get(symbol)
+          if cond:
+            self.event_handler.on_tick(
+                symbol,
+                data[symbol]['bid'],
+                data[symbol]['ask']
+            )
       self.market_data = data
 
     return self.market_data
@@ -204,11 +230,22 @@ class MT_Client(metaclass=Singleton):
 
       if self.event_handler is not None:
         for st in data.keys():
-          cond1 = st not in self.bar_data
-          cond2 = self.bar_data[st] != self.bar_data[st]
-          if cond1 or cond2:
-            # TODO: event handler
-            pass
+          cond = st not in self.bar_data
+          cond = cond or data[st] != self.bar_data[st]
+          if cond:
+            symbol, time_frame = st.split('_')
+            self.event_handler.on_bar_data(
+                symbol,
+                time_frame,
+                data[st]['time'],
+                OHLC(DataFrame({
+                    'open': data[st]['open'],
+                    'high': data[st]['high'],
+                    'low': data[st]['low'],
+                    'close': data[st]['close'],
+                })),
+                data[st]['tick_volume']
+            )
       self.bar_data = data
 
     return self.bar_data
@@ -248,9 +285,8 @@ class MT_Client(metaclass=Singleton):
       with open(self.path_orders_stored, 'w') as f:
         f.write(json.dumps(data))
 
-      if self.event_handler is not None and new_event:
-        # TODO: event handler
-        pass
+      if new_event:
+        self.event_handler.on_order_event(self.account_info, self.open_orders)
 
     return self.open_orders
 
@@ -274,38 +310,39 @@ class MT_Client(metaclass=Singleton):
         for t, o in self.open_orders.items()
     ]
 
-  def start_thread_check_historic_data(self) -> None:
-    """Start the thread to check historic data."""
+  def start_thread_check_historical_data(self) -> None:
+    """Start the thread to check historical data."""
     while self.ACTIVE:
       sleep(self.sleep_delay)
       if self.START:
-        self.check_historic_data()
+        self.check_historical_data()
 
-  def check_historic_data(
+  def check_historical_data(
           self, symbol: ty.Union[str, None] = None) -> ty.Dict:
-    """Update historic_data, trigger event if needed and return that data."""
-    # "symbol" is None when it comes from "start_thread_check_historic_data"
+    """Update historical_data, trigger event if needed and return that data."""
+    # "symbol" is None when it comes from "start_thread_check_historical_data"
     # In this case, we need to get a random remaining symbol
     if symbol is None:
       remaining_symbols = get_remaining_symbols()
       symbol = remaining_symbols[randrange(len(remaining_symbols))]
 
     # We read the symbol file
-    file_path = self.path_historic_data.joinpath(
-        f'Historic_Data_{symbol}.json')
+    file_path = self.path_historical_data.joinpath(
+        f'Historical_Data_{symbol}.json')
     data = try_load_json(file_path)
 
     if len(data) > 0:
       # The dataframe is built
       df = DataFrame.from_dict(
           data[f'{symbol}_{Config.timeframe}'], orient='index')
-      self.historic_data[symbol] = df
+      self.historical_data[symbol] = df
 
       # The date and time corresponding to the last load are calculated
-      if self._is_historic_data_up_to_date(df):
+      if self._is_historical_data_up_to_date(df):
         log.info(f'{symbol} -> {(df.index[0], df.index[-1])}')
 
-        # TODO: call to event handler
+        add_successful_symbol(symbol)
+        self.event_handler.on_historical_data(symbol, OHLC(df))
 
         # We delete the command file(s) in case it hasn't been deleted.
         command_files = self.command_file_exist(symbol)
@@ -315,8 +352,8 @@ class MT_Client(metaclass=Singleton):
     return data
 
   @staticmethod
-  def _is_historic_data_up_to_date(df: DataFrame) -> bool:
-    """Check if the historic data is up to date."""
+  def _is_historical_data_up_to_date(df: DataFrame) -> bool:
+    """Check if the historical data is up to date."""
     now_date = datetime.now(Config.utc_timezone)
     td = timedelta(minutes=now_date.minute % 5,
                    seconds=now_date.second,
@@ -330,17 +367,17 @@ class MT_Client(metaclass=Singleton):
     return (last_date_from_df >= start_range
             and last_date_from_df < end_range)
 
-  def start_thread_check_historic_trades(self) -> None:
-    """Start the thread to check historic trades."""
+  def start_thread_check_historical_trades(self) -> None:
+    """Start the thread to check historical trades."""
     while self.ACTIVE:
       sleep(self.sleep_delay)
       if self.START:
-        self.check_historic_trades()
+        self.check_historical_trades()
 
-  def check_historic_trades(self) -> ty.Dict:
-    """Update and return the historic trades object."""
-    self.historic_trades = try_load_json(self.path_historic_trades)
-    return self.historic_trades
+  def check_historical_trades(self) -> ty.Dict:
+    """Update and return the historical trades object."""
+    self.historical_trades = try_load_json(self.path_historical_trades)
+    return self.historical_trades
 
   def subscribe_symbols(self, symbols: ty.List[str]) -> None:
     """To send a SUBSCRIBE_SYMBOLS command to subscribe to market (tick) data.
@@ -381,22 +418,22 @@ class MT_Client(metaclass=Singleton):
     self.send_command('SUBSCRIBE_SYMBOLS_BAR_DATA',
                       ','.join(str(p) for p in data))
 
-  def get_historic_data(
+  def get_historical_data(
       self,
       symbol: str,
       time_frame: str
   ) -> None:
-    """To send a GET_HISTORIC_DATA command to request historic data.
+    """To send a GET_HISTORIC_DATA command to request historical data.
 
     Kwargs:
-        symbol (str): Symbol to get historic data.
+        symbol (str): Symbol to get historical data.
         time_frame (str): Time frame for the requested data.
 
     Returns:
         None
 
-        The data will be stored in self.historic_data.
-        On receiving the data the event_handler.on_historic_data()
+        The data will be stored in self.historical_data.
+        On receiving the data the event_handler.on_historical_data()
         function will be triggered.
     """
     # We add 10 hours because the way the library interprets this input requires
@@ -405,10 +442,10 @@ class MT_Client(metaclass=Singleton):
     start = (end - timedelta(days=Config.lookback_days)).timestamp()
     end = end.timestamp()
     data = [symbol, time_frame, int(start), int(end)]
-    self.send_command('GET_HISTORIC_DATA', ','.join(str(p) for p in data))
+    self.send_command('GET_HISTORICAL_DATA', ','.join(str(p) for p in data))
 
-  def get_historic_trades(self, lookback_days: int = 30) -> None:
-    """To send a GET_HISTORIC_TRADES command to request historic trades.
+  def get_historical_trades(self, lookback_days: int = 30) -> None:
+    """To send a GET_HISTORIC_TRADES command to request historical trades.
 
     Kwargs:
         lookback_days (int): Days to look back into the trade history.
@@ -417,11 +454,11 @@ class MT_Client(metaclass=Singleton):
     Returns:
         None
 
-        The data will be stored in self.historic_trades.
-        On receiving the data the event_handler.on_historic_trades()
+        The data will be stored in self.historical_trades.
+        On receiving the data the event_handler.on_historical_trades()
         function will be triggered.
     """
-    self.send_command('GET_HISTORIC_TRADES', str(lookback_days))
+    self.send_command('GET_HISTORICAL_TRADES', str(lookback_days))
 
   def open_order(self, order: Order) -> None:
     """To send an OPEN_ORDER command to open an order."""
@@ -460,7 +497,7 @@ class MT_Client(metaclass=Singleton):
 
   def place_break_even(self, order: Order) -> None:
     """Modify the order to place a break even."""
-    pip = mt_client.get_pip(order.symbol)
+    pip = get_pip(order.symbol)
     buy = order.order_type == OrderType.BUY
     break_even = order.price + pip if buy else order.price - pip
     self.modify_order(
@@ -574,18 +611,18 @@ class MT_Client(metaclass=Singleton):
       if not try_remove_file(file_path):
         break
 
-  def clean_all_historic_files(self) -> None:
-    """Clean historic files."""
+  def clean_all_historical_files(self) -> None:
+    """Clean historical files."""
     for symbol in Config.symbols:
-      file_path = self.path_historic_data.joinpath(
-          f'Historic_Data_{symbol}.json')
+      file_path = self.path_historical_data.joinpath(
+          f'Historical_Data_{symbol}.json')
       try_remove_file(file_path)
 
   def command_file_exist(self, symbol: str) -> ty.List[Path]:
-    """Return the command files that match request historic data from symbol."""
+    """Return the command files that match request hist. data from symbol."""
     g = glob.glob(f'{self.path_commands_prefix}*')
     return [
-        Path(f) for f in g if f'GET_HISTORIC_DATA|{symbol}' in open(f).read()
+        Path(f) for f in g if f'GET_HISTORICAL_DATA|{symbol}' in open(f).read()
     ]
 
   def get_balance(self) -> float:
@@ -596,11 +633,3 @@ class MT_Client(metaclass=Singleton):
     else:
       log.warning(f'Balance is not a float: {balance}')
       return -1.0
-
-  @staticmethod
-  def get_pip(symbol: str) -> float:
-    """Return the pip value for symbol."""
-    return 0.01 if 'JPY' in symbol else 0.0001
-
-
-mt_client = MT_Client()

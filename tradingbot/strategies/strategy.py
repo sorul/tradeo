@@ -2,12 +2,15 @@
 from abc import ABC, abstractmethod
 from typing import Union
 from tradingbot.order import Order
-from tradingbot.forex_client import mt_client
 from datetime import datetime
 from tradingbot.config import Config
 from tradingbot.log import log
 from tradingbot.order_type import OrderType
 from tradingbot.ohlc import OHLC
+from tradingbot.forex_client import MT_Client
+from tradingbot.event_handlers.event_handler_factory import (
+    event_handler_factory
+)
 
 
 class Strategy(ABC):
@@ -31,6 +34,7 @@ class Strategy(ABC):
   def check_order_viability(order: Order, min_risk_profit: float = 1.5) -> bool:
     """Check if the order is viable."""
     symbol = order.symbol
+    mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
     orders = [o for o in mt_client.get_open_orders() if o.symbol == symbol]
     c1 = len(orders) == 0
     c2 = order.risk_benefit() > min_risk_profit
@@ -46,6 +50,8 @@ class Strategy(ABC):
           int(order.magic)).astimezone(Config.utc_timezone)
       current_datetime = datetime.now(Config.utc_timezone)
       if (current_datetime - open_time).seconds > time_threshold:
+        mt_client = MT_Client(
+            event_handler_factory(Config.event_handler_class))
         mt_client.close_orders_by_magic(order.magic)
         log.debug(f'Close order {order.magic} due to time threshold')
     except ValueError:  # int(order.magic)
@@ -66,6 +72,8 @@ class Strategy(ABC):
 
       # Check if the order can be closed based on the time threshold
       if (current_datetime - open_time).seconds > time_threshold:
+        mt_client = MT_Client(
+            event_handler_factory(Config.event_handler_class))
         mt_client.close_orders_by_magic(order.magic)
         log.debug(f'Close order {order.magic} due to time threshold')
 
@@ -111,6 +119,7 @@ class Strategy(ABC):
 
     # Check if the price has reached a threshold to place a break even
     if not break_even_placed:
+      mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
       bid, ask = mt_client.get_bid_ask(order.symbol)
       price = (bid + ask) / 2
       percentage_reached = (

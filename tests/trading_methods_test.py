@@ -120,3 +120,8 @@ def test_sell_harami():
       'low': [0, 1]
   }))
   assert tm.harami_pattern(data, 'sell')
+
+
+def test_get_pip():
+  assert tm.get_pip('GBPUSD') == 0.0001
+  assert tm.get_pip('USDJPY') == 0.01

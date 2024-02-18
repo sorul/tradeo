@@ -1,6 +1,6 @@
 from pathlib import Path
 from unittest.mock import patch, MagicMock
-from tradingbot.forex_client import MT_Client, mt_client
+from tradingbot.forex_client import MT_Client
 from tradingbot.config import Config
 import shutil
 from pandas import DataFrame
@@ -18,13 +18,18 @@ from tradingbot.order import (
     OrderPrice
 )
 from tradingbot.order_type import OrderType
+from tradingbot.event_handlers.event_handler_factory import (
+    event_handler_factory
+)
 
 
 def test_set_agent_paths():
   mock_config = MagicMock()
+  mock_config = Config
   mock_config.mt_files_path = resources_test_path()
 
   with patch('tradingbot.forex_client.Config', mock_config):
+    mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
     path_file = join(mock_config.mt_files_path, mt_client.prefix_files_path)
 
     # Method to test
@@ -35,9 +40,9 @@ def test_set_agent_paths():
     assert mt_client.path_market_data == Path(
         join(path_file, 'Market_Data.json'))
     assert mt_client.path_bar_data == Path(join(path_file, 'Bar_Data.json'))
-    assert mt_client.path_historic_data == Path(join(path_file))
-    assert mt_client.path_historic_trades == Path(join(
-        path_file, 'Historic_Trades.json'))
+    assert mt_client.path_historical_data == Path(join(path_file))
+    assert mt_client.path_historical_trades == Path(join(
+        path_file, 'Historical_Trades.json'))
     assert mt_client.path_orders_stored == Path(join(
         path_file, 'Orders_Stored.json'))
     assert mt_client.path_messages_stored == Path(join(
@@ -52,6 +57,7 @@ def test_check_messages(tmp_path):
   original_messages_path = Path(f'{resources_test_path()}/Messages.json')
   shutil.copyfile(original_messages_path, messages_path)
 
+  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
   mt_client.path_messages = messages_path
 
   # Call for the first time to read messages
@@ -90,6 +96,7 @@ def test_check_market_data(tmp_path):
   original_market_data_path = Path(f'{resources_test_path()}/Market_Data.json')
   shutil.copyfile(original_market_data_path, market_data_path)
 
+  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
   mt_client.path_market_data = market_data_path
 
   # Call for the first time to read data
@@ -137,6 +144,7 @@ def test_check_bar_data(tmp_path):
   original_bar_data_path = Path(f'{resources_test_path()}/Bar_Data.json')
   shutil.copyfile(original_bar_data_path, bar_data_path)
 
+  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
   mt_client.path_bar_data = bar_data_path
 
   # Call for the first time to read data
@@ -147,7 +155,9 @@ def test_check_bar_data(tmp_path):
           'open': [1.08973, 1.08975],
           'high': [1.08979, 1.08981],
           'low': [1.08967, 1.08969],
-          'close': [1.08975, 1.08977]
+          'close': [1.08975, 1.08977],
+          'time': '2024-01-01T00:00:00.000Z',
+          'tick_volume': 0.91761
       }
   }
 
@@ -164,7 +174,9 @@ def test_check_bar_data(tmp_path):
       'open': [1.08990, 1.08995],
       'high': [1.09000, 1.09005],
       'low': [1.08975, 1.08980],
-      'close': [1.08995, 1.09000]
+      'close': [1.08995, 1.09000],
+      'time': '2024-02-01T00:00:00.000Z',
+      'tick_volume': 0.11111
   }
   with open(bar_data_path, 'w') as f:
     f.write(json.dumps(data))
@@ -188,6 +200,7 @@ def test_check_open_orders(tmp_path):
       f'{resources_test_path()}/Orders_Stored.json')
   shutil.copyfile(original_orders_stored_path, orders_stored_path)
 
+  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
   mt_client.path_orders = orders_path
   mt_client.path_orders_stored = orders_stored_path
 
@@ -255,14 +268,13 @@ def test_check_open_orders(tmp_path):
   assert mt_client.account_info == data['account_info']
 
 
-def test_check_historic_data(tmp_path):
+def test_check_historical_data():
 
   symbol = 'USDJPY'
+  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
+  mt_client.path_historical_data = resources_test_path()
 
-  mt_client.path_historic_data = tmp_path
-  mt_client.path_historic_data = resources_test_path()
-
-  data = mt_client.check_historic_data(symbol)
+  data = mt_client.check_historical_data(symbol)
   mock_data = {
       'USDJPY_M5': {
           '2024.01.09 08:30': {
@@ -286,10 +298,10 @@ def test_check_historic_data(tmp_path):
 
   # Assertions
   assert data == mock_data
-  assert mt_client.historic_data[symbol].equals(mock_df)
+  assert mt_client.historical_data[symbol].equals(mock_df)
 
 
-def test_is_historic_data_up_to_date_true():
+def test_is_historical_data_up_to_date_true():
   tz = pytz.timezone(str(Config.utc_timezone))
   Config.broker_timezone = tz
   df = DataFrame(
@@ -304,29 +316,30 @@ def test_is_historic_data_up_to_date_true():
   )
   d = datetime(2024, 1, 20, 1, 5)
   with freeze_time(tz.localize(d)):
-    assert MT_Client._is_historic_data_up_to_date(df)
+    assert MT_Client._is_historical_data_up_to_date(df)
 
   d = datetime(2024, 1, 20, 1, 8)
   with freeze_time(tz.localize(d)):
-    assert MT_Client._is_historic_data_up_to_date(df)
+    assert MT_Client._is_historical_data_up_to_date(df)
 
   d = datetime(2024, 1, 20, 1, 10)
   with freeze_time(tz.localize(d)):
-    assert not MT_Client._is_historic_data_up_to_date(df)
+    assert not MT_Client._is_historical_data_up_to_date(df)
 
 
-def test_check_historic_trades(tmp_path):
+def test_check_historical_trades(tmp_path):
 
   # Copy the Bar_Data.json file to the temporary folder
-  historic_trades_path = tmp_path / 'Historic_Trades.json'
-  original_historic_trades_path = Path(
-      f'{resources_test_path()}/Historic_Trades.json')
-  shutil.copyfile(original_historic_trades_path, historic_trades_path)
+  historical_trades_path = tmp_path / 'Historical_Trades.json'
+  original_historical_trades_path = Path(
+      f'{resources_test_path()}/Historical_Trades.json')
+  shutil.copyfile(original_historical_trades_path, historical_trades_path)
 
-  mt_client.path_historic_trades = historic_trades_path
+  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
+  mt_client.path_historical_trades = historical_trades_path
 
   # Call for the first time to read data
-  mt_client.check_historic_trades()
+  mt_client.check_historical_trades()
 
   assert_data = {
       '2015257378': {
@@ -344,15 +357,15 @@ def test_check_historic_trades(tmp_path):
       }
   }
 
-  assert mt_client.historic_trades == assert_data
+  assert mt_client.historical_trades == assert_data
 
   # Does not change on second call
-  mt_client.check_historic_trades()
+  mt_client.check_historical_trades()
 
-  assert mt_client.historic_trades == assert_data
+  assert mt_client.historical_trades == assert_data
 
   # Write new data
-  data = try_load_json(historic_trades_path)
+  data = try_load_json(historical_trades_path)
   data['2015257379'] = {
       'magic': 1696018343,
       'symbol': 'EURUSD',
@@ -366,18 +379,19 @@ def test_check_historic_trades(tmp_path):
       'swap': 0.00,
       'comment': '[sl 1.65410]'
   }
-  with open(historic_trades_path, 'w') as f:
+  with open(historical_trades_path, 'w') as f:
     f.write(json.dumps(data))
 
   # Now it does change
-  mt_client.check_historic_trades()
+  mt_client.check_historical_trades()
 
-  assert mt_client.historic_trades == data
+  assert mt_client.historical_trades == data
 
 
 def test_send_command(tmp_path):
 
   tmp_path = Path(tmp_path)
+  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
   mt_client.path_commands_prefix = tmp_path / 'Commands_'
 
   # Acquire and release lock
@@ -395,7 +409,7 @@ def test_send_command(tmp_path):
 
 
 def test_clean_all_command_files(tmp_path):
-
+  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
   mt_client.path_commands_prefix = tmp_path
 
   # Create some files
@@ -416,13 +430,13 @@ def test_clean_all_command_files(tmp_path):
   assert not file2.exists()
 
 
-def test_clean_all_historic_files(tmp_path):
-
-  mt_client.path_historic_data = tmp_path
+def test_clean_all_historical_files(tmp_path):
+  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
+  mt_client.path_historical_data = tmp_path
 
   # Create some files
-  file1 = Path(join(tmp_path, 'Historic_Data_EURUSD.json'))
-  file2 = Path(join(tmp_path, 'Historic_Data_USDJPY.json'))
+  file1 = Path(join(tmp_path, 'Historical_Data_EURUSD.json'))
+  file2 = Path(join(tmp_path, 'Historical_Data_USDJPY.json'))
   file1.touch()
   file2.touch()
 
@@ -431,7 +445,7 @@ def test_clean_all_historic_files(tmp_path):
   assert file2.exists()
 
   # Clean them
-  mt_client.clean_all_historic_files()
+  mt_client.clean_all_historical_files()
 
   # Check they are gone
   assert not file1.exists()
@@ -439,6 +453,7 @@ def test_clean_all_historic_files(tmp_path):
 
 
 def test_command_file_exist():
+  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
   mt_client.path_commands_prefix = Path(f'{resources_test_path()}/Commands_')
 
   assert mt_client.command_file_exist('GBPNZD')
@@ -447,6 +462,7 @@ def test_command_file_exist():
 
 def test_clean_messages():
   m = {'INFO': ['test'], 'ERROR': ['error_test']}
+  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
   mt_client.messages = m  # type: ignore
   mt_client.clean_messages()
   assert mt_client.messages == {'INFO': [], 'ERROR': []}
@@ -456,6 +472,7 @@ def test_get_bid_ask(tmp_path):
   market_data_path = tmp_path / 'Market_Data.json'
   original_market_data_path = Path(f'{resources_test_path()}/Market_Data.json')
   shutil.copyfile(original_market_data_path, market_data_path)
+  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
   mt_client.path_market_data = market_data_path
   mt_client.check_market_data()
 
@@ -471,6 +488,7 @@ def test_get_bid_ask(tmp_path):
 
 
 def test_get_open_orders():
+  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
   mt_client.open_orders = {
       '2023993175': {
           'magic': 1705617043,
@@ -516,6 +534,7 @@ def test_get_open_orders():
 
 @patch('tradingbot.log.log.debug')
 def test_place_break_even(mock_debug, tmp_path):
+  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
   mt_client.path_commands_prefix = tmp_path
   order = Order(
       MutableOrderDetails(
@@ -535,8 +554,3 @@ def test_place_break_even(mock_debug, tmp_path):
   )
   mt_client.place_break_even(order)
   mock_debug.assert_called_with(f'Break even placed in {order.magic}')
-
-
-def test_get_pip():
-  assert mt_client.get_pip('GBPUSD') == 0.0001
-  assert mt_client.get_pip('USDJPY') == 0.01

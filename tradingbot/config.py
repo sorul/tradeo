@@ -3,6 +3,16 @@ from pathlib import Path
 import logging
 import os
 import pytz
+from typing import Union
+
+
+def get_bool_from_env(env_name: str) -> Union[bool, None]:
+  """Get bool from env."""
+  e = os.getenv(env_name)
+  if e is None:
+    return None
+  else:
+    return str(e).lower() in ['true', '1']
 
 
 class Config:
@@ -25,7 +35,8 @@ class Config:
   # Trading configuration
   symbols = (os.getenv('TB_SYMBOLS') or 'EURUSD,USDJPY,USDCAD').split(',')
   timeframe = os.getenv('TB_TIMEFRAME') or 'M5'
-  lookback_days = float(os.getenv('TB_LOOKBACK_DAYS') or 10)
+  lookback_days = int(os.getenv('TB_LOOKBACK_DAYS') or 10)
+  strategies = (os.getenv('TB_STRATEGIES') or 'EMA_strategy').split(',')
 
   # Logging configuration
   syslog_address = os.getenv('TB_SYSLOG_ADDRESS') or 'logs2.papertrailapp.com'
@@ -41,3 +52,19 @@ class Config:
     log_level = logging.ERROR
   else:
     log_level = ll
+
+  # Forex client configuration
+  check_messages_thread = get_bool_from_env(
+      'TB_CHECK_MESSAGES_THREAD') or True
+  check_market_data_thread = get_bool_from_env(
+      'TB_CHECK_MARKET_DATA_THREAD') or True
+  check_bar_data_thread = get_bool_from_env(
+      'TB_CHECK_BAR_DATA_THREAD') or True
+  check_open_orders_thread = get_bool_from_env(
+      'TB_CHECK_OPEN_ORDERS_THREAD') or True
+  check_historical_data_thread = get_bool_from_env(
+      'TB_CHECK_HISTORICAL_DATA_THREAD') or True
+  check_historical_trades_thread = get_bool_from_env(
+      'TB_CHECK_HISTORICAL_TRADES_THREAD') or True
+  event_handler_class = os.getenv(
+      'TB_EVENT_HANDLER_CLASS') or 'BasicEventHandler'

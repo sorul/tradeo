@@ -3,6 +3,7 @@ from pandas import DataFrame
 from tradingbot.ohlc import OHLC
 from tradingbot.strategies.ema_strategy import EMA_strategy
 import numpy as np
+from datetime import datetime
 
 
 def test_indicator():
@@ -19,4 +20,4 @@ def test_indicator():
       'close': closes
   }))
   strategy = EMA_strategy()
-  assert isinstance(strategy.indicator(data, 'EURUSD'), Order)
+  assert isinstance(strategy.indicator(data, 'EURUSD', datetime.now()), Order)

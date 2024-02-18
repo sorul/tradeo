@@ -6,8 +6,11 @@ from datetime import datetime
 from pathlib import Path
 from tradingbot.config import Config
 from unittest.mock import patch
-from tradingbot.forex_client import mt_client
+from tradingbot.forex_client import MT_Client
 import pytz
+from tradingbot.event_handlers.event_handler_factory import (
+    event_handler_factory
+)
 
 
 @patch('tradingbot.files.get_default_path')
@@ -58,6 +61,7 @@ def test_check_time_viability():
 @patch('tradingbot.files.get_default_path')
 def test_send_profit_message(mock_data_path, tmp_path):
   tz = pytz.timezone(str(Config.local_timezone))
+  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
   mt_client.account_info = {'balance': 100.0}
 
   # Make data_path() return the temporary directory

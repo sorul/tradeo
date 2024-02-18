@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## ** V0.6.0  (18/02/2024) **
+- fix:
+  - EventHandler class to process every incoming trading response.
+  - Strategy factory.
+
+
 ## ** V0.5.1  (12/02/2024) **
 - fix:
   - "symbol" variable relocate in ImmutableOrderDetails class
@@ -21,7 +27,7 @@
 
 ## ** V0.3.0  (25/01/2024) **
 - feat:
-  - forex main to handle incoming historic data
+  - forex main to handle incoming historical data
   - support methods
 - test
   - forex main

@@ -38,7 +38,7 @@ input int numLastMessages = 50;
 input string t1 = "If true, it will open charts for bar data symbols, ";
 input string t2 = "which reduces the delay on a new bar.";
 input bool openChartsForBarData = false;
-input bool openChartsForHistoricData = false;
+input bool openChartsForHistoricalData = false;
 input string t3 = "--- Trading Parameters ---";
 input int MaximumOrders = 1000;
 input double MaximumLotSize = 2;
@@ -58,8 +58,8 @@ string filePathOrders = folderName + "/Orders.json";
 string filePathMessages = folderName + "/Messages.json";
 string filePathMarketData = folderName + "/Market_Data.json";
 string filePathBarData = folderName + "/Bar_Data.json";
-string filePathHistoricData = folderName + "/Historic_Data.json";
-string filePathHistoricTrades = folderName + "/Historic_Trades.json";
+string filePathHistoricalData = folderName + "/Historical_Data.json";
+string filePathHistoricalTrades = folderName + "/Historical_Trades.json";
 string filePathCommandsPrefix = folderName + "/Commands_";
 string lastOrderText = "", lastMarketDataText = "", lastMessageText = "";
 struct MESSAGE
@@ -235,10 +235,10 @@ void CheckCommands() {
          SubscribeSymbols(content);
       } else if (command == "SUBSCRIBE_SYMBOLS_BAR_DATA") {
          SubscribeSymbolsBarData(content);
-      } else if (command == "GET_HISTORIC_TRADES") {
-         GetHistoricTrades(content);
-      } else if (command == "GET_HISTORIC_DATA") {
-         GetHistoricData(content);
+      } else if (command == "GET_HISTORICAL_TRADES") {
+         GetHistoricalTrades(content);
+      } else if (command == "GET_HISTORICAL_DATA") {
+         GetHistoricalData(content);
       } else if (command == "RESET_COMMAND_IDS") {
          Print("Resetting stored command IDs.");
          ResetCommandIDs();
@@ -608,13 +608,13 @@ void SubscribeSymbolsBarData(string dataStr) {
    }
 }
 
-void GetHistoricData(string dataStr) {
+void GetHistoricalData(string dataStr) {
    string sep = ",";
    ushort uSep = StringGetCharacter(sep, 0);
    string data[];
    int splits = StringSplit(dataStr, uSep, data);
    if (ArraySize(data) != 4) {
-      SendError("HISTORIC_DATA_WRONG_FORMAT", "Wrong format for GET_HISTORIC_DATA command: " + dataStr);
+      SendError("HISTORICAL_DATA_WRONG_FORMAT", "Wrong format for GET_HISTORICAL_DATA command: " + dataStr);
       return;
    }
    string symbol = data[0];
@@ -622,13 +622,13 @@ void GetHistoricData(string dataStr) {
    datetime dateStart = (datetime)StringToInteger(data[2]);
    datetime dateEnd = (datetime)StringToInteger(data[3]);
    if (StringLen(symbol) == 0) {
-      SendError("HISTORIC_DATA_SYMBOL", "Could not read symbol: " + dataStr);
+      SendError("HISTORICAL_DATA_SYMBOL", "Could not read symbol: " + dataStr);
       return;
    }
    if (!SymbolSelect(symbol, true)) {
-      SendError("HISTORIC_DATA_SELECT_SYMBOL", "Could not select symbol " + symbol + " in market watch. Error: " + ErrorDescription(GetLastError()));
+      SendError("HISTORICAL_DATA_SELECT_SYMBOL", "Could not select symbol " + symbol + " in market watch. Error: " + ErrorDescription(GetLastError()));
    }
-   if (openChartsForHistoricData) {
+   if (openChartsForHistoricalData) {
       // if just opened sleep to give MT4 some time to fetch the data. 
       if (OpenChartIfNotOpen(symbol, timeFrame)) Sleep(200);
    }
@@ -649,7 +649,7 @@ void GetHistoricData(string dataStr) {
       SendInfo("Sleep 200"); //CRV
    }
    if (rates_count <= 0) {
-      SendError("HISTORIC_DATA", "Could not get historic data for " + symbol + "_" + data[1] + ": " + ErrorDescription(GetLastError()));
+      SendError("HISTORICAL_DATA", "Could not get historical data for " + symbol + "_" + data[1] + ": " + ErrorDescription(GetLastError()));
       return;
    }
    bool first = true;
@@ -679,18 +679,19 @@ void GetHistoricData(string dataStr) {
    // This causes the creation of different text files (one for each pair) without overwriting the same one. 
    // It attempts to write 5 times.
    for (int i=0; i<5; i++) {
-      string file =  filePathHistoricData;
+      string file =  filePathHistoricalData;
       string concat;
+      // This concatenates the symbol to the file name.
       StringConcatenate(concat,"_",symbol,".json");
       StringReplace(file, ".json", concat);
       if (WriteToFile(file, text)) break;
       SendInfo(StringFormat("Writing attempt %.1f.", i));
       Sleep(10);
    }
-   SendInfo(StringFormat("Successfully read historic data for %s_%s.", symbol, data[1]));
+   SendInfo(StringFormat("Successfully read historical data for %s_%s.", symbol, data[1]));
 }
 
-void GetHistoricTrades(string dataStr) {
+void GetHistoricalTrades(string dataStr) {
    int lookbackDays = (int)StringToInteger(dataStr);
    if (lookbackDays <= 0) {
       SendError("HISTORIC_TRADES", "Lookback days smaller or equal to zero: " + dataStr);
@@ -723,10 +724,10 @@ void GetHistoricTrades(string dataStr) {
    }
    text += "}";
    for (int i=0; i<5; i++) {
-      if (WriteToFile(filePathHistoricTrades, text)) break;
+      if (WriteToFile(filePathHistoricalTrades, text)) break;
       Sleep(100);
    }
-   SendInfo("Successfully read historic trades.");
+   SendInfo("Successfully read historical trades.");
 }
 
 void CheckMarketData() {
@@ -1027,7 +1028,7 @@ void ResetFolder() {
    FolderCreate(folderName);
    FileDelete(filePathMarketData);
    FileDelete(filePathBarData);
-   // FileDelete(filePathHistoricData);
+   // FileDelete(filePathHistoricalData);
    FileDelete(filePathOrders);
    FileDelete(filePathMessages);
    for (int i=0; i<maxCommandFiles; i++) {
