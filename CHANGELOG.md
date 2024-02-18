@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## ** V0.6.0  (18/02/2024) **
+- fix:
+  - EventHandler class to process every incoming trading response.
+  - Strategy factory.
+
+
 ## ** V0.5.1  (12/02/2024) **
 - fix:
   - "symbol" variable relocate in ImmutableOrderDetails class
