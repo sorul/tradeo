@@ -18,9 +18,6 @@ from tradingbot.order import (
     OrderPrice
 )
 from tradingbot.order_type import OrderType
-from tradingbot.event_handlers.event_handler_factory import (
-    event_handler_factory
-)
 
 
 def test_set_agent_paths():
@@ -29,7 +26,7 @@ def test_set_agent_paths():
   mock_config.mt_files_path = resources_test_path()
 
   with patch('tradingbot.forex_client.Config', mock_config):
-    mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
+    mt_client = MT_Client()
     path_file = join(mock_config.mt_files_path, mt_client.prefix_files_path)
 
     # Method to test
@@ -57,7 +54,7 @@ def test_check_messages(tmp_path):
   original_messages_path = Path(f'{resources_test_path()}/Messages.json')
   shutil.copyfile(original_messages_path, messages_path)
 
-  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
+  mt_client = MT_Client()
   mt_client.path_messages = messages_path
 
   # Call for the first time to read messages
@@ -96,7 +93,7 @@ def test_check_market_data(tmp_path):
   original_market_data_path = Path(f'{resources_test_path()}/Market_Data.json')
   shutil.copyfile(original_market_data_path, market_data_path)
 
-  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
+  mt_client = MT_Client()
   mt_client.path_market_data = market_data_path
 
   # Call for the first time to read data
@@ -144,7 +141,7 @@ def test_check_bar_data(tmp_path):
   original_bar_data_path = Path(f'{resources_test_path()}/Bar_Data.json')
   shutil.copyfile(original_bar_data_path, bar_data_path)
 
-  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
+  mt_client = MT_Client()
   mt_client.path_bar_data = bar_data_path
 
   # Call for the first time to read data
@@ -200,7 +197,7 @@ def test_check_open_orders(tmp_path):
       f'{resources_test_path()}/Orders_Stored.json')
   shutil.copyfile(original_orders_stored_path, orders_stored_path)
 
-  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
+  mt_client = MT_Client()
   mt_client.path_orders = orders_path
   mt_client.path_orders_stored = orders_stored_path
 
@@ -271,7 +268,7 @@ def test_check_open_orders(tmp_path):
 def test_check_historical_data():
 
   symbol = 'USDJPY'
-  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
+  mt_client = MT_Client()
   mt_client.path_historical_data = resources_test_path()
 
   data = mt_client.check_historical_data(symbol)
@@ -335,7 +332,7 @@ def test_check_historical_trades(tmp_path):
       f'{resources_test_path()}/Historical_Trades.json')
   shutil.copyfile(original_historical_trades_path, historical_trades_path)
 
-  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
+  mt_client = MT_Client()
   mt_client.path_historical_trades = historical_trades_path
 
   # Call for the first time to read data
@@ -391,7 +388,7 @@ def test_check_historical_trades(tmp_path):
 def test_send_command(tmp_path):
 
   tmp_path = Path(tmp_path)
-  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
+  mt_client = MT_Client()
   mt_client.path_commands_prefix = tmp_path / 'Commands_'
 
   # Acquire and release lock
@@ -409,7 +406,7 @@ def test_send_command(tmp_path):
 
 
 def test_clean_all_command_files(tmp_path):
-  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
+  mt_client = MT_Client()
   mt_client.path_commands_prefix = tmp_path
 
   # Create some files
@@ -431,7 +428,7 @@ def test_clean_all_command_files(tmp_path):
 
 
 def test_clean_all_historical_files(tmp_path):
-  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
+  mt_client = MT_Client()
   mt_client.path_historical_data = tmp_path
 
   # Create some files
@@ -453,7 +450,7 @@ def test_clean_all_historical_files(tmp_path):
 
 
 def test_command_file_exist():
-  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
+  mt_client = MT_Client()
   mt_client.path_commands_prefix = Path(f'{resources_test_path()}/Commands_')
 
   assert mt_client.command_file_exist('GBPNZD')
@@ -462,7 +459,7 @@ def test_command_file_exist():
 
 def test_clean_messages():
   m = {'INFO': ['test'], 'ERROR': ['error_test']}
-  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
+  mt_client = MT_Client()
   mt_client.messages = m  # type: ignore
   mt_client.clean_messages()
   assert mt_client.messages == {'INFO': [], 'ERROR': []}
@@ -472,7 +469,7 @@ def test_get_bid_ask(tmp_path):
   market_data_path = tmp_path / 'Market_Data.json'
   original_market_data_path = Path(f'{resources_test_path()}/Market_Data.json')
   shutil.copyfile(original_market_data_path, market_data_path)
-  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
+  mt_client = MT_Client()
   mt_client.path_market_data = market_data_path
   mt_client.check_market_data()
 
@@ -488,7 +485,7 @@ def test_get_bid_ask(tmp_path):
 
 
 def test_get_open_orders():
-  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
+  mt_client = MT_Client()
   mt_client.open_orders = {
       '2023993175': {
           'magic': 1705617043,
@@ -534,7 +531,7 @@ def test_get_open_orders():
 
 @patch('tradingbot.log.log.debug')
 def test_place_break_even(mock_debug, tmp_path):
-  mt_client = MT_Client(event_handler_factory(Config.event_handler_class))
+  mt_client = MT_Client()
   mt_client.path_commands_prefix = tmp_path
   order = Order(
       MutableOrderDetails(
