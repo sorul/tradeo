@@ -59,7 +59,7 @@ class EMA_strategy(Strategy):
                   stop_loss=ema_50[-1] - 10 * pip
               )),
           ImmutableOrderDetails(
-              symbol=symbol, order_type=OrderType.BUY,
+              symbol=symbol, order_type=OrderType(buy=True, market=True),
               magic=magic, comment=self.strategy_name)
       )
     elif lower_tendency:
@@ -70,7 +70,7 @@ class EMA_strategy(Strategy):
                   stop_loss=ema_50[-1] + 10 * pip
               )),
           ImmutableOrderDetails(
-              symbol=symbol, order_type=OrderType.SELL,
+              symbol=symbol, order_type=OrderType(buy=False, market=True),
               magic=magic, comment=self.strategy_name)
       )
 

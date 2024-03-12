@@ -262,7 +262,7 @@ void OpenOrder(string orderStr) {
    }
    string symbol = data[0];
    int digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
-   int orderType = StringToOrderType(data[1]);
+   int orderType = StringToOrderOperation(data[1]);
    double lots = NormalizeDouble(StringToDouble(data[2]), lotSizeDigits);
    double price = NormalizeDouble(StringToDouble(data[3]), digits);
    double stopLoss = NormalizeDouble(StringToDouble(data[4]), digits);
@@ -303,7 +303,7 @@ void OpenOrder(string orderStr) {
    if (orderType == ORDER_TYPE_SELL_STOP)
       res = trade.SellStop(lots, price, symbol, stopLoss, takeProfit, ORDER_TIME_GTC, expiration, comment);
    if (res) {
-      SendInfo("Successfully sent order: " + symbol + ", " + OrderTypeToString(orderType) + ", " + DoubleToString(lots, lotSizeDigits) + ", " + DoubleToString(price, digits));
+      SendInfo("Successfully sent order: " + symbol + ", " + OrderOperationToString(orderType) + ", " + DoubleToString(lots, lotSizeDigits) + ", " + DoubleToString(price, digits));
    } else {
       SendError("OPEN_ORDER", "Could not open order: " + ErrorDescription(GetLastError()));
    }
@@ -355,7 +355,7 @@ void ModifyOrder(string orderStr) {
    else
       res = trade.OrderModify(ticket, price, stopLoss, takeProfit, ORDER_TIME_GTC, expiration);
    if (res) {
-      SendInfo(StringFormat("Successfully modified order %d: %s, %s, %.2f, %.5f, %.5f, %.5f", ticket, symbol, OrderTypeToString(orderType), lots, price, stopLoss, takeProfit));
+      SendInfo(StringFormat("Successfully modified order %d: %s, %s, %.2f, %.5f, %.5f, %.5f", ticket, symbol, OrderOperationToString(orderType), lots, price, stopLoss, takeProfit));
    } else {
       SendError("MODIFY_ORDER", StringFormat("Error in modifying order %d: %s", ticket, ErrorDescription(GetLastError())));
    }
@@ -851,7 +851,7 @@ void CheckOpenOrders() {
                            PositionGetInteger(POSITION_MAGIC), 
                            PositionGetString(POSITION_SYMBOL), 
                            PositionGetDouble(POSITION_VOLUME), 
-                           OrderTypeToString((int)PositionGetInteger(POSITION_TYPE)), 
+                           OrderOperationToString((int)PositionGetInteger(POSITION_TYPE)), 
                            PositionGetDouble(POSITION_PRICE_OPEN), 
                            TimeToString(PositionGetInteger(POSITION_TIME), TIME_DATE|TIME_SECONDS), 
                            PositionGetDouble(POSITION_SL), 
@@ -873,7 +873,7 @@ void CheckOpenOrders() {
                            OrderGetInteger(ORDER_MAGIC), 
                            OrderGetString(ORDER_SYMBOL), 
                            OrderGetDouble(ORDER_VOLUME_CURRENT), 
-                           OrderTypeToString((int)OrderGetInteger(ORDER_TYPE)), 
+                           OrderOperationToString((int)OrderGetInteger(ORDER_TYPE)), 
                            OrderGetDouble(ORDER_PRICE_OPEN), 
                            TimeToString(OrderGetInteger(ORDER_TIME_SETUP), TIME_DATE|TIME_SECONDS), 
                            OrderGetDouble(ORDER_SL), 
@@ -968,7 +968,7 @@ bool OpenChartIfNotOpen(string symbol, ENUM_TIMEFRAMES timeFrame) {
 }
 
 // use string so that we can have the same in MT5. 
-string OrderTypeToString(int orderType) {
+string OrderOperationToString(int orderType) {
    if (orderType == POSITION_TYPE_BUY) return "buy";
    if (orderType == POSITION_TYPE_SELL) return "sell";
    if (orderType == ORDER_TYPE_BUY_LIMIT) return "buylimit";
@@ -978,7 +978,7 @@ string OrderTypeToString(int orderType) {
    return "unknown";
 }
 
-int StringToOrderType(string orderTypeStr) {
+int StringToOrderOperation(string orderTypeStr) {
    if (orderTypeStr == "buy") return POSITION_TYPE_BUY;
    if (orderTypeStr == "sell") return POSITION_TYPE_SELL;
    if (orderTypeStr == "buylimit") return ORDER_TYPE_BUY_LIMIT;

@@ -28,17 +28,21 @@ def test_check_order_viability():
       ),
       ImmutableOrderDetails(
           symbol='EURUSD',
-          order_type=OrderType.BUY,
+          order_type=OrderType(buy=True, market=True),
           magic='123456789',
           comment=''
       )
   )
 
   # Viable profit risk
-  assert Strategy.check_order_viability(order, min_risk_profit=1.5)
+  tz = pytz.timezone(str(Config.utc_timezone))
+  d = datetime(2024, 1, 9, 12, 5)
+  with freeze_time(tz.localize(d)):
+    assert Strategy.check_order_viability(order, min_risk_profit=1.5)
 
   # Not viable profit risk
-  assert not Strategy.check_order_viability(order, min_risk_profit=3)
+  with freeze_time(tz.localize(d)):
+    assert not Strategy.check_order_viability(order, min_risk_profit=3)
 
 
 @patch('tradingbot.log.log.debug')
@@ -56,7 +60,7 @@ def test_handle_limit_orders(mock_debug, tmp_path):
       ),
       ImmutableOrderDetails(
           symbol='EURUSD',
-          order_type=OrderType.BUY,
+          order_type=OrderType(buy=True, market=True),
           magic='1999999999',
           comment=''
       )
@@ -86,7 +90,7 @@ def test_handle_filled_orders(mock_debug, tmp_path):
       ),
       ImmutableOrderDetails(
           symbol='EURUSD',
-          order_type=OrderType.BUY,
+          order_type=OrderType(buy=True, market=True),
           magic='1999999999',
           comment=''
       )
@@ -122,7 +126,7 @@ def test_check_if_break_even_can_be_placed(tmp_path):
       ),
       ImmutableOrderDetails(
           symbol='EURUSD',
-          order_type=OrderType.BUY,
+          order_type=OrderType(buy=True, market=True),
           magic='1999999999',
           comment=''
       )

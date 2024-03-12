@@ -2,6 +2,7 @@ import tradingbot.trading_methods as tm
 from pandas import DataFrame
 import numpy as np
 from tradingbot.ohlc import OHLC
+from tradingbot.order_type import OrderType
 
 
 def test_get_pivots():
@@ -69,7 +70,7 @@ def test_buy_three_bar_reversal():
       'close': [2, 1, 5],
       'low': [1, 0, 0.5]
   }))
-  assert tm.three_bar_reversal(data, 'buy')
+  assert tm.three_bar_reversal(data, OrderType(buy=True, market=True))
 
 
 def test_sell_three_bar_reversal():
@@ -79,7 +80,7 @@ def test_sell_three_bar_reversal():
       'close': [4, 5, 1],
       'low': [1, 3, 0]
   }))
-  assert tm.three_bar_reversal(data, 'sell')
+  assert tm.three_bar_reversal(data, OrderType(buy=False, market=True))
 
 
 def test_buy_pinbar():
@@ -89,7 +90,7 @@ def test_buy_pinbar():
       'close': [5],
       'low': [0]
   }))
-  assert tm.pinbar_pattern(data, 'buy')
+  assert tm.pinbar_pattern(data, OrderType(buy=True, market=True))
 
 
 def test_sell_pinbar():
@@ -99,7 +100,7 @@ def test_sell_pinbar():
       'close': [1],
       'low': [0]
   }))
-  assert tm.pinbar_pattern(data, 'sell')
+  assert tm.pinbar_pattern(data, OrderType(buy=False, market=True))
 
 
 def test_buy_harami():
@@ -109,7 +110,7 @@ def test_buy_harami():
       'close': [1, 4],
       'low': [0, 0.5]
   }))
-  assert tm.harami_pattern(data, 'buy')
+  assert tm.harami_pattern(data, OrderType(buy=True, market=True))
 
 
 def test_sell_harami():
@@ -119,7 +120,7 @@ def test_sell_harami():
       'close': [5, 2],
       'low': [0, 1]
   }))
-  assert tm.harami_pattern(data, 'sell')
+  assert tm.harami_pattern(data, OrderType(buy=False, market=True))
 
 
 def test_get_pip():

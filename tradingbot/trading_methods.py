@@ -1,9 +1,9 @@
 """Common methods in trading strategies."""
 from typing import List, Tuple
 from pandas import Series
-from .order_type import OrderType as ot
 from numpy import ndarray
 from .ohlc import OHLC
+from .order_type import OrderType
 
 
 def get_pip(symbol: str) -> float:
@@ -131,19 +131,19 @@ def SAR(  # noqa
   return sar
 
 
-def confirmation_pattern(data: OHLC, operation: str) -> bool:
+def confirmation_pattern(data: OHLC, order_type: OrderType) -> bool:
   """Return True if different patterns are detected.
 
   https://s3.tradingview.com/z/zk1YPPgw_big.png
   https://www.tradingview.com/chart/EURUSD/zk1YPPgw-10-MOST-important-bar-patterns-to-profit-trade/
   """
-  c1 = three_bar_reversal(data, operation)
-  c2 = pinbar_pattern(data, operation)
-  c3 = harami_pattern(data, operation)
+  c1 = three_bar_reversal(data, order_type)
+  c2 = pinbar_pattern(data, order_type)
+  c3 = harami_pattern(data, order_type)
   return c1 or c2 or c3
 
 
-def three_bar_reversal(data: OHLC, operation: str) -> bool:
+def three_bar_reversal(data: OHLC, order_type: OrderType) -> bool:
   """Envelope Pattern.
 
   docs/images/buy_three_bar_reversal.png
@@ -153,7 +153,7 @@ def three_bar_reversal(data: OHLC, operation: str) -> bool:
   highs = data.high
   lows = data.low
   closes = data.close
-  if operation == ot.BUY:
+  if order_type.buy:
     return opens[-3] > closes[-3] and opens[-2] > closes[-2] and \
         opens[-1] < closes[-1] and lows[-3] > lows[-2] and \
         lows[-2] < lows[-1] and opens[-3] > highs[-2] and closes[-1] > highs[-2]
@@ -163,7 +163,7 @@ def three_bar_reversal(data: OHLC, operation: str) -> bool:
         lows[-3] < lows[-2] and closes[-1] < lows[-2]
 
 
-def pinbar_pattern(data: OHLC, operation: str) -> bool:
+def pinbar_pattern(data: OHLC, order_type: OrderType) -> bool:
   """Pin-Bar Pattern.
 
   docs/images/buy_pinbar.png
@@ -173,7 +173,7 @@ def pinbar_pattern(data: OHLC, operation: str) -> bool:
   highs = data.high
   lows = data.low
   closes = data.close
-  if operation == ot.BUY:
+  if order_type.buy:
     upper_third = highs[-1] - (highs[-1] - lows[-1]) / 3
     body = abs(opens[-1] - closes[-1])
     lower_wick = opens[-1] - lows[-1]
@@ -197,7 +197,7 @@ def pinbar_pattern(data: OHLC, operation: str) -> bool:
     )
 
 
-def harami_pattern(data: OHLC, operation: str) -> bool:
+def harami_pattern(data: OHLC, order_type: OrderType) -> bool:
   """Harami Pattern.
 
   docs/images/buy_harami.png
@@ -207,7 +207,7 @@ def harami_pattern(data: OHLC, operation: str) -> bool:
   highs = data.high
   lows = data.low
   closes = data.close
-  if operation == ot.BUY:
+  if order_type.buy:
     return opens[-2] > closes[-2] and opens[-1] < closes[-1] and \
         highs[-1] < highs[-2] and lows[-1] > lows[-2]
   else:

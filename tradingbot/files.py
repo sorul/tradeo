@@ -22,12 +22,13 @@ class Files(str, Enum):
 
   # LOCKS
   FOREX_LOCK = 'forex.lock'
+  NEW_ORDER_LOCK = 'new_order.lock'
 
 
 def file_exists(file: str, file_path: Path = _default_path) -> bool:
   """Return True if the file exists.
 
-  file_path: "data_path" as default value.
+  file_path: "get_default_path()" as default value.
   """
   path = file_path if file_path != _default_path else get_default_path()
   return exists(path / file)
@@ -103,7 +104,7 @@ def write_file(
 ) -> None:
   """Write a file.
 
-  file_path: "data_path" as default value.
+  file_path: "get_default_path()" as default value.
   """
   path = file_path if file_path != _default_path else get_default_path()
 

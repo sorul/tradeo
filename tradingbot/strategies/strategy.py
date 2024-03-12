@@ -5,7 +5,6 @@ from tradingbot.order import Order
 from datetime import datetime
 from tradingbot.config import Config
 from tradingbot.log import log
-from tradingbot.order_type import OrderType
 from tradingbot.ohlc import OHLC
 from tradingbot.mt_client import MT_Client
 
@@ -48,7 +47,7 @@ class Strategy(ABC):
       current_datetime = datetime.now(Config.utc_timezone)
       if (current_datetime - open_time).seconds > time_threshold:
         mt_client = MT_Client()
-        mt_client.close_orders_by_magic(order.magic)
+        mt_client.send_close_orders_by_magic_command(order.magic)
         log.debug(f'Close order {order.magic} due to time threshold')
     except ValueError:  # int(order.magic)
       pass
@@ -69,7 +68,7 @@ class Strategy(ABC):
       # Check if the order can be closed based on the time threshold
       if (current_datetime - open_time).seconds > time_threshold:
         mt_client = MT_Client()
-        mt_client.close_orders_by_magic(order.magic)
+        mt_client.send_close_orders_by_magic_command(order.magic)
         log.debug(f'Close order {order.magic} due to time threshold')
 
       # Check if a break even can be placed
@@ -97,12 +96,10 @@ class Strategy(ABC):
     result = False
     # First check if a previous break even has been placed
     break_even_placed_buy = (
-        order.order_type == OrderType.BUY
-        and order.stop_loss > order.price
+        order.order_type.buy and order.stop_loss > order.price
     )
     break_even_placed_sell = (
-        order.order_type == OrderType.SELL
-        and order.stop_loss < order.price
+        order.order_type.sell and order.stop_loss < order.price
     )
     break_even_placed = break_even_placed_buy or break_even_placed_sell
 

@@ -11,15 +11,17 @@ from .log import log
 import typing as ty
 from random import randrange
 from .singleton import Singleton
-from .files import try_load_json, try_remove_file
+from .files import try_load_json, try_remove_file, lock, unlock
 from .utils import (
     string_to_date_utc,
     get_remaining_symbols,
     add_successful_symbol
 )
+from .order_operations import OrderOperations
+from .order_type import get_order_type_from_str
+from .files import Files
 from pathlib import Path
 from .order import Order, MutableOrderDetails, ImmutableOrderDetails, OrderPrice
-from .order_type import OrderType
 from .ohlc import OHLC
 from .trading_methods import get_pip
 from tradingbot.event_handlers.event_handler import EventHandler
@@ -112,7 +114,7 @@ class MT_Client(metaclass=Singleton):
   def start(self) -> None:
     """Start the threads."""
     self.START = True
-    self.reset_command_ids()
+    self.send_reset_command_ids_command()
     # Start the demand threads
     if Config.check_messages_thread:
       self.start_thread(self.start_thread_check_messages)
@@ -207,6 +209,8 @@ class MT_Client(metaclass=Singleton):
 
   def get_bid_ask(self, symbol: str) -> ty.Tuple[float, float]:
     """Return the bid and ask price of a symbol.
+
+    Return 0,0 if symbol not found.
 
     Bid: sell price
     Ask: buy price
@@ -306,7 +310,7 @@ class MT_Client(metaclass=Singleton):
             ),
             ImmutableOrderDetails(
                 symbol=o['symbol'],
-                order_type=OrderType(o['type']),
+                order_type=get_order_type_from_str(o['type']),
                 magic=o['magic'],
                 comment=o['comment']
             ), ticket=int(t))
@@ -463,16 +467,42 @@ class MT_Client(metaclass=Singleton):
     """
     self.send_command('GET_HISTORICAL_TRADES', str(lookback_days))
 
-  def open_order(self, order: Order) -> None:
+  def create_new_order(self, order: Order) -> None:
+    """Create new order."""
+    log.debug(f'Creating new order: {order}')
+    lock(Files.NEW_ORDER_LOCK)
+
+    if order.order_type.pending:
+      bid, ask = self.get_bid_ask(order.symbol)
+      self._modify_pending_order(order, bid, ask)
+
+    self.send_open_order_command(order)
+
+    unlock(Files.NEW_ORDER_LOCK)
+
+  def _modify_pending_order(self, order: Order, bid: float, ask: float) -> None:
+    """Modify the pending order based on the bid/ask."""
+    if bid != 0 and ask != 0:
+      ot = order.order_type
+      if ot.buy and order.price > ask:
+        ot.value = OrderOperations.BUYSTOP
+      elif ot.buy and order.price < ask:
+        ot.value = OrderOperations.BUYLIMIT
+      elif ot.sell and order.price < bid:
+        ot.value = OrderOperations.SELLSTOP
+      elif ot.sell and order.price > bid:
+        ot.value = OrderOperations.SELLLIMIT
+
+  def send_open_order_command(self, order: Order) -> None:
     """To send an OPEN_ORDER command to open an order."""
     data = [
-        order.symbol, order.order_type, order.lots, order.price,
+        order.symbol, order.order_type.value, order.lots, order.price,
         order.stop_loss, order.take_profit, order.magic, order.comment,
         order.expiration
     ]
     self.send_command('OPEN_ORDER', ','.join(str(p) for p in data))
 
-  def modify_order(
+  def send_modify_order_command(
       self,
       ticket: int,
       mod: MutableOrderDetails
@@ -501,9 +531,9 @@ class MT_Client(metaclass=Singleton):
   def place_break_even(self, order: Order) -> None:
     """Modify the order to place a break even."""
     pip = get_pip(order.symbol)
-    buy = order.order_type == OrderType.BUY
+    buy = order.order_type.buy
     break_even = order.price + pip if buy else order.price - pip
-    self.modify_order(
+    self.send_modify_order_command(
         order.ticket,
         MutableOrderDetails(
             prices=OrderPrice(
@@ -517,7 +547,7 @@ class MT_Client(metaclass=Singleton):
     )
     log.debug(f'Break even placed in {order.magic}')
 
-  def close_order(self, ticket: int, lots: float = 0) -> None:
+  def send_close_order_command(self, ticket: int, lots: float = 0) -> None:
     """To send a CLOSE_ORDER command to close an order.
 
     Args:
@@ -531,11 +561,11 @@ class MT_Client(metaclass=Singleton):
     data = [ticket, lots]
     self.send_command('CLOSE_ORDER', ','.join(str(p) for p in data))
 
-  def close_all_orders(self) -> None:
+  def send_close_all_orders_command(self) -> None:
     """To send a CLOSE_ALL_ORDERS command to close all orders."""
     self.send_command('CLOSE_ALL_ORDERS', '')
 
-  def close_orders_by_symbol(self, symbol: str) -> None:
+  def send_close_orders_by_symbol_command(self, symbol: str) -> None:
     """To send a CLOSE_ORDERS_BY_SYMBOL command to close all orders.
 
     Args:
@@ -544,7 +574,7 @@ class MT_Client(metaclass=Singleton):
     """
     self.send_command('CLOSE_ORDERS_BY_SYMBOL', symbol)
 
-  def close_orders_by_magic(self, magic: str) -> None:
+  def send_close_orders_by_magic_command(self, magic: str) -> None:
     """To send a CLOSE_ORDERS_BY_MAGIC command to close all orders.
 
     Args:
@@ -554,7 +584,7 @@ class MT_Client(metaclass=Singleton):
     """
     self.send_command('CLOSE_ORDERS_BY_MAGIC', magic)
 
-  def reset_command_ids(self) -> None:
+  def send_reset_command_ids_command(self) -> None:
     """To send a RESET_COMMAND_IDS command to reset stored command IDs.
 
     This should be used when restarting the python side without restarting
@@ -580,9 +610,9 @@ class MT_Client(metaclass=Singleton):
 
     self.command_id = (self.command_id + 1) % 100000
 
-    end_time = datetime.utcnow() + timedelta(
+    end_time = datetime.now(Config.utc_timezone) + timedelta(
         seconds=self.max_retry_command_seconds)
-    now = datetime.utcnow()
+    now = datetime.now(Config.utc_timezone)
 
     # trying again for X seconds in case all files exist or are
     # currently read from mql side.
@@ -602,7 +632,7 @@ class MT_Client(metaclass=Singleton):
       if success:
         break
       sleep(self.sleep_delay)
-      now = datetime.utcnow()
+      now = datetime.now(Config.utc_timezone)
 
     # release lock again
     self.lock.release()

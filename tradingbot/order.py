@@ -51,7 +51,12 @@ class ImmutableOrderDetails:
   """Class to hold order metadata."""
 
   def __init__(
-          self, symbol: str, order_type: OrderType, magic: str, comment: str):
+          self,
+          symbol: str,
+          order_type: OrderType,
+          magic: str,
+          comment: str
+  ):
     """Initialize the attributes."""
     self.symbol = symbol
     self.order_type = order_type

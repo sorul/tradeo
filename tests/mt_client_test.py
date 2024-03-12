@@ -10,7 +10,7 @@ from datetime import datetime
 import pytz
 from freezegun import freeze_time
 from tradingbot.paths import resources_test_path
-from os.path import join
+from os.path import join, exists
 from tradingbot.order import (
     Order,
     MutableOrderDetails,
@@ -511,7 +511,7 @@ def test_get_open_orders():
       ),
       ImmutableOrderDetails(
           symbol='AUDUSD',
-          order_type=OrderType.BUY,
+          order_type=OrderType(buy=True, market=True),
           magic='1705617043',
           comment='this is a comment'
       ),
@@ -532,7 +532,7 @@ def test_get_open_orders():
 @patch('tradingbot.log.log.debug')
 def test_place_break_even(mock_debug, tmp_path):
   mt_client = MT_Client()
-  mt_client.path_commands_prefix = tmp_path
+  mt_client.path_commands_prefix = tmp_path / 'Commands_'
   order = Order(
       MutableOrderDetails(
           prices=OrderPrice(
@@ -543,7 +543,7 @@ def test_place_break_even(mock_debug, tmp_path):
       ),
       ImmutableOrderDetails(
           symbol='AUDUSD',
-          order_type=OrderType.BUY,
+          order_type=OrderType(buy=True, market=True),
           magic='1705617043',
           comment='this is a comment'
       ),
@@ -551,3 +551,40 @@ def test_place_break_even(mock_debug, tmp_path):
   )
   mt_client.place_break_even(order)
   mock_debug.assert_called_with(f'Break even placed in {order.magic}')
+
+
+@patch('tradingbot.files.get_default_path')
+def test_create_new_order(mock_default_path, tmp_path):
+  # Make data_path() return the temporary directory
+  mock_default_path.return_value = tmp_path
+
+  # Market Data
+  market_data_path = tmp_path / 'Market_Data.json'
+  original_market_data_path = Path(f'{resources_test_path()}/Market_Data.json')
+  shutil.copyfile(original_market_data_path, market_data_path)
+  mt_client = MT_Client()
+  mt_client.path_market_data = market_data_path
+  mt_client.check_market_data()
+
+  # Command files
+  mt_client.path_commands_prefix = tmp_path / 'Commands_'
+
+  order = Order(
+      MutableOrderDetails(
+          prices=OrderPrice(
+              price=0.65754,
+              stop_loss=0.65443,
+              take_profit=0.00000
+          ), lots=0.01
+      ),
+      ImmutableOrderDetails(
+          symbol='EURUSD',
+          order_type=OrderType(buy=True, market=False),
+          magic='1705617043',
+          comment='this is a comment'
+      ),
+      ticket=2023993175
+  )
+  mt_client.create_new_order(order)
+  file_path = f'{mt_client.path_commands_prefix}{0}.txt'
+  assert exists(file_path)

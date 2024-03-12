@@ -1,7 +1,14 @@
 # CHANGELOG
 
+## ** V0.7.0  (12/03/2024) **
+- feat:
+  - New method "create_new_order" in mt_client.py
+- test:
+  - test_create_new_order method.
+
+
 ## ** V0.6.0  (18/02/2024) **
-- fix:
+- feat:
   - EventHandler class to process every incoming trading response.
   - Strategy factory.
 
