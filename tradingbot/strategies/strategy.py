@@ -31,7 +31,7 @@ class Strategy(ABC):
     """Check if the order is viable."""
     symbol = order.symbol
     mt_client = MT_Client()
-    orders = [o for o in mt_client.get_open_orders() if o.symbol == symbol]
+    orders = [o for o in mt_client.open_orders if o.symbol == symbol]
     c1 = len(orders) == 0
     c2 = order.risk_benefit() > min_risk_profit
     # High spread
@@ -39,7 +39,7 @@ class Strategy(ABC):
     return c1 and c2 and c3
 
   @staticmethod
-  def handle_limit_orders(order: Order, time_threshold: int) -> None:
+  def handle_pending_orders(order: Order, time_threshold: int = 3600) -> None:
     """Handle limit orders based on the time threshold."""
     try:
       open_time = datetime.fromtimestamp(
@@ -55,8 +55,8 @@ class Strategy(ABC):
   @staticmethod
   def handle_filled_orders(
       order: Order,
-      time_threshold: int,
-      break_even_time_threshold: int,
+      time_threshold: int = 3600 * 24,
+      break_even_time_threshold: int = 3600 * 12,
       break_even_per_threshold: float = 0.75
   ) -> None:
     """Handle filled orders by closing them or placing a break even."""

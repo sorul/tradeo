@@ -46,7 +46,7 @@ def test_check_order_viability():
 
 
 @patch('tradingbot.log.log.debug')
-def test_handle_limit_orders(mock_debug, tmp_path):
+def test_handle_pending_orders(mock_debug, tmp_path):
   mt_client = MT_Client()
   mt_client.path_commands_prefix = tmp_path
 
@@ -70,7 +70,7 @@ def test_handle_limit_orders(mock_debug, tmp_path):
   tz = pytz.timezone(str(Config.broker_timezone))
   d = datetime(2024, 1, 1, 0, 0)
   with freeze_time(tz.localize(d)):
-    Strategy.handle_limit_orders(order, time_threshold)
+    Strategy.handle_pending_orders(order, time_threshold)
     mock_debug.assert_called_with(
         f'Close order {order.magic} due to time threshold')
 

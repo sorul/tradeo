@@ -5,6 +5,7 @@ from .config import Config
 from .files import Files
 from . import files as f
 from .utils import get_remaining_symbols, reboot_mt
+from tradingbot.strategies.strategy_factory import strategy_factory
 from random import randrange
 from .log import log
 import traceback
@@ -58,13 +59,33 @@ def main():
   # Send commands to obtain bid/ask
   mt_client.subscribe_symbols(Config.symbols)
 
-  # TODO: Trades management
+  # Handle the existing trades
+  handle_trades(mt_client)
 
   # Process the result of "get_historical_data"
   handle_new_historical_data(utc_date, execution_time)
 
   # Finish the main
   finish()
+
+
+def handle_trades(mt_client: MT_Client) -> None:
+  """Handle the existing trades."""
+  orders = mt_client.check_open_orders()
+  for order in orders:
+    strategy = strategy_factory(order.comment)
+
+    if order.order_type.pending:
+      strategy.handle_pending_orders(order)
+    elif order.order_type.market:
+      strategy.handle_filled_orders(order)
+
+  len_orders = len(orders)
+  message = f'Number of open orders: {len_orders}'
+  if len_orders > 900:
+    log.warning(message)
+  else:
+    log.debug(message)
 
 
 def handle_new_historical_data(

@@ -65,7 +65,7 @@ class MT_Client(metaclass=Singleton):
 
     # Data attributes
     self.messages: messages_type = {'INFO': [], 'ERROR': []}
-    self.open_orders: attributes_data_type = {}
+    self.open_orders: ty.List[Order] = []
     self.account_info: account_info_type = {}
     self.market_data: attributes_data_type = {}
     self.bar_data: attributes_data_type = {}
@@ -264,8 +264,11 @@ class MT_Client(metaclass=Singleton):
       if self.START:
         self.check_open_orders()
 
-  def check_open_orders(self) -> ty.Dict[str, ty.Dict]:
-    """Update, trigger event if needed and return the open orders object."""
+  def check_open_orders(self) -> ty.List[Order]:
+    """Update, trigger event if needed and return the open orders object.
+
+    The open orders can be pending or filled.
+    """
     data = try_load_json(self.path_orders)
     data_orders = data.get('orders')
     data_account_info = data.get('account_info')
@@ -276,18 +279,23 @@ class MT_Client(metaclass=Singleton):
         and (data_orders != self.open_orders
              or data_account_info != self.account_info)):
 
-      new_event = False
-      for order_id, _order in self.open_orders.items():
-        # also triggers if a pending order got filled?
-        if order_id not in data_orders.keys():
-          new_event = True
+      orders = self._transform_json_orders_to_orders(data_orders)
 
-      for order_id, _order in data_orders.items():
-        if order_id not in self.open_orders:
+      new_event = False
+      # If an existing open order is not in the new data, trigger an event
+      for order in self.open_orders:
+        if order not in orders:
           new_event = True
+          break
+
+      # If a new open order is not in the existing data, trigger an event
+      for order in orders:
+        if order not in self.open_orders:
+          new_event = True
+          break
 
       self.account_info = data_account_info
-      self.open_orders = data_orders
+      self.open_orders = orders
 
       with open(self.path_orders_stored, 'w') as f:
         f.write(json.dumps(data))
@@ -297,7 +305,8 @@ class MT_Client(metaclass=Singleton):
 
     return self.open_orders
 
-  def get_open_orders(self) -> ty.List[Order]:
+  def _transform_json_orders_to_orders(
+          self, json_orders: ty.Dict) -> ty.List[Order]:
     """Return a list of open Order objects."""
     return [
         Order(
@@ -314,7 +323,7 @@ class MT_Client(metaclass=Singleton):
                 magic=o['magic'],
                 comment=o['comment']
             ), ticket=int(t))
-        for t, o in self.open_orders.items()
+        for t, o in json_orders.items()
     ]
 
   def start_thread_check_historical_data(self) -> None:
