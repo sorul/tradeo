@@ -204,21 +204,24 @@ def test_check_open_orders(tmp_path):
   # Call for the first time to read orders
   mt_client.check_open_orders()
 
-  assert_orders_data = {
-      '2023993175': {
-          'magic': 1705617043,
-          'symbol': 'AUDUSD',
-          'lots': 0.01,
-          'type': 'buy',
-          'open_price': 0.65754,
-          'open_time': '2024.01.19 00:30:43',
-          'SL': 0.65443,
-          'TP': 0.0,
-          'pnl': -0.59,
-          'swap': 0.0,
-          'comment': 'this is a comment'
-      }
-  }
+  assert_orders_data = [
+      Order(
+          MutableOrderDetails(
+              prices=OrderPrice(
+                  price=0.65754,
+                  stop_loss=0.65443,
+                  take_profit=0.00000
+              ), lots=0.01
+          ),
+          ImmutableOrderDetails(
+              symbol='AUDUSD',
+              order_type=OrderType(buy=True, market=True),
+              magic='1705617043',
+              comment='this is a comment'
+          ),
+          ticket=2023993175
+      )
+  ]
   assert_account_data = {
       'name': 'Foo',
       'number': -999999999,
@@ -261,7 +264,7 @@ def test_check_open_orders(tmp_path):
   # Now it changes
   mt_client.check_open_orders()
 
-  assert mt_client.open_orders == data['orders']
+  assert len(mt_client.open_orders) == 2
   assert mt_client.account_info == data['account_info']
 
 
@@ -484,23 +487,8 @@ def test_get_bid_ask(tmp_path):
   assert ask == 0
 
 
-def test_get_open_orders():
+def test_transform_json_orders_to_orders():
   mt_client = MT_Client()
-  mt_client.open_orders = {
-      '2023993175': {
-          'magic': 1705617043,
-          'symbol': 'AUDUSD',
-          'lots': 0.01,
-          'type': 'buy',
-          'open_price': 0.65754,
-          'open_time': '2024.01.19 00:30:43',
-          'SL': 0.65443,
-          'TP': 0.00000,
-          'pnl': -0.59,
-          'swap': 0.00,
-          'comment': 'this is a comment'
-      }
-  }
   order = Order(
       MutableOrderDetails(
           prices=OrderPrice(
@@ -517,7 +505,23 @@ def test_get_open_orders():
       ),
       ticket=2023993175
   )
-  orders = mt_client.get_open_orders()
+  mt_client.open_orders = [order]
+  json_orders = {
+      '2023993175': {
+          'magic': 1705617043,
+          'symbol': 'AUDUSD',
+          'lots': 0.01,
+          'type': 'buy',
+          'open_price': 0.65754,
+          'open_time': '2024.01.19 00:30:43',
+          'SL': 0.65443,
+          'TP': 0.00000,
+          'pnl': -0.59,
+          'swap': 0.00,
+          'comment': 'this is a comment'
+      }
+  }
+  orders = mt_client._transform_json_orders_to_orders(json_orders)
   assert len(orders) == 1
   assert orders[0] == order
   assert order.price == 0.65754

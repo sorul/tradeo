@@ -2,6 +2,7 @@
 from tradingbot.ohlc import OHLC
 from typing import List, Dict
 from abc import ABC
+from tradingbot.order import Order
 
 
 class EventHandler(ABC):
@@ -49,6 +50,7 @@ class EventHandler(ABC):
     """Handle when a new message is received."""
     return None
 
-  def on_order_event(self, account_info: Dict, open_orders: Dict) -> None:
-    """Handle the return of an order event."""
+  def on_order_event(
+          self, account_info: Dict, open_orders: List[Order]) -> None:
+    """Handle when a new order event or removed order is received."""
     return None

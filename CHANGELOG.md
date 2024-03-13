@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## ** V0.8.0  (13/03/2024) **
+- feat:
+  - New method "handle_trades" in forex.py
+
+
 ## ** V0.7.0  (12/03/2024) **
 - feat:
   - New method "create_new_order" in mt_client.py
