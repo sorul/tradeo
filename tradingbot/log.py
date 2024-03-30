@@ -3,11 +3,32 @@
 import logging
 import socket
 from logging.handlers import SysLogHandler
+from logging import Handler
+import requests
+
 from .singleton import Singleton
 from .config import Config
 
 
 """URL: https://my.papertrailapp.com/events ."""
+
+
+class TelegramHandler(Handler):
+  """Handler to send logs to telegram."""
+
+  def emit(self, record):
+    """Send the log to telegram."""
+    log_entry = self.format(record)
+    payload = {
+        'chat_id': Config.forex_telegram_chat_id,
+        'text': log_entry,
+        'parse_mode': 'HTML'
+    }
+    token = Config.forex_telegram_token
+    return requests.post(
+        f'https://api.telegram.org/bot{token}/sendMessage',
+        data=payload
+    ).content
 
 
 class ContextFilter(logging.Filter):
@@ -26,19 +47,38 @@ class Log(metaclass=Singleton):
 
   def __init__(self):
     """Initialize the logger."""
-    self.logger = logging.getLogger()
-    self.logger.setLevel(Config.log_level)
+    self.logger = logging.getLogger('tradingbot')
+    self.logger.setLevel(logging.DEBUG)
+    self._build_log()
+    self._build_telegram_log()
 
-    self.syslog = SysLogHandler(
+  def _build_log(self) -> None:
+    handler = SysLogHandler(
         address=(Config.syslog_address, Config.syslog_port))
 
-    self.syslog.addFilter(ContextFilter())
-    self.formatter = logging.Formatter(
+    # Filter
+    handler.addFilter(ContextFilter())
+    formatter = logging.Formatter(
         '%(asctime)s %(levelname)s trading-bot: %(message)s',
         datefmt='%b %d %H:%M:%S')
 
-    self.syslog.setFormatter(self.formatter)
-    self.logger.addHandler(self.syslog)
+    # Format
+    handler.setFormatter(formatter)
+
+    # Level
+    handler.setLevel(Config.log_level)
+
+    # Add the handler
+    self.logger.addHandler(handler)
+
+  def _build_telegram_log(self) -> None:
+    handler = TelegramHandler()
+
+    # Level
+    handler.setLevel(Config.tg_log_level)
+
+    # Add the handler
+    self.logger.addHandler(handler)
 
   def debug(self, msg: str):
     """Log debug message."""
@@ -50,11 +90,12 @@ class Log(metaclass=Singleton):
 
   def warning(self, msg: str):
     """Log warning message."""
-    self.logger.warning(msg)
+    self.logger.warning(f'🟡 {msg}')
 
   def error(self, msg: str):
     """Log error message."""
-    self.logger.error(msg.replace('\n', ' '))
+    msg = msg.replace('\n', ' ')
+    self.logger.error(f'🔴 {msg}')
 
 
 # Singleton instance
