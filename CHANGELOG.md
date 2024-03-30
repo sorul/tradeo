@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## ** V0.9.0  (30/03/2024) **
+- feat:
+  - Telegram handle for logging
+
 ## ** V0.8.0  (13/03/2024) **
 - feat:
   - New method "handle_trades" in forex.py
