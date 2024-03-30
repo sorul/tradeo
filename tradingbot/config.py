@@ -50,7 +50,7 @@ class Config:
   symbols = (os.getenv('TB_SYMBOLS') or 'EURUSD,USDJPY,USDCAD').split(',')
   timeframe = os.getenv('TB_TIMEFRAME') or 'M5'
   lookback_days = int(os.getenv('TB_LOOKBACK_DAYS') or 10)
-  strategies = (os.getenv('TB_STRATEGIES') or 'EMA_strategy').split(',')
+  strategies = (os.getenv('TB_STRATEGIES') or 'BasicStrategy').split(',')
 
   # Forex client configuration
   check_messages_thread = _get_bool_from_env(

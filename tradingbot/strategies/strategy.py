@@ -10,7 +10,7 @@ from tradingbot.mt_client import MT_Client
 
 
 class Strategy(ABC):
-  """Strategy class."""
+  """This class should not be instantiated."""
 
   def __init__(self, strategy_name: str):
     """Initialize the attributes."""

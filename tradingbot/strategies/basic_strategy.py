@@ -1,24 +1,24 @@
 """EMA Strategy."""
-from tradingbot.strategies.strategy import Strategy
 from typing import Union
+from datetime import datetime
+
+from tradingbot.trading_methods import EMA, get_pivots, get_pip
+from tradingbot.ohlc import OHLC
+from tradingbot.utils import create_magic_number
+from tradingbot.strategies.strategy import Strategy
 from tradingbot.order import (Order,
                               MutableOrderDetails,
                               ImmutableOrderDetails,
                               OrderPrice,
                               OrderType)
 
-from tradingbot.trading_methods import EMA, get_pivots, get_pip
-from tradingbot.ohlc import OHLC
-from tradingbot.utils import create_magic_number
-from datetime import datetime
 
-
-class EMA_strategy(Strategy):
+class BasicStrategy(Strategy):
   """Strategy based on EMAs and price tendency."""
 
   def __init__(self):
     """Initialize the attributes."""
-    super().__init__('EMA_strategy')
+    super().__init__('BasicStrategy')
 
   def indicator(
       self,

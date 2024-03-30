@@ -1,7 +1,7 @@
 from tradingbot.order import Order
 from pandas import DataFrame
 from tradingbot.ohlc import OHLC
-from tradingbot.strategies.ema_strategy import EMA_strategy
+from tradingbot.strategies.basic_strategy import BasicStrategy
 import numpy as np
 from datetime import datetime
 
@@ -19,5 +19,5 @@ def test_indicator():
       'low': lows,
       'close': closes
   }))
-  strategy = EMA_strategy()
+  strategy = BasicStrategy()
   assert isinstance(strategy.indicator(data, 'EURUSD', datetime.now()), Order)

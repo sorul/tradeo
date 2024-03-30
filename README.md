@@ -16,7 +16,7 @@ export TB_BROKER_TIMEZONE=Etc/GMT-2
 export TB_SYMBOLS=EURUSD,USDCAD,USDCHF
 export TB_TIMEFRAME=M5
 export TB_LOOKBACK_DAYS=10
-export TB_STRATEGIES=EMA_strategy
+export TB_STRATEGIES=BasicStrategy
 
 # Forex-Client configuration
 export TB_CHECK_MESSAGES_THREAD=true

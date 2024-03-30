@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## ** V0.10.0  (30/03/2024) **
+- feat:
+  - Executable class for custom your own bots
+
 ## ** V0.9.0  (30/03/2024) **
 - feat:
   - Telegram handle for logging

@@ -160,3 +160,4 @@ cython_debug/
 
 # Project-specific files
 data/*.lock
+main.py

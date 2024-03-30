@@ -5,9 +5,9 @@ from tradingbot.log import log
 
 def strategy_factory(strategy: str) -> Strategy:
   """Given a strategy name, return the corresponding strategy object."""
-  from tradingbot.strategies.ema_strategy import (EMA_strategy)
+  from tradingbot.strategies.basic_strategy import (BasicStrategy)
 
-  for s in [EMA_strategy()]:
+  for s in [BasicStrategy()]:
     if s.strategy_name in strategy or strategy in s.strategy_name:
       return s
 
