@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## ** V0.11.1  (31/03/2024) **
+- refactor:
+  - The necessary changes are made to prepare for the first tag
+
 ## ** V0.11.0  (31/03/2024) **
 - feat:
   - Factory classes removed

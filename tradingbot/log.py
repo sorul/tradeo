@@ -6,8 +6,8 @@ from logging.handlers import SysLogHandler
 from logging import Handler
 import requests
 
-from .singleton import Singleton
-from .config import Config
+from tradingbot.singleton import Singleton
+from tradingbot.config import Config
 
 
 """URL: https://my.papertrailapp.com/events ."""

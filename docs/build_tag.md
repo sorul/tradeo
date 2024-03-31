@@ -33,5 +33,5 @@ The \<option> should be ([Poetry Doc](https://python-poetry.org/docs/cli/#versio
 
 ### 4. Make the build package and push it to Github:
 ```
-make version
+make tag
 ```

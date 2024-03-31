@@ -1,5 +1,5 @@
 """Class to hold order type."""
-from .order_operations import OrderOperations
+from tradingbot.order_operations import OrderOperations
 
 
 class OrderType:

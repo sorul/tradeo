@@ -1,5 +1,6 @@
 """This script is one of the possible entry points of the project."""
 from datetime import datetime, timedelta
+from random import randrange
 import traceback
 
 from tradingbot.mt_client import MT_Client
@@ -7,7 +8,6 @@ from tradingbot.config import Config
 from tradingbot.files import Files
 from tradingbot import files as f
 from tradingbot.utils import get_remaining_symbols, reboot_mt
-from random import randrange
 from tradingbot.log import log
 from tradingbot.executable.executable import Executable
 from tradingbot.strategies.basic_strategy import BasicStrategy

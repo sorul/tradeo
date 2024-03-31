@@ -49,7 +49,7 @@ def test_check_order_viability():
         mt_client, order, min_risk_profit=3)
 
 
-@patch('tradingbot.log.log.debug')
+@patch('tradingbot.log.debug')
 def test_handle_pending_orders(mock_debug, tmp_path):
   mt_client = MT_Client()
   mt_client.path_commands_prefix = tmp_path
@@ -79,7 +79,7 @@ def test_handle_pending_orders(mock_debug, tmp_path):
         f'Close order {order.magic} due to time threshold')
 
 
-@patch('tradingbot.log.log.debug')
+@patch('tradingbot.log.debug')
 def test_handle_filled_orders(mock_debug, tmp_path):
   mt_client = MT_Client()
   mt_client.path_commands_prefix = tmp_path

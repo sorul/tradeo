@@ -1,13 +1,14 @@
 """Script to collect different files utilities."""
 import typing as ty
 from pathlib import Path
-from tradingbot.paths import get_default_path
 from os.path import exists
 import json
 import os
 from time import sleep
 from json.decoder import JSONDecodeError
 from enum import Enum
+
+from tradingbot.paths import get_default_path
 
 _default_path = get_default_path()
 

@@ -1,16 +1,17 @@
 """Script to collect different utilities."""
 from time import sleep
 from datetime import datetime
-from .config import Config
-from .paths import data_path, bash_path
-from .files import lock, unlock, Files
-from .files import Files as f
 import subprocess
 import typing as ty
-from .log import log
 from os.path import basename, join
 from pytz import BaseTzInfo
 from pytz.tzinfo import DstTzInfo, StaticTzInfo
+
+from tradingbot.config import Config
+from tradingbot.paths import data_path, bash_path
+from tradingbot.files import lock, unlock, Files
+from tradingbot.files import Files as f
+from tradingbot.log import log
 
 timezone_type = ty.Union[DstTzInfo, BaseTzInfo, StaticTzInfo]
 

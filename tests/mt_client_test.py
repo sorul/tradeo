@@ -533,7 +533,7 @@ def test_transform_json_orders_to_orders():
   assert order.lots == 0.01
 
 
-@patch('tradingbot.log.log.debug')
+@patch('tradingbot.log.debug')
 def test_place_break_even(mock_debug, tmp_path):
   mt_client = MT_Client()
   mt_client.path_commands_prefix = tmp_path / 'Commands_'
