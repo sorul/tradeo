@@ -1,10 +1,14 @@
 """Class than extends EventHandler to provide basic functionality."""
-from tradingbot.event_handlers.event_handler import EventHandler
-from tradingbot.ohlc import OHLC
-from tradingbot.strategies.strategy_factory import strategy_factory
-from tradingbot.config import Config
+from __future__ import annotations
 from datetime import datetime
-from tradingbot.mt_client import MT_Client
+from typing import TYPE_CHECKING
+
+from tradingbot.event_handlers.event_handler import EventHandler
+from tradingbot.strategies.basic_strategy import BasicStrategy
+from tradingbot.config import Config
+if TYPE_CHECKING:
+  from tradingbot.ohlc import OHLC
+  from tradingbot.mt_client import MT_Client
 
 
 class BasicEventHandler(EventHandler):
@@ -16,14 +20,14 @@ class BasicEventHandler(EventHandler):
 
   def on_historical_data(
           self,
+          mt_client: MT_Client,
           symbol: str,
           data: OHLC
   ) -> None:
     """Handle the return of GET_HISTORICAL_DATA command."""
     now_date = datetime.now(Config.utc_timezone)
-    mt_client = MT_Client()
-    for strategy_name in Config.strategies:
-      strategy = strategy_factory(strategy_name)
-      possible_order = strategy.indicator(data, symbol, now_date)
-      if possible_order and strategy.check_order_viability(possible_order):
-        mt_client.create_new_order(possible_order)
+    strategy = BasicStrategy()
+    possible_order = strategy.indicator(data, symbol, now_date)
+    if possible_order and strategy.check_order_viability(
+            mt_client, possible_order):
+      mt_client.create_new_order(possible_order)

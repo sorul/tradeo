@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## ** V0.11.0  (31/03/2024) **
+- feat:
+  - Factory classes removed
+
 ## ** V0.10.0  (30/03/2024) **
 - feat:
   - Executable class for custom your own bots

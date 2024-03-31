@@ -1,4 +1,14 @@
 from unittest.mock import patch
+from datetime import datetime
+from pathlib import Path
+from freezegun import freeze_time
+import pytz
+import shutil
+
+from tradingbot.order_type import OrderType
+from tradingbot.config import Config
+from tradingbot.paths import resources_test_path
+from tradingbot.mt_client import MT_Client
 from tradingbot.strategies.strategy import Strategy
 from tradingbot.order import (
     Order,
@@ -6,18 +16,10 @@ from tradingbot.order import (
     ImmutableOrderDetails,
     OrderPrice
 )
-import shutil
-from tradingbot.order_type import OrderType
-from datetime import datetime
-from tradingbot.config import Config
-from tradingbot.paths import resources_test_path
-from tradingbot.mt_client import MT_Client
-from pathlib import Path
-from freezegun import freeze_time
-import pytz
 
 
 def test_check_order_viability():
+  mt_client = MT_Client()
   order = Order(
       MutableOrderDetails(
           prices=OrderPrice(
@@ -38,11 +40,13 @@ def test_check_order_viability():
   tz = pytz.timezone(str(Config.utc_timezone))
   d = datetime(2024, 1, 9, 12, 5)
   with freeze_time(tz.localize(d)):
-    assert Strategy.check_order_viability(order, min_risk_profit=1.5)
+    assert Strategy.check_order_viability(
+        mt_client, order, min_risk_profit=1.5)
 
   # Not viable profit risk
   with freeze_time(tz.localize(d)):
-    assert not Strategy.check_order_viability(order, min_risk_profit=3)
+    assert not Strategy.check_order_viability(
+        mt_client, order, min_risk_profit=3)
 
 
 @patch('tradingbot.log.log.debug')
@@ -70,7 +74,7 @@ def test_handle_pending_orders(mock_debug, tmp_path):
   tz = pytz.timezone(str(Config.broker_timezone))
   d = datetime(2024, 1, 1, 0, 0)
   with freeze_time(tz.localize(d)):
-    Strategy.handle_pending_orders(order, time_threshold)
+    Strategy.handle_pending_orders(mt_client, order, time_threshold)
     mock_debug.assert_called_with(
         f'Close order {order.magic} due to time threshold')
 
@@ -100,7 +104,7 @@ def test_handle_filled_orders(mock_debug, tmp_path):
   tz = pytz.timezone(str(Config.broker_timezone))
   d = datetime(2024, 1, 1, 0, 0)
   with freeze_time(tz.localize(d)):
-    Strategy.handle_filled_orders(order, time_threshold, 0)
+    Strategy.handle_filled_orders(mt_client, order, time_threshold, 0)
     mock_debug.assert_called_with(
         f'Close order {order.magic} due to time threshold')
 
@@ -138,6 +142,7 @@ def test_check_if_break_even_can_be_placed(tmp_path):
   break_even_per_threshold = 0
 
   assert Strategy._check_if_break_even_can_be_placed(
+      mt_client,
       order,
       open_time,
       current_datetime,

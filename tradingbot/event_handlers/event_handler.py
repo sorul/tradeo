@@ -1,8 +1,12 @@
 """Parent class for event handlers."""
-from tradingbot.ohlc import OHLC
-from typing import List, Dict
+from __future__ import annotations
+from typing import List, Dict, TYPE_CHECKING
 from abc import ABC
-from tradingbot.order import Order
+
+if TYPE_CHECKING:
+  from tradingbot.order import Order
+  from tradingbot.ohlc import OHLC
+  from tradingbot.mt_client import MT_Client
 
 
 class EventHandler(ABC):
@@ -14,6 +18,7 @@ class EventHandler(ABC):
 
   def on_tick(
       self,
+      mt_client: MT_Client,
       symbol: str,
       bid: float,
       ask: float
@@ -23,6 +28,7 @@ class EventHandler(ABC):
 
   def on_bar_data(
       self,
+      mt_client: MT_Client,
       symbol: str,
       time_frame: str,
       time: str,
@@ -34,6 +40,7 @@ class EventHandler(ABC):
 
   def on_historical_data(
           self,
+          mt_client: MT_Client,
           symbol: str,
           data: OHLC
   ) -> None:
@@ -41,16 +48,24 @@ class EventHandler(ABC):
     return None
 
   def on_historical_trades(
-      self
+      self,
+      mt_client: MT_Client
   ) -> None:
     """Handle the return of GET_HISTORICAL_TRADES command."""
     return None
 
-  def on_message(self, message: List[str]) -> None:
+  def on_message(
+          self,
+          mt_client: MT_Client,
+          message: List[str]) -> None:
     """Handle when a new message is received."""
     return None
 
   def on_order_event(
-          self, account_info: Dict, open_orders: List[Order]) -> None:
+          self,
+          mt_client: MT_Client,
+          account_info: Dict,
+          open_orders: List[Order]
+  ) -> None:
     """Handle when a new order event or removed order is received."""
     return None

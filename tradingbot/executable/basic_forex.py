@@ -7,10 +7,11 @@ from tradingbot.config import Config
 from tradingbot.files import Files
 from tradingbot import files as f
 from tradingbot.utils import get_remaining_symbols, reboot_mt
-from tradingbot.strategies.strategy_factory import strategy_factory
 from random import randrange
 from tradingbot.log import log
 from tradingbot.executable.executable import Executable
+from tradingbot.strategies.basic_strategy import BasicStrategy
+from tradingbot.event_handlers.basic_event_handler import BasicEventHandler
 
 
 class BasicForex(Executable):
@@ -19,22 +20,22 @@ class BasicForex(Executable):
   def entry_point(self):
     """Entry point of the forex bot."""
     if not self.is_locked() and self.check_time_viability():
+      mt_client = MT_Client(event_handler=BasicEventHandler())
       try:
-        self.main()
+        self.main(mt_client)
       except Exception:  # noqa
         # Finish the bot
-        self.finish()
+        self.finish(mt_client)
         # Log the error
         log.error(traceback.format_exc())
 
-  def main(self):
+  def main(self, mt_client: MT_Client):
     """Execute forex bot."""
     # First of all, we lock the execution of the forex bot.
     # To prevent another execution to run at the same time.
     f.lock(Files.FOREX_LOCK)
 
     # Start the MT Client
-    mt_client = MT_Client()
     mt_client.start()
 
     # Clean all files
@@ -55,7 +56,7 @@ class BasicForex(Executable):
     )
 
     # Send profit message
-    self._send_profit_message(local_date)
+    self._send_profit_message(mt_client, local_date)
 
     # Send commands to obtain the historical data
     [
@@ -70,21 +71,20 @@ class BasicForex(Executable):
     self.handle_trades(mt_client)
 
     # Process the result of "get_historical_data"
-    self.handle_new_historical_data(utc_date, execution_time)
+    self.handle_new_historical_data(mt_client, utc_date, execution_time)
 
     # Finish the main
-    self.finish()
+    self.finish(mt_client)
 
   def handle_trades(self, mt_client: MT_Client) -> None:
     """Handle the existing trades."""
     orders = mt_client.check_open_orders()
+    strategy = BasicStrategy()
     for order in orders:
-      strategy = strategy_factory(order.comment)
-
       if order.order_type.pending:
-        strategy.handle_pending_orders(order)
+        strategy.handle_pending_orders(mt_client, order)
       elif order.order_type.market:
-        strategy.handle_filled_orders(order)
+        strategy.handle_filled_orders(mt_client, order)
 
     len_orders = len(orders)
     message = f'Number of open orders: {len_orders}'
@@ -95,6 +95,7 @@ class BasicForex(Executable):
 
   def handle_new_historical_data(
           self,
+          mt_client: MT_Client,
           utc_date: datetime,
           execution_time: timedelta
   ) -> None:
@@ -110,7 +111,6 @@ class BasicForex(Executable):
       next_symbol = rs[randrange(len(rs))]
 
       # Check if JSON data is available to trigger the event
-      mt_client = MT_Client()
       mt_client.check_historical_data(next_symbol)
 
       # Update the remaining symbols
@@ -125,9 +125,9 @@ class BasicForex(Executable):
     # Check if MT needs to restart
     self._check_mt_needs_to_restart(len(rs))
 
-  def _send_profit_message(self, local_date: datetime) -> bool:
+  def _send_profit_message(
+          self, mt_client: MT_Client, local_date: datetime) -> bool:
     """Get the balance of the account."""
-    mt_client = MT_Client()
     balance = mt_client.get_balance()
     last_balance = f.get_last_balance()
     difference = balance - last_balance
@@ -162,8 +162,7 @@ class BasicForex(Executable):
     is_not_on_the_hour = now_date.minute != 0
     return is_weekday and is_not_on_the_hour
 
-  def finish(self) -> None:
+  def finish(self, mt_client: MT_Client) -> None:
     """Finish the forex bot."""
-    mt_client = MT_Client()
     mt_client.stop()
     f.unlock(Files.FOREX_LOCK)

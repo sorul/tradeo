@@ -73,8 +73,8 @@ def test_send_profit_message(mock_data_path, tmp_path):
 
   # Sends a message
   d = datetime(2024, 1, 1, 12, 5)
-  assert bf._send_profit_message(tz.localize(d))
+  assert bf._send_profit_message(mt_client, tz.localize(d))
 
   # Doesn't send a message
   d = datetime(2024, 1, 1, 13, 5)
-  assert not bf._send_profit_message(tz.localize(d))
+  assert not bf._send_profit_message(mt_client, tz.localize(d))

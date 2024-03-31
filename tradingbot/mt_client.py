@@ -1,39 +1,41 @@
 """Script of MT_Client what it sends commands to MT4/MT5."""
-import glob
-import json
-from time import sleep
+from __future__ import annotations
+from datetime import datetime, timedelta
+from typing import List, Dict, Union, Callable, Tuple, TYPE_CHECKING
 from threading import Thread, Lock
 from os.path import join, exists
-from datetime import datetime, timedelta
-from pandas import DataFrame
-from .config import Config
-from .log import log
-import typing as ty
 from random import randrange
-from .singleton import Singleton
-from .files import try_load_json, try_remove_file, lock, unlock
-from .utils import (
+from pandas import DataFrame
+from pathlib import Path
+from time import sleep
+import glob
+import json
+
+from tradingbot.config import Config
+from tradingbot.log import log
+from tradingbot.singleton import Singleton
+from tradingbot.files import try_load_json, try_remove_file, lock, unlock
+from tradingbot.order_operations import OrderOperations
+from tradingbot.order_type import get_order_type_from_str
+from tradingbot.files import Files
+from tradingbot.order import (
+    Order, MutableOrderDetails, ImmutableOrderDetails, OrderPrice)
+from tradingbot.ohlc import OHLC
+from tradingbot.trading_methods import get_pip
+from tradingbot.utils import (
     string_to_date_utc,
     get_remaining_symbols,
     add_successful_symbol
 )
-from .order_operations import OrderOperations
-from .order_type import get_order_type_from_str
-from .files import Files
-from pathlib import Path
-from .order import Order, MutableOrderDetails, ImmutableOrderDetails, OrderPrice
-from .ohlc import OHLC
-from .trading_methods import get_pip
-from tradingbot.event_handlers.event_handler import EventHandler
-from tradingbot.event_handlers.event_handler_factory import (
-    event_handler_factory)
+if TYPE_CHECKING:
+  from tradingbot.event_handlers.event_handler import EventHandler
 
 
 # Typing types
-attributes_data_type = ty.Dict[str, ty.Dict]
-messages_type = ty.Dict[str, ty.List[ty.List[str]]]
-account_info_type = ty.Dict[str, ty.Union[float, str]]
-historical_data_type = ty.Dict[str, DataFrame]
+attributes_data_type = Dict[str, Dict]
+messages_type = Dict[str, List[List[str]]]
+account_info_type = Dict[str, Union[float, str]]
+historical_data_type = Dict[str, DataFrame]
 
 
 class MT_Client(metaclass=Singleton):
@@ -43,7 +45,7 @@ class MT_Client(metaclass=Singleton):
   """
 
   def __init__(self,
-               event_handler: ty.Union[EventHandler, None] = None,
+               event_handler: Union[EventHandler, None] = None,
                sleep_delay: float = 0.005,
                max_retry_command_seconds: int = 5 * 60
                ):
@@ -57,15 +59,14 @@ class MT_Client(metaclass=Singleton):
     self.set_agent_paths()
 
     # Control attributes
-    eh = event_handler_factory(Config.event_handler_class)
-    self.event_handler = event_handler if event_handler is not None else eh
+    self.event_handler = event_handler
     self.lock = Lock()
     self._last_messages_millis = 0
     self.command_id = 0
 
     # Data attributes
     self.messages: messages_type = {'INFO': [], 'ERROR': []}
-    self.open_orders: ty.List[Order] = []
+    self.open_orders: List[Order] = []
     self.account_info: account_info_type = {}
     self.market_data: attributes_data_type = {}
     self.bar_data: attributes_data_type = {}
@@ -105,7 +106,7 @@ class MT_Client(metaclass=Singleton):
       log.error(f'mt_files_path: {mt_files_path} does not exist!')
 
   @staticmethod
-  def start_thread(target: ty.Callable) -> Thread:
+  def start_thread(target: Callable) -> Thread:
     """To start the thread with a method as target."""
     thread = Thread(target=target, args=(), daemon=True)
     thread.start()
@@ -164,7 +165,8 @@ class MT_Client(metaclass=Singleton):
           else:
             self.messages['INFO'].append(message_content[1:])
 
-          self.event_handler.on_message(message_content)
+          if self.event_handler:
+            self.event_handler.on_message(self, message_content)
 
     return self.messages
 
@@ -187,18 +189,19 @@ class MT_Client(metaclass=Singleton):
       if self.START:
         self.check_market_data()
 
-  def check_market_data(self) -> ty.Dict[str, ty.Dict]:
+  def check_market_data(self) -> Dict[str, Dict]:
     """Update, trigger event if needed and return the market data object."""
     data = try_load_json(self.path_market_data)
 
     if len(data) > 0 and data != self.market_data:
 
-      if self.event_handler is not None:
+      if self.event_handler:
         for symbol in data.keys():
           cond = symbol not in self.market_data
           cond = cond or data[symbol] != self.market_data.get(symbol)
           if cond:
             self.event_handler.on_tick(
+                self,
                 symbol,
                 data[symbol]['bid'],
                 data[symbol]['ask']
@@ -207,7 +210,7 @@ class MT_Client(metaclass=Singleton):
 
     return self.market_data
 
-  def get_bid_ask(self, symbol: str) -> ty.Tuple[float, float]:
+  def get_bid_ask(self, symbol: str) -> Tuple[float, float]:
     """Return the bid and ask price of a symbol.
 
     Return 0,0 if symbol not found.
@@ -229,19 +232,20 @@ class MT_Client(metaclass=Singleton):
       if self.START:
         self.check_bar_data()
 
-  def check_bar_data(self) -> ty.Dict[str, ty.Dict]:
+  def check_bar_data(self) -> Dict[str, Dict]:
     """Update, trigger event if needed and return the bar data object."""
     data = try_load_json(self.path_bar_data)
 
     if len(data) > 0 and data != self.bar_data:
 
-      if self.event_handler is not None:
+      if self.event_handler:
         for st in data.keys():
           cond = st not in self.bar_data
           cond = cond or data[st] != self.bar_data[st]
           if cond:
             symbol, time_frame = st.split('_')
             self.event_handler.on_bar_data(
+                self,
                 symbol,
                 time_frame,
                 data[st]['time'],
@@ -264,7 +268,7 @@ class MT_Client(metaclass=Singleton):
       if self.START:
         self.check_open_orders()
 
-  def check_open_orders(self) -> ty.List[Order]:
+  def check_open_orders(self) -> List[Order]:
     """Update, trigger event if needed and return the open orders object.
 
     The open orders can be pending or filled.
@@ -274,8 +278,8 @@ class MT_Client(metaclass=Singleton):
     data_account_info = data.get('account_info')
 
     if (len(data) > 0
-        and isinstance(data_orders, ty.Dict)
-        and isinstance(data_account_info, ty.Dict)
+        and isinstance(data_orders, Dict)
+        and isinstance(data_account_info, Dict)
         and (data_orders != self.open_orders
              or data_account_info != self.account_info)):
 
@@ -300,13 +304,15 @@ class MT_Client(metaclass=Singleton):
       with open(self.path_orders_stored, 'w') as f:
         f.write(json.dumps(data))
 
-      if new_event:
-        self.event_handler.on_order_event(self.account_info, self.open_orders)
+      if new_event and self.event_handler:
+        self.event_handler.on_order_event(
+            self, self.account_info, self.open_orders
+        )
 
     return self.open_orders
 
   def _transform_json_orders_to_orders(
-          self, json_orders: ty.Dict) -> ty.List[Order]:
+          self, json_orders: Dict) -> List[Order]:
     """Return a list of open Order objects."""
     return [
         Order(
@@ -334,7 +340,7 @@ class MT_Client(metaclass=Singleton):
         self.check_historical_data()
 
   def check_historical_data(
-          self, symbol: ty.Union[str, None] = None) -> ty.Dict:
+          self, symbol: Union[str, None] = None) -> Dict:
     """Update historical_data, trigger event if needed and return that data."""
     # "symbol" is None when it comes from "start_thread_check_historical_data"
     # In this case, we need to get a random remaining symbol
@@ -358,7 +364,8 @@ class MT_Client(metaclass=Singleton):
         log.info(f'{symbol} -> {(df.index[0], df.index[-1])}')
 
         add_successful_symbol(symbol)
-        self.event_handler.on_historical_data(symbol, OHLC(df))
+        if self.event_handler:
+          self.event_handler.on_historical_data(self, symbol, OHLC(df))
 
         # We delete the command file(s) in case it hasn't been deleted.
         command_files = self.command_file_exist(symbol)
@@ -390,12 +397,12 @@ class MT_Client(metaclass=Singleton):
       if self.START:
         self.check_historical_trades()
 
-  def check_historical_trades(self) -> ty.Dict:
+  def check_historical_trades(self) -> Dict:
     """Update and return the historical trades object."""
     self.historical_trades = try_load_json(self.path_historical_trades)
     return self.historical_trades
 
-  def subscribe_symbols(self, symbols: ty.List[str]) -> None:
+  def subscribe_symbols(self, symbols: List[str]) -> None:
     """To send a SUBSCRIBE_SYMBOLS command to subscribe to market (tick) data.
 
     Args:
@@ -413,7 +420,7 @@ class MT_Client(metaclass=Singleton):
 
   def subscribe_symbols_bar_data(
       self,
-      symbols: ty.List[ty.List[str]]
+      symbols: List[List[str]]
   ) -> None:
     """To send a SUBSCRIBE_SYMBOLS_BAR_DATA command to subscribe to bar data.
 
@@ -660,7 +667,7 @@ class MT_Client(metaclass=Singleton):
           f'Historical_Data_{symbol}.json')
       try_remove_file(file_path)
 
-  def command_file_exist(self, symbol: str) -> ty.List[Path]:
+  def command_file_exist(self, symbol: str) -> List[Path]:
     """Return the command files that match request hist. data from symbol."""
     g = glob.glob(f'{self.path_commands_prefix}*')
     return [

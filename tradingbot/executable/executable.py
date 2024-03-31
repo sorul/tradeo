@@ -13,7 +13,7 @@ class Executable(ABC):
     """Entry point of the executable."""
 
   @abstractmethod
-  def main(self) -> None:
+  def main(self, mt_client: MT_Client) -> None:
     """Execute the executable."""
 
   @abstractmethod
@@ -22,7 +22,11 @@ class Executable(ABC):
 
   @abstractmethod
   def handle_new_historical_data(
-          self, utc_date: datetime, execution_time: timedelta) -> None:
+          self,
+          mt_client: MT_Client,
+          utc_date: datetime,
+          execution_time: timedelta
+  ) -> None:
     """Handle the new historical data."""
 
   @abstractmethod
@@ -34,5 +38,5 @@ class Executable(ABC):
     """Check if the time is viable to execute the executable."""
 
   @abstractmethod
-  def finish(self) -> None:
+  def finish(self, mt_client: MT_Client) -> None:
     """Finish the executable."""

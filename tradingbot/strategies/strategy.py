@@ -1,12 +1,15 @@
 """Abstract class for strategies."""
+from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Union
-from tradingbot.order import Order
 from datetime import datetime
+from typing import Union, TYPE_CHECKING
+
 from tradingbot.config import Config
 from tradingbot.log import log
-from tradingbot.ohlc import OHLC
-from tradingbot.mt_client import MT_Client
+if TYPE_CHECKING:
+  from tradingbot.order import Order
+  from tradingbot.ohlc import OHLC
+  from tradingbot.mt_client import MT_Client
 
 
 class Strategy(ABC):
@@ -14,7 +17,6 @@ class Strategy(ABC):
 
   def __init__(self, strategy_name: str):
     """Initialize the attributes."""
-    super().__init__()
     self.strategy_name = strategy_name
 
   @abstractmethod
@@ -27,10 +29,13 @@ class Strategy(ABC):
     """Return an order if the strategy is triggered."""
 
   @staticmethod
-  def check_order_viability(order: Order, min_risk_profit: float = 1.5) -> bool:
+  def check_order_viability(
+          mt_client: MT_Client,
+          order: Order,
+          min_risk_profit: float = 1.5
+  ) -> bool:
     """Check if the order is viable."""
     symbol = order.symbol
-    mt_client = MT_Client()
     orders = [o for o in mt_client.open_orders if o.symbol == symbol]
     c1 = len(orders) == 0
     c2 = order.risk_benefit() > min_risk_profit
@@ -39,14 +44,17 @@ class Strategy(ABC):
     return c1 and c2 and c3
 
   @staticmethod
-  def handle_pending_orders(order: Order, time_threshold: int = 3600) -> None:
+  def handle_pending_orders(
+          mt_client: MT_Client,
+          order: Order,
+          time_threshold: int = 3600
+  ) -> None:
     """Handle limit orders based on the time threshold."""
     try:
       open_time = datetime.fromtimestamp(
           int(order.magic)).astimezone(Config.utc_timezone)
       current_datetime = datetime.now(Config.utc_timezone)
       if (current_datetime - open_time).seconds > time_threshold:
-        mt_client = MT_Client()
         mt_client.send_close_orders_by_magic_command(order.magic)
         log.debug(f'Close order {order.magic} due to time threshold')
     except ValueError:  # int(order.magic)
@@ -54,6 +62,7 @@ class Strategy(ABC):
 
   @staticmethod
   def handle_filled_orders(
+      mt_client: MT_Client,
       order: Order,
       time_threshold: int = 3600 * 24,
       break_even_time_threshold: int = 3600 * 12,
@@ -67,13 +76,13 @@ class Strategy(ABC):
 
       # Check if the order can be closed based on the time threshold
       if (current_datetime - open_time).seconds > time_threshold:
-        mt_client = MT_Client()
         mt_client.send_close_orders_by_magic_command(order.magic)
         log.debug(f'Close order {order.magic} due to time threshold')
 
       # Check if a break even can be placed
       else:
         Strategy._check_if_break_even_can_be_placed(
+            mt_client,
             order,
             open_time,
             current_datetime,
@@ -86,6 +95,7 @@ class Strategy(ABC):
 
   @staticmethod
   def _check_if_break_even_can_be_placed(
+      mt_client: MT_Client,
       order: Order,
       open_time: datetime,
       current_datetime: datetime,
@@ -111,7 +121,6 @@ class Strategy(ABC):
 
     # Check if the price has reached a threshold to place a break even
     if not break_even_placed:
-      mt_client = MT_Client()
       bid, ask = mt_client.get_bid_ask(order.symbol)
       price = (bid + ask) / 2
       percentage_reached = (
