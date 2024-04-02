@@ -32,9 +32,11 @@ class Strategy(ABC):
   def check_order_viability(
           mt_client: MT_Client,
           order: Order,
-          min_risk_profit: float = 1.5
+          min_risk_profit: float = 1.5,
+          **kwargs
   ) -> bool:
     """Check if the order is viable."""
+    _ = kwargs
     symbol = order.symbol
     orders = [o for o in mt_client.open_orders if o.symbol == symbol]
     c1 = len(orders) == 0
@@ -66,9 +68,11 @@ class Strategy(ABC):
       order: Order,
       time_threshold: int = 3600 * 24,
       break_even_time_threshold: int = 3600 * 12,
-      break_even_per_threshold: float = 0.75
+      break_even_per_threshold: float = 0.75,
+      **kwargs
   ) -> None:
     """Handle filled orders by closing them or placing a break even."""
+    _ = kwargs
     try:
       open_time = datetime.fromtimestamp(
           int(order.magic)).astimezone(Config.utc_timezone)
@@ -100,9 +104,11 @@ class Strategy(ABC):
       open_time: datetime,
       current_datetime: datetime,
       break_even_time_threshold: int,
-      break_even_per_threshold: float
+      break_even_per_threshold: float,
+      **kwargs
   ) -> bool:
     """Check if a break even can be placed."""
+    _ = kwargs
     result = False
     # First check if a previous break even has been placed
     break_even_placed_buy = (

@@ -3,6 +3,7 @@
 ## ** V0.12.0  (31/03/2024) **
 - feat:
   - New attribute PNL in Order object
+  - New attribute **kwargs in Strategy static methods
 - fix:
   - "TB_STRATEGIES" and "TB_EVENT_HANDLER_CLASS" variables removed 
 
