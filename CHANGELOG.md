@@ -1,13 +1,13 @@
 # CHANGELOG
 
-## ** V0.12.0  (31/03/2024) **
+## ** V0.12.0  (31/03/2024) - TAG **
 - feat:
   - New attribute PNL in Order object
   - New attribute **kwargs in Strategy static methods
 - fix:
   - "TB_STRATEGIES" and "TB_EVENT_HANDLER_CLASS" variables removed 
 
-## ** V0.11.1  (31/03/2024) **
+## ** V0.11.1  (31/03/2024) - TAG **
 - refactor:
   - The necessary changes are made to prepare for the first tag
 
