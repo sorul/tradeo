@@ -50,7 +50,6 @@ class Config:
   symbols = (os.getenv('TB_SYMBOLS') or 'EURUSD,USDJPY,USDCAD').split(',')
   timeframe = os.getenv('TB_TIMEFRAME') or 'M5'
   lookback_days = int(os.getenv('TB_LOOKBACK_DAYS') or 10)
-  strategies = (os.getenv('TB_STRATEGIES') or 'BasicStrategy').split(',')
 
   # Forex client configuration
   check_messages_thread = _get_bool_from_env(
@@ -65,8 +64,6 @@ class Config:
       'TB_CHECK_HISTORICAL_DATA_THREAD') or True
   check_historical_trades_thread = _get_bool_from_env(
       'TB_CHECK_HISTORICAL_TRADES_THREAD') or True
-  event_handler_class = os.getenv(
-      'TB_EVENT_HANDLER_CLASS') or 'BasicEventHandler'
 
   # Logging configuration
   syslog_address = os.getenv('TB_SYSLOG_ADDRESS') or 'logs2.papertrailapp.com'

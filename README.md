@@ -16,7 +16,6 @@ export TB_BROKER_TIMEZONE=Etc/GMT-2
 export TB_SYMBOLS=EURUSD,USDCAD,USDCHF
 export TB_TIMEFRAME=M5
 export TB_LOOKBACK_DAYS=10
-export TB_STRATEGIES=BasicStrategy
 
 # Forex-Client configuration
 export TB_CHECK_MESSAGES_THREAD=true
@@ -25,7 +24,6 @@ export TB_CHECK_BAR_DATA_THREAD=false
 export TB_CHECK_OPEN_ORDERS_THREAD=true
 export TB_CHECK_HISTORICAL_DATA_THREAD=true
 export TB_CHECK_HISTORICAL_TRADES_THREAD=false
-export TB_EVENT_HANDLER_CLASS=BasicEventHandler
 
 # Metatrader configuration
 export TB_WINE_PATH=/usr/local/bin/wine

@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## ** V0.12.0  (31/03/2024) **
+- feat:
+  - New attribute PNL in Order object
+- fix:
+  - "TB_STRATEGIES" and "TB_EVENT_HANDLER_CLASS" variables removed 
+
 ## ** V0.11.1  (31/03/2024) **
 - refactor:
   - The necessary changes are made to prepare for the first tag

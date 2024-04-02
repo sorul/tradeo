@@ -328,7 +328,7 @@ class MT_Client(metaclass=Singleton):
                 order_type=get_order_type_from_str(o['type']),
                 magic=o['magic'],
                 comment=o['comment']
-            ), ticket=int(t))
+            ), ticket=int(t), pnl=o['pnl'])
         for t, o in json_orders.items()
     ]
 

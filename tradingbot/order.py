@@ -55,7 +55,7 @@ class ImmutableOrderDetails:
           symbol: str,
           order_type: OrderType,
           magic: str,
-          comment: str
+          comment: str,
   ):
     """Initialize the attributes."""
     self.symbol = symbol
@@ -89,12 +89,14 @@ class Order:
       self,
       mutable_details: MutableOrderDetails,
       immutable_details: ImmutableOrderDetails,
-      ticket: int = 0
+      ticket: int = 0,
+      pnl: float = 0
   ):
     """Initialize the attributes."""
     self._mutable_details = mutable_details
     self._immutable_details = immutable_details
     self._ticket = ticket  # it would not be available until the order be filled
+    self._pnl = pnl  # it would not be available until the order be filled
 
   def __eq__(self, __value: object) -> bool:
     """Check if the order is equal to another order."""
@@ -149,6 +151,11 @@ class Order:
   def ticket(self) -> int:
     """Get the ticket."""
     return self._ticket
+
+  @property
+  def pnl(self) -> float:
+    """Get the gain or loss."""
+    return self._pnl
 
   def risk_benefit(self) -> float:
     """Get the risk benefit."""
