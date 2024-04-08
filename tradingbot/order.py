@@ -102,6 +102,10 @@ class Order:
     """Check if the order is equal to another order."""
     return isinstance(__value, Order) and self.ticket == __value.ticket
 
+  def __str__(self) -> str:
+    """Return a string representation of the order."""
+    return f'{self.comment} {self.symbol} {self.price} {self.magic}'
+
   @property
   def symbol(self) -> str:
     """Get the symbol."""

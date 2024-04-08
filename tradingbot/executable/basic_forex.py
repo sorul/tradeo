@@ -5,24 +5,34 @@ import traceback
 
 from tradingbot.mt_client import MT_Client
 from tradingbot.config import Config
-from tradingbot.files import Files
-from tradingbot import files as f
 from tradingbot.utils import get_remaining_symbols, reboot_mt
 from tradingbot.log import log
 from tradingbot.executable.executable import Executable
 from tradingbot.strategies.basic_strategy import BasicStrategy
 from tradingbot.event_handlers.basic_event_handler import BasicEventHandler
+from tradingbot.context_managers.blocker import Blocker
+from tradingbot.utils import (reset_successful_symbols,
+                              reset_consecutive_times_down_file,
+                              increment_consecutive_times_down,
+                              get_consecutive_times_down, get_last_balance)
 
 
 class BasicForex(Executable):
   """Basic example of a forex bot."""
+
+  def __init__(self):
+    """Initialize the forex bot."""
+    self.name = 'BasicForex'
 
   def entry_point(self):
     """Entry point of the forex bot."""
     if not self.is_locked() and self.check_time_viability():
       mt_client = MT_Client(event_handler=BasicEventHandler())
       try:
-        self.main(mt_client)
+        # Lock the execution of the forex bot.
+        # Another thread can not run at the same time.
+        with Blocker(name=self.name):
+          self.main(mt_client)
       except Exception:  # noqa
         # Finish the bot
         self.finish(mt_client)
@@ -33,7 +43,6 @@ class BasicForex(Executable):
     """Execute forex bot."""
     # First of all, we lock the execution of the forex bot.
     # To prevent another execution to run at the same time.
-    f.lock(Files.FOREX_LOCK)
 
     # Start the MT Client
     mt_client.start()
@@ -42,7 +51,7 @@ class BasicForex(Executable):
     mt_client.clean_all_command_files()
     mt_client.clean_all_historical_files()
     mt_client.clean_messages()
-    f.reset_successful_symbols_file()
+    reset_successful_symbols()
 
     # Dates
     utc_date = datetime.now(Config.utc_timezone)
@@ -120,7 +129,7 @@ class BasicForex(Executable):
     if len(rs) > 0:
       log.warning(f'{len(rs)} remaining symbols to process.')
     else:
-      f.reset_consecutive_times_down_file()
+      reset_consecutive_times_down_file()
 
     # Check if MT needs to restart
     self._check_mt_needs_to_restart(len(rs))
@@ -129,7 +138,7 @@ class BasicForex(Executable):
           self, mt_client: MT_Client, local_date: datetime) -> bool:
     """Get the balance of the account."""
     balance = mt_client.get_balance()
-    last_balance = f.get_last_balance()
+    last_balance = get_last_balance()
     difference = balance - last_balance
     emoji = '🚀' if difference >= 0 else '☔'
     message_condition = local_date.hour % 12 == 0 and local_date.minute == 5
@@ -141,16 +150,16 @@ class BasicForex(Executable):
 
   def _check_mt_needs_to_restart(self, n_remaining_symbols: int) -> None:
     """Check if MT needs to restart."""
-    ctd = f.get_consecutive_times_down()
+    ctd = get_consecutive_times_down()
     symbols_len = len(Config.symbols)
     if n_remaining_symbols > int(symbols_len / 2) and ctd > 4:
       reboot_mt()
     else:
-      f.increment_consecutive_times_down()
+      increment_consecutive_times_down()
 
   def is_locked(self) -> bool:
     """Return True if the forex-bot is running."""
-    return f.file_exists(Files.FOREX_LOCK.value)
+    return Blocker(name=self.name).is_blocked()
 
   def check_time_viability(self) -> bool:
     """Check if the forex bot is viable to run."""
@@ -165,4 +174,3 @@ class BasicForex(Executable):
   def finish(self, mt_client: MT_Client) -> None:
     """Finish the forex bot."""
     mt_client.stop()
-    f.unlock(Files.FOREX_LOCK)

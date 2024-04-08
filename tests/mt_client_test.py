@@ -405,7 +405,8 @@ def test_send_command(tmp_path):
   mt_client.send_command('TEST', 'test content')
 
   assert mt_client.command_id == 1
-  assert try_read_file('Commands_0.txt', tmp_path) == '<:1|TEST|test content:>'
+  assert try_read_file(
+      tmp_path / 'Commands_0.txt') == '<:1|TEST|test content:>'
 
 
 def test_clean_all_command_files(tmp_path):

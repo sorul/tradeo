@@ -40,9 +40,9 @@ class Config:
   utc_timezone = pytz.utc
 
   # Paths configuration
-  user = os.environ['USER']
+  home = os.environ['HOME']
   default_mt_files_path = Path(
-      f'/home/{user}/.wine/drive_c/Program Files/MetaTrader/MQL5/Files'
+      f'{home}/.wine/drive_c/Program Files/MetaTrader/MQL5/Files'
   )
   mt_files_path = Path(os.getenv('TB_MT_FILES_PATH') or default_mt_files_path)
 

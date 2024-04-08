@@ -16,10 +16,10 @@ def test_is_locked(mock_data_path, tmp_path):
   # Make data_path() return the temporary directory
   mock_data_path.return_value = tmp_path
 
-  lock_file = Path(tmp_path / Files.FOREX_LOCK.value)
+  bf = BasicForex()
+  lock_file = Path(tmp_path / f'{bf.name}.block')
   lock_file.touch()
 
-  bf = BasicForex()
   assert bf.is_locked()
 
   # Test when lock file does not exist

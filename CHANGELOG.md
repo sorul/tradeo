@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## ** V0.13.0  (08/04/2024) **
+- feat:
+  - New Blocker class to lock the executions
+  - Order object has a new __str__() method
+- refactor:
+  - Several methods are moved from one module to another
+- fix:
+  - $USER environment variable updated to $HOME variable
+  - We retrieve the environment variables from MetaTrader
+  - Bug about remaining symbols fixed
+  - Bug about command files fixed
+
 ## ** V0.12.1  (08/04/2024) **
 - fix:
   - New structure of folders to solve files issues.

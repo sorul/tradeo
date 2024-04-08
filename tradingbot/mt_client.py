@@ -14,10 +14,10 @@ import json
 from tradingbot.config import Config
 from tradingbot.log import log
 from tradingbot.singleton import Singleton
-from tradingbot.files import try_load_json, try_remove_file, lock, unlock
+from tradingbot.files import (
+    try_load_json, try_remove_file, try_read_file)
 from tradingbot.order_operations import OrderOperations
 from tradingbot.order_type import get_order_type_from_str
-from tradingbot.files import Files
 from tradingbot.order import (
     Order, MutableOrderDetails, ImmutableOrderDetails, OrderPrice)
 from tradingbot.ohlc import OHLC
@@ -180,6 +180,7 @@ class MT_Client(metaclass=Singleton):
 
   def clean_messages(self):
     """Clean the messages object."""
+    try_remove_file(self.path_messages)
     self.messages = {'INFO': [], 'ERROR': []}
 
   def start_thread_check_market_data(self) -> None:
@@ -344,8 +345,10 @@ class MT_Client(metaclass=Singleton):
     """Update historical_data, trigger event if needed and return that data."""
     # "symbol" is None when it comes from "start_thread_check_historical_data"
     # In this case, we need to get a random remaining symbol
+    remaining_symbols = get_remaining_symbols()
+    if len(remaining_symbols) == 0:
+      return {}
     if symbol is None:
-      remaining_symbols = get_remaining_symbols()
       symbol = remaining_symbols[randrange(len(remaining_symbols))]
 
     # We read the symbol file
@@ -361,7 +364,7 @@ class MT_Client(metaclass=Singleton):
 
       # The date and time corresponding to the last load are calculated
       if self._is_historical_data_up_to_date(df):
-        log.info(f'{symbol} -> {(df.index[0], df.index[-1])}')
+        log.debug(f'{symbol} -> {(df.index[0], df.index[-1])}')
 
         add_successful_symbol(symbol)
         if self.event_handler:
@@ -385,7 +388,7 @@ class MT_Client(metaclass=Singleton):
     start_range = rounded_now_date
     end_range = rounded_now_date + timedelta(minutes=5)
     last_date_from_df = string_to_date_utc(
-        str_date=df.index[-1], timezone=Config.broker_timezone)
+        str_date=df.index[-1], from_timezone=Config.broker_timezone)
 
     return (last_date_from_df >= start_range
             and last_date_from_df < end_range)
@@ -486,15 +489,12 @@ class MT_Client(metaclass=Singleton):
   def create_new_order(self, order: Order) -> None:
     """Create new order."""
     log.debug(f'Creating new order: {order}')
-    lock(Files.NEW_ORDER_LOCK)
 
     if order.order_type.pending:
       bid, ask = self.get_bid_ask(order.symbol)
       self._modify_pending_order(order, bid, ask)
 
     self.send_open_order_command(order)
-
-    unlock(Files.NEW_ORDER_LOCK)
 
   def _modify_pending_order(self, order: Order, bid: float, ask: float) -> None:
     """Modify the pending order based on the bid/ask."""
@@ -512,7 +512,7 @@ class MT_Client(metaclass=Singleton):
   def send_open_order_command(self, order: Order) -> None:
     """To send an OPEN_ORDER command to open an order."""
     data = [
-        order.symbol, order.order_type.value, order.lots, order.price,
+        order.symbol, str(order.order_type.value), order.lots, order.price,
         order.stop_loss, order.take_profit, order.magic, order.comment,
         order.expiration
     ]
@@ -670,8 +670,9 @@ class MT_Client(metaclass=Singleton):
   def command_file_exist(self, symbol: str) -> List[Path]:
     """Return the command files that match request hist. data from symbol."""
     g = glob.glob(f'{self.path_commands_prefix}*')
+    pattern = f'GET_HISTORICAL_DATA|{symbol}'
     return [
-        Path(f) for f in g if f'GET_HISTORICAL_DATA|{symbol}' in open(f).read()
+        Path(f) for f in g if pattern in try_read_file(Path(f))
     ]
 
   def get_balance(self) -> float:
