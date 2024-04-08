@@ -11,10 +11,9 @@ from tradingbot.config import Config
 from tradingbot.log import log
 from tradingbot.mt_client import MT_Client
 from tradingbot.utils import (
-    string_to_date_utc, create_magic_number, reset_successful_symbols,
-    add_successful_symbol, reboot_mt, reset_consecutive_times_down_file,
-    get_successful_symbols, get_remaining_symbols, get_last_balance,
-    get_consecutive_times_down, increment_consecutive_times_down
+    string_to_date_utc, create_magic_number, get_last_balance,
+    reboot_mt, reset_consecutive_times_down, increment_consecutive_times_down,
+    get_consecutive_times_down
 )
 from tradingbot.ohlc import OHLC
 from tradingbot.order_operations import OrderOperations

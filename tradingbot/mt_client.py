@@ -1,7 +1,7 @@
 """Script of MT_Client what it sends commands to MT4/MT5."""
 from __future__ import annotations
 from datetime import datetime, timedelta
-from typing import List, Dict, Union, Callable, Tuple, TYPE_CHECKING
+from typing import List, Dict, Union, Callable, Tuple, TYPE_CHECKING, Set
 from threading import Thread, Lock
 from os.path import join, exists
 from random import randrange
@@ -22,11 +22,7 @@ from tradingbot.order import (
     Order, MutableOrderDetails, ImmutableOrderDetails, OrderPrice)
 from tradingbot.ohlc import OHLC
 from tradingbot.trading_methods import get_pip
-from tradingbot.utils import (
-    string_to_date_utc,
-    get_remaining_symbols,
-    add_successful_symbol
-)
+from tradingbot.utils import string_to_date_utc
 if TYPE_CHECKING:
   from tradingbot.event_handlers.event_handler import EventHandler
 
@@ -72,6 +68,7 @@ class MT_Client(metaclass=Singleton):
     self.bar_data: attributes_data_type = {}
     self.historical_data: historical_data_type = {}
     self.historical_trades: attributes_data_type = {}
+    self.successful_symbols: Set[str] = set()
 
     # State attributes
     self.ACTIVE = True
@@ -345,7 +342,7 @@ class MT_Client(metaclass=Singleton):
     """Update historical_data, trigger event if needed and return that data."""
     # "symbol" is None when it comes from "start_thread_check_historical_data"
     # In this case, we need to get a random remaining symbol
-    remaining_symbols = get_remaining_symbols()
+    remaining_symbols = self.get_remaining_symbols()
     if len(remaining_symbols) == 0:
       return {}
     if symbol is None:
@@ -366,7 +363,7 @@ class MT_Client(metaclass=Singleton):
       if self._is_historical_data_up_to_date(df):
         log.debug(f'{symbol} -> {(df.index[0], df.index[-1])}')
 
-        add_successful_symbol(symbol)
+        self.successful_symbols.add(symbol)
         if self.event_handler:
           self.event_handler.on_historical_data(self, symbol, OHLC(df))
 
@@ -512,7 +509,7 @@ class MT_Client(metaclass=Singleton):
   def send_open_order_command(self, order: Order) -> None:
     """To send an OPEN_ORDER command to open an order."""
     data = [
-        order.symbol, str(order.order_type.value), order.lots, order.price,
+        order.symbol, order.order_type.value.value, order.lots, order.price,
         order.stop_loss, order.take_profit, order.magic, order.comment,
         order.expiration
     ]
@@ -683,3 +680,9 @@ class MT_Client(metaclass=Singleton):
     else:
       log.warning(f'Balance is not a float: {balance}')
       return -1.0
+
+  def get_remaining_symbols(self) -> List[str]:
+    """Return the list of remaining symbols."""
+    all_symbols = set(Config.symbols)
+    successful_symbols = self.successful_symbols
+    return list(all_symbols - successful_symbols)

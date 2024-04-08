@@ -1,5 +1,12 @@
 # CHANGELOG
 
+
+## ** V0.14.0  (08/04/2024) **
+- refactor:
+  - Successful symbols are now an attribute of MT_Client class instead of a file
+- fix:
+  - Bug about order type in order creation fixed
+
 ## ** V0.13.0  (08/04/2024) **
 - feat:
   - New Blocker class to lock the executions

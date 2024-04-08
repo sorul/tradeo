@@ -5,14 +5,13 @@ import traceback
 
 from tradingbot.mt_client import MT_Client
 from tradingbot.config import Config
-from tradingbot.utils import get_remaining_symbols, reboot_mt
+from tradingbot.utils import reboot_mt
 from tradingbot.log import log
 from tradingbot.executable.executable import Executable
 from tradingbot.strategies.basic_strategy import BasicStrategy
 from tradingbot.event_handlers.basic_event_handler import BasicEventHandler
 from tradingbot.context_managers.blocker import Blocker
-from tradingbot.utils import (reset_successful_symbols,
-                              reset_consecutive_times_down_file,
+from tradingbot.utils import (reset_consecutive_times_down,
                               increment_consecutive_times_down,
                               get_consecutive_times_down, get_last_balance)
 
@@ -51,7 +50,6 @@ class BasicForex(Executable):
     mt_client.clean_all_command_files()
     mt_client.clean_all_historical_files()
     mt_client.clean_messages()
-    reset_successful_symbols()
 
     # Dates
     utc_date = datetime.now(Config.utc_timezone)
@@ -110,7 +108,7 @@ class BasicForex(Executable):
   ) -> None:
     """Handle the new historical data."""
     # Initialize the remaining symbols
-    rs = get_remaining_symbols()
+    rs = mt_client.get_remaining_symbols()
 
     # The execution will take up to 4 minutes
     stop_condition = utc_date - execution_time + timedelta(minutes=4)
@@ -123,13 +121,13 @@ class BasicForex(Executable):
       mt_client.check_historical_data(next_symbol)
 
       # Update the remaining symbols
-      rs = get_remaining_symbols()
+      rs = mt_client.get_remaining_symbols()
 
     # Check if there are remaining symbols to process
     if len(rs) > 0:
       log.warning(f'{len(rs)} remaining symbols to process.')
     else:
-      reset_consecutive_times_down_file()
+      reset_consecutive_times_down()
 
     # Check if MT needs to restart
     self._check_mt_needs_to_restart(len(rs))

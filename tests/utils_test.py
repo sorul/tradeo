@@ -1,7 +1,6 @@
 import pytest
 from datetime import datetime
 import tradingbot.utils as utils
-from tradingbot.config import Config
 import pytz
 from tradingbot.files import try_read_file
 from tradingbot.files import Files
@@ -36,55 +35,8 @@ def test_invalid_date():
     utils.string_to_date_utc(str_date)
 
 
-@patch('tradingbot.utils.data_path')
-def test_get_successful_symbols(mock_data_path, tmp_path):
-
-  # Make data_path() return the temporary directory
-  mock_data_path.return_value = tmp_path
-
-  with open(tmp_path / Files.SUCCESSFUL_SYMBOLS.value, 'w') as file:
-    file.write('EURUSD\nUSDJPY\nGBPUSD')
-
-  result = utils.get_successful_symbols()
-  assert result == ['EURUSD', 'USDJPY', 'GBPUSD']
-
-
-@patch('tradingbot.utils.data_path')
-def test_get_remaining_symbols(mock_data_path, tmp_path):
-
-  # Make data_path() return the temporary directory
-  mock_data_path.return_value = tmp_path
-
-  with open(tmp_path / Files.SUCCESSFUL_SYMBOLS.value, 'w') as file:
-    file.write('EURUSD\nUSDJPY')
-
-  result = utils.get_remaining_symbols()
-  assert len(result) == len(Config.symbols) - 2
-  assert 'EURUSD' not in result
-
-
 @patch('tradingbot.files.get_default_path')
-def test_reset_successful_symbols(mock_default_path, tmp_path):
-
-  # Make data_path() return the temporary directory
-  mock_default_path.return_value = tmp_path
-
-  # Create the file with some content
-  mock_text = 'EURUSD\nUSDJPY\nGBPUSD'
-  file_path = tmp_path / Files.SUCCESSFUL_SYMBOLS.value
-  with open(file_path, 'w') as file:
-    file.write(mock_text)
-
-  assert try_read_file(file_path) == mock_text
-
-  # Call to the function to test
-  utils.reset_successful_symbols()
-
-  assert try_read_file(file_path) == ''
-
-
-@patch('tradingbot.files.get_default_path')
-def test_reset_consecutive_times_down_file(mock_default_path, tmp_path):
+def test_reset_consecutive_times_down(mock_default_path, tmp_path):
 
   # Make data_path() return the temporary directory
   mock_default_path.return_value = tmp_path
@@ -98,7 +50,7 @@ def test_reset_consecutive_times_down_file(mock_default_path, tmp_path):
   assert try_read_file(file_path) == mock_text
 
   # Call to the function to test
-  utils.reset_consecutive_times_down_file()
+  utils.reset_consecutive_times_down()
 
   assert try_read_file(file_path) == '0'
 

@@ -593,3 +593,11 @@ def test_create_new_order(mock_default_path, tmp_path):
   mt_client.create_new_order(order)
   file_path = f'{mt_client.path_commands_prefix}{0}.txt'
   assert exists(file_path)
+
+
+def test_get_remaining_symbols():
+  mt_client = MT_Client()
+  mt_client.successful_symbols = {'EURUSD', 'USDCAD'}
+  result = mt_client.get_remaining_symbols()
+  assert len(result) == len(Config.symbols) - 2
+  assert 'EURUSD' not in result

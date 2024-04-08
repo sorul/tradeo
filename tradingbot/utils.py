@@ -8,7 +8,7 @@ from pytz import BaseTzInfo
 from pytz.tzinfo import DstTzInfo, StaticTzInfo
 
 from tradingbot.config import Config
-from tradingbot.paths import data_path, bash_path, get_default_path
+from tradingbot.paths import bash_path, get_default_path
 from tradingbot.files import Files
 from tradingbot.files import write_file, try_read_file
 from tradingbot.log import log
@@ -24,29 +24,6 @@ def string_to_date_utc(
   """Convert a string to a datetime object in UTC timezone."""
   r = from_timezone.localize(datetime.strptime(str_date, date_format))
   return r.astimezone(Config.utc_timezone)
-
-
-def add_successful_symbol(symbol: str) -> None:
-  """Add a symbol to the successful symbols file."""
-  path = data_path().joinpath(Files.SUCCESSFUL_SYMBOLS.value)
-  with open(path, 'a') as file:
-    file.write(f'{symbol}\n')
-
-
-def get_successful_symbols() -> ty.List[str]:
-  """Return the list of successful symbols."""
-  path = data_path().joinpath(Files.SUCCESSFUL_SYMBOLS.value)
-  with open(path, 'r') as file:
-    lines = file.readlines()
-    symbols = [symbol.strip() for symbol in lines]
-  return symbols
-
-
-def get_remaining_symbols() -> ty.List[str]:
-  """Return the list of remaining symbols."""
-  all_symbols = set(Config.symbols)
-  successful_symbols = set(get_successful_symbols())
-  return list(all_symbols - successful_symbols)
 
 
 def reboot_mt():
@@ -66,12 +43,7 @@ def create_magic_number() -> str:
   ).replace('.', '')
 
 
-def reset_successful_symbols() -> None:
-  """Reset the successful symbols file."""
-  write_file(Files.SUCCESSFUL_SYMBOLS.value, '')
-
-
-def reset_consecutive_times_down_file() -> None:
+def reset_consecutive_times_down() -> None:
   """Reset the consecutive times down file."""
   write_file(Files.CONSECUTIVE_TIMES_DOWN.value, '0')
 
