@@ -1,13 +1,17 @@
 # CHANGELOG
 
-## ** V0.12.0  (31/03/2024) - TAG **
+## ** V0.12.1  (08/04/2024) **
+- fix:
+  - New structure of folders to solve files issues.
+
+## ** V0.12.0  (31/03/2024) **
 - feat:
   - New attribute PNL in Order object
   - New attribute **kwargs in Strategy static methods
 - fix:
   - "TB_STRATEGIES" and "TB_EVENT_HANDLER_CLASS" variables removed 
 
-## ** V0.11.1  (31/03/2024) - TAG **
+## ** V0.11.1  (31/03/2024) **
 - refactor:
   - The necessary changes are made to prepare for the first tag
 

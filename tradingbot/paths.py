@@ -9,7 +9,7 @@ def config_path() -> Path:
 
 def bash_path() -> Path:
   """Return the bash path."""
-  return root_project() / 'bash'
+  return bin_project() / 'bash'
 
 
 def resources_test_path() -> Path:
@@ -24,9 +24,14 @@ def get_default_path():
 
 def data_path() -> Path:
   """Return the data path."""
-  return root_project() / 'data'
+  return bin_project() / 'data'
 
 
 def root_project() -> Path:
   """Return the root project path."""
-  return Path(__file__).parent.parent
+  return bin_project().parent
+
+
+def bin_project() -> Path:
+  """Return the root project path."""
+  return Path(__file__).parent
