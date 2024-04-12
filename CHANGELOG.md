@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## ** V0.15.0 (in development) **
+- feat:
+  - MT_MessageError and MT_MessageInfo for handle MetaTrader messages.
 
 ## ** V0.14.0  (08/04/2024) **
 - refactor:
