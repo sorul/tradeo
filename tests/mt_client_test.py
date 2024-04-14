@@ -73,8 +73,8 @@ def test_check_messages(tmp_path):
           )
       ]
   }
-  assert mt_client.messages['INFO'] == assert_data['INFO']
-  assert mt_client.messages['ERROR'] == assert_data['ERROR']
+  assert mt_client.get_info_messages() == assert_data['INFO']
+  assert mt_client.get_error_messages() == assert_data['ERROR']
 
   # Does not change on second call
   mt_client.check_messages()

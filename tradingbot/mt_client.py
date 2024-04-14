@@ -1,7 +1,7 @@
 """Script of MT_Client what it sends commands to MT4/MT5."""
 from __future__ import annotations
 from datetime import datetime, timedelta
-from typing import List, Dict, Union, Callable, Tuple, TYPE_CHECKING, Set
+from typing import List, Dict, Union, Callable, Tuple, TYPE_CHECKING, Set, cast
 from threading import Thread, Lock
 from os.path import join, exists
 from random import randrange
@@ -177,13 +177,26 @@ class MT_Client(metaclass=Singleton):
 
     return self.messages
 
-  def get_messages(self) -> messages_type:
-    """Return the messages object."""
-    return self.messages
+  def get_error_messages(self) -> List[MT_MessageError]:
+    """Return the error messages."""
+    return cast(List[MT_MessageError], self.messages['ERROR'])
 
-  def set_messages(self, data: messages_type) -> None:
+  def get_info_messages(self) -> List[MT_MessageInfo]:
+    """Return the info messages."""
+    return cast(List[MT_MessageInfo], self.messages['INFO'])
+
+  def set_messages(
+      self,
+      info_messages: List[MT_MessageInfo],
+      error_messages: List[MT_MessageError]
+  ) -> None:
     """Set manually the messages object."""
-    self.messages = data
+    self.messages['INFO'] = cast(
+        List[Union[MT_MessageInfo, MT_MessageError]], info_messages
+    )
+    self.messages['ERROR'] = cast(
+        List[Union[MT_MessageInfo, MT_MessageError]], error_messages
+    )
 
   def clean_messages(self):
     """Clean the messages object."""
