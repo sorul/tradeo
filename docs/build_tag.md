@@ -2,7 +2,10 @@ Source: [Tutorial]( https://dev.to/luscasleo/creating-and-publishing-a-python-li
 
 ### 1. Merge all the changes into develop branch
 
-### 2. Being in develop branch, update the [CHANGELOG](../CHANGELOG.md) file. 
+### 2. Being in develop branch, update the [CHANGELOG](../CHANGELOG.md) file.
+
+Write down the date of today.
+
 The changes are cataloged in:
 - fix: A bug fix. Correlates with PATCH
 - feat: A new feature. Correlates with MINOR

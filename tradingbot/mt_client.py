@@ -1,7 +1,7 @@
 """Script of MT_Client what it sends commands to MT4/MT5."""
 from __future__ import annotations
 from datetime import datetime, timedelta
-from typing import List, Dict, Union, Callable, Tuple, TYPE_CHECKING, Set
+from typing import List, Dict, Union, Callable, Tuple, TYPE_CHECKING, Set, cast
 from threading import Thread, Lock
 from os.path import join, exists
 from random import randrange
@@ -23,13 +23,14 @@ from tradingbot.order import (
 from tradingbot.ohlc import OHLC
 from tradingbot.trading_methods import get_pip
 from tradingbot.utils import string_to_date_utc
+from tradingbot.mt_message import MT_MessageError, MT_MessageInfo
 if TYPE_CHECKING:
   from tradingbot.event_handlers.event_handler import EventHandler
 
 
 # Typing types
 attributes_data_type = Dict[str, Dict]
-messages_type = Dict[str, List[List[str]]]
+messages_type = Dict[str, List[Union[MT_MessageInfo, MT_MessageError]]]
 account_info_type = Dict[str, Union[float, str]]
 historical_data_type = Dict[str, DataFrame]
 
@@ -158,22 +159,44 @@ class MT_Client(metaclass=Singleton):
 
           message_content = list(message.values())
           if 'ERROR' in message_content:
-            self.messages['ERROR'].append(message_content[1:])
+            time = message_content[1]
+            error_type = message_content[2]
+            description = message_content[3]
+            self.messages['ERROR'].append(
+                MT_MessageError(time, error_type, description)
+            )
           else:
-            self.messages['INFO'].append(message_content[1:])
+            time = message_content[1]
+            message = message_content[2]
+            self.messages['INFO'].append(
+                MT_MessageInfo(time, message)
+            )
 
           if self.event_handler:
             self.event_handler.on_message(self, message_content)
 
     return self.messages
 
-  def get_messages(self) -> messages_type:
-    """Return the messages object."""
-    return self.messages
+  def get_error_messages(self) -> List[MT_MessageError]:
+    """Return the error messages."""
+    return cast(List[MT_MessageError], self.messages['ERROR'])
 
-  def set_messages(self, data: messages_type) -> None:
+  def get_info_messages(self) -> List[MT_MessageInfo]:
+    """Return the info messages."""
+    return cast(List[MT_MessageInfo], self.messages['INFO'])
+
+  def set_messages(
+      self,
+      info_messages: List[MT_MessageInfo],
+      error_messages: List[MT_MessageError]
+  ) -> None:
     """Set manually the messages object."""
-    self.messages = data
+    self.messages['INFO'] = cast(
+        List[Union[MT_MessageInfo, MT_MessageError]], info_messages
+    )
+    self.messages['ERROR'] = cast(
+        List[Union[MT_MessageInfo, MT_MessageError]], error_messages
+    )
 
   def clean_messages(self):
     """Clean the messages object."""
@@ -674,15 +697,17 @@ class MT_Client(metaclass=Singleton):
 
   def get_balance(self) -> float:
     """Return the balance of the account."""
-    balance = self.account_info.get('balance')
-    if isinstance(balance, float):
-      return balance
-    else:
-      log.warning(f'Balance is not a float: {balance}')
-      return -1.0
+    max_retries = 5
+    for _ in range(max_retries):
+      self.check_open_orders()
+      balance = self.account_info.get('balance')
+      if isinstance(balance, float):
+        return balance
+      sleep(0.5)
+    log.warning(f'Balance is not a float: {balance}')
+    return -1.0
 
   def get_remaining_symbols(self) -> List[str]:
     """Return the list of remaining symbols."""
     all_symbols = set(Config.symbols)
-    successful_symbols = self.successful_symbols
-    return list(all_symbols - successful_symbols)
+    return list(all_symbols - self.successful_symbols)

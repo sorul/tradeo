@@ -1,23 +1,26 @@
 from pathlib import Path
 from unittest.mock import patch, MagicMock
-from tradingbot.mt_client import MT_Client
-from tradingbot.config import Config
 import shutil
 from pandas import DataFrame
-from tradingbot.files import try_load_json, try_read_file
 import json
 from datetime import datetime
 import pytz
 from freezegun import freeze_time
-from tradingbot.paths import resources_test_path
 from os.path import join, exists
+
+from tradingbot.paths import resources_test_path
+from tradingbot.mt_client import MT_Client
+from tradingbot.config import Config
+from tradingbot.files import try_load_json, try_read_file
 from tradingbot.order import (
     Order,
     MutableOrderDetails,
     ImmutableOrderDetails,
     OrderPrice
 )
+from tradingbot.mt_message import MT_MessageError, MT_MessageInfo
 from tradingbot.order_type import OrderType
+from tradingbot.files import Files
 
 
 def test_set_agent_paths():
@@ -61,10 +64,17 @@ def test_check_messages(tmp_path):
   mt_client.check_messages()
 
   assert_data = {
-      'INFO': [['2024.01.18 22:26:36', 'Dummy Info']],
-      'ERROR': [['2024.01.18 22:26:36', 'Dummy Error']]
+      'INFO': [MT_MessageInfo('2024.01.18 22:26:36', 'Dummy Info')],
+      'ERROR': [
+          MT_MessageError(
+              '2024.01.18 22:26:36',
+              'WRONG_FORMAT_START_IDENTIFIER',
+              'Dummy Error'
+          )
+      ]
   }
-  assert mt_client.messages == assert_data
+  assert mt_client.get_info_messages() == assert_data['INFO']
+  assert mt_client.get_error_messages() == assert_data['ERROR']
 
   # Does not change on second call
   mt_client.check_messages()
@@ -82,7 +92,9 @@ def test_check_messages(tmp_path):
   # Now it does change
   mt_client.check_messages()
 
-  assert_data['INFO'].append(['2024.01.18 22:26:36', 'New Message'])
+  assert_data['INFO'].append(
+      MT_MessageInfo('2024.01.18 22:26:36', 'New Message')
+  )
   assert mt_client.messages == assert_data
 
 
@@ -601,3 +613,26 @@ def test_get_remaining_symbols():
   result = mt_client.get_remaining_symbols()
   assert len(result) == len(Config.symbols) - 2
   assert 'EURUSD' not in result
+
+
+def test_get_balance(tmp_path):
+
+  # Copy the Orders.json file to the temporary folder
+  orders_path = tmp_path / 'Orders.json'
+  original_orders_path = Path(f'{resources_test_path()}/Orders.json')
+  shutil.copyfile(original_orders_path, orders_path)
+
+  # Copy the last_balance.txt file to the temporary folder
+  last_balance_path = tmp_path / Files.LAST_BALANCE.value
+  original_last_balance_path = Path(
+      f'{resources_test_path()}/{Files.LAST_BALANCE.value}'
+  )
+  shutil.copyfile(original_last_balance_path, last_balance_path)
+
+  mt_client = MT_Client()
+  mt_client.path_orders = orders_path
+
+  # Call for the first time to read orders
+  mt_client.check_open_orders()
+
+  assert mt_client.get_balance() > 0

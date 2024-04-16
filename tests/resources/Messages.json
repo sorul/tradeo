@@ -7,6 +7,7 @@
   "22222222": {
     "type": "ERROR",
     "time": "2024.01.18 22:26:36",
-    "message": "Dummy Error"
+    "error_type": "WRONG_FORMAT_START_IDENTIFIER",
+    "description": "Dummy Error"
   }
 }

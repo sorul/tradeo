@@ -4,6 +4,8 @@ from random import randrange
 import traceback
 
 from tradingbot.mt_client import MT_Client
+from tradingbot.files import write_file
+from tradingbot.files import Files
 from tradingbot.config import Config
 from tradingbot.utils import reboot_mt
 from tradingbot.log import log
@@ -140,8 +142,9 @@ class BasicForex(Executable):
     difference = balance - last_balance
     emoji = '🚀' if difference >= 0 else '☔'
     message_condition = local_date.hour % 12 == 0 and local_date.minute == 5
-    if message_condition:
+    if message_condition and balance != -1:
       log.info(f'{emoji} {difference:.2f} €')
+      write_file(Files.LAST_BALANCE.value, str(balance))
       return True
     else:
       return False

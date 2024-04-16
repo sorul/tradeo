@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## ** V0.15.0 (in development) **
+- feat:
+  - MT_MessageError and MT_MessageInfo for handle MetaTrader messages.
+  - "get_error_messages" and "get_info_messages" new methods from MT_Client.
+- docs:
+  - README completed.
+  - LICENSE added.
 
 ## ** V0.14.0  (08/04/2024) **
 - refactor:
