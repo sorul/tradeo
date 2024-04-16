@@ -23,16 +23,16 @@ We add the currency pairs in the timeframe we are going to use (in my case it wo
 Activate the expert in any symbol chart, it does not matter which chart you use. But only in one of them.
 
 > [!TIP]
-> If you want to execute MetaTrader in the background, your can use this script.
+> If you want to execute MetaTrader in the background, your can use this [execute_mt5.sh](https://github.com/sorul/sorul_tradingbot/blob/master/scripts/execute_mt5.sh) script.
 
 
 ## Usage
 
-You can create strategies inheriting *tradingbot.strategies.strategy.Strategy* class. An example of this it would be [basic_strategy.py](tradingbot/strategies/basic_strategy.py)
+- You can create strategies inheriting *tradingbot.strategies.strategy.Strategy* class. An example of this it would be [basic_strategy.py](tradingbot/strategies/basic_strategy.py)
 
-You can customize the handler of metatrader responses inheriting *tradingbot.event_handlers.event_handler.EventHandler* class. An example of this it would be [basic_handler.py](tradingbot/event_handlers/basic_event_handler.py)
+- You can customize the handler of metatrader responses inheriting *tradingbot.event_handlers.event_handler.EventHandler* class. An example of this it would be [basic_handler.py](tradingbot/event_handlers/basic_event_handler.py)
 
-An example of a main script using this library would be [basic_forex.py](tradingbot/tradingbot/executable/basic_forex.py) that inheriting *tradingbot.executable.executable.Executable*.
+- An example of a main script using this library would be [basic_forex.py](tradingbot/tradingbot/executable/basic_forex.py) that inheriting *tradingbot.executable.executable.Executable*.
 
 > [!NOTE]  
 > A real project that imports this wonderful library and you can watch for inspiration is [sorul_tradingbot](https://github.com/sorul/sorul_tradingbot)
@@ -82,6 +82,7 @@ The different possibilities for exporting environment variables depend on
 the user's preference. For example, we can place all the variables in a
 ".env" file and then execute the command using Poetry:
 
+*main_forex.sh*
 ```bash
 #!/bin/bash
 PATH=/home/pi/.poetry/bin:/home/pi/.pyenv/shims:/home/pi/.pyenv/bin:/home/pi/.poetry/bin:/home/pi/.pyenv/shims:/home/pi/.pyenv/bin:/home/pi/.cargo/bin:/home/pi/.poetry/bin:/home/pi/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/games:/usr/games
@@ -101,5 +102,3 @@ Edit the crontab (crontab -e):
 
 */5 * * * 0-5 <path_to_your_project>/main_forex.sh >> /tmp/crontab_script_log.txt 2>&1
 ```
-
-Tho
