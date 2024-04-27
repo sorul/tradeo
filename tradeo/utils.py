@@ -7,11 +7,11 @@ from os.path import join
 from pytz import BaseTzInfo
 from pytz.tzinfo import DstTzInfo, StaticTzInfo
 
-from tradingbot.config import Config
-from tradingbot.paths import bash_path, get_default_path
-from tradingbot.files import Files
-from tradingbot.files import write_file, try_read_file
-from tradingbot.log import log
+from tradeo.config import Config
+from tradeo.paths import bash_path, get_default_path
+from tradeo.files import Files
+from tradeo.files import write_file, try_read_file
+from tradeo.log import log
 
 timezone_type = ty.Union[DstTzInfo, BaseTzInfo, StaticTzInfo]
 

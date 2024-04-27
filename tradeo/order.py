@@ -1,5 +1,5 @@
 """Class to hold order data."""
-from tradingbot.order_type import OrderType
+from tradeo.order_type import OrderType
 
 
 class OrderPrice:

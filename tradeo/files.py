@@ -8,7 +8,7 @@ from time import sleep
 from json.decoder import JSONDecodeError
 from enum import Enum
 
-from tradingbot.paths import get_default_path
+from tradeo.paths import get_default_path
 
 _default_path = get_default_path()
 

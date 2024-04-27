@@ -1,9 +1,9 @@
 import pytest
 from datetime import datetime
-import tradingbot.utils as utils
+import tradeo.utils as utils
 import pytz
-from tradingbot.files import try_read_file
-from tradingbot.files import Files
+from tradeo.files import try_read_file
+from tradeo.files import Files
 from unittest.mock import patch
 
 
@@ -35,7 +35,7 @@ def test_invalid_date():
     utils.string_to_date_utc(str_date)
 
 
-@patch('tradingbot.files.get_default_path')
+@patch('tradeo.files.get_default_path')
 def test_reset_consecutive_times_down(mock_default_path, tmp_path):
 
   # Make data_path() return the temporary directory
@@ -55,7 +55,7 @@ def test_reset_consecutive_times_down(mock_default_path, tmp_path):
   assert try_read_file(file_path) == '0'
 
 
-@patch('tradingbot.utils.get_default_path')
+@patch('tradeo.utils.get_default_path')
 def test_get_last_balance(mock_default_path, tmp_path):
 
   # Make data_path() return the temporary directory
@@ -69,7 +69,7 @@ def test_get_last_balance(mock_default_path, tmp_path):
   assert utils.get_last_balance() == 100
 
 
-@patch('tradingbot.utils.get_default_path')
+@patch('tradeo.utils.get_default_path')
 def test_get_consecutive_times_down(mock_default_path, tmp_path):
 
   # Make data_path() return the temporary directory
@@ -83,8 +83,8 @@ def test_get_consecutive_times_down(mock_default_path, tmp_path):
   assert utils.get_consecutive_times_down() == 10
 
 
-@patch('tradingbot.utils.get_default_path')
-@patch('tradingbot.files.get_default_path')
+@patch('tradeo.utils.get_default_path')
+@patch('tradeo.files.get_default_path')
 def test_increment_consecutive_times_down(
         mock_default_utils_path, mock_default_files_path, tmp_path):
 

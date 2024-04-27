@@ -4,12 +4,12 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Union, TYPE_CHECKING
 
-from tradingbot.config import Config
-from tradingbot.log import log
+from tradeo.config import Config
+from tradeo.log import log
 if TYPE_CHECKING:
-  from tradingbot.order import Order
-  from tradingbot.ohlc import OHLC
-  from tradingbot.mt_client import MT_Client
+  from tradeo.order import Order
+  from tradeo.ohlc import OHLC
+  from tradeo.mt_client import MT_Client
 
 
 class Strategy(ABC):

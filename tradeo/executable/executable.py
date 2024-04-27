@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 
-from tradingbot.mt_client import MT_Client
+from tradeo.mt_client import MT_Client
 
 
 class Executable(ABC):

@@ -2,15 +2,15 @@
 from typing import Union
 from datetime import datetime
 
-from tradingbot.trading_methods import EMA, get_pivots, get_pip
-from tradingbot.ohlc import OHLC
-from tradingbot.utils import create_magic_number
-from tradingbot.strategies.strategy import Strategy
-from tradingbot.order import (Order,
-                              MutableOrderDetails,
-                              ImmutableOrderDetails,
-                              OrderPrice,
-                              OrderType)
+from tradeo.trading_methods import EMA, get_pivots, get_pip
+from tradeo.ohlc import OHLC
+from tradeo.utils import create_magic_number
+from tradeo.strategies.strategy import Strategy
+from tradeo.order import (Order,
+                          MutableOrderDetails,
+                          ImmutableOrderDetails,
+                          OrderPrice,
+                          OrderType)
 
 
 class BasicStrategy(Strategy):

@@ -1,4 +1,4 @@
-from tradingbot.log import log
+from tradeo.log import log
 
 
 def test_info():

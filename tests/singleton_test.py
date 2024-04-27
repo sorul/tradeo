@@ -1,4 +1,4 @@
-from tradingbot.singleton import Singleton
+from tradeo.singleton import Singleton
 
 
 class Test_Singleton(metaclass=Singleton):

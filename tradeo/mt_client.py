@@ -11,21 +11,21 @@ from time import sleep
 import glob
 import json
 
-from tradingbot.config import Config
-from tradingbot.log import log
-from tradingbot.singleton import Singleton
-from tradingbot.files import (
+from tradeo.config import Config
+from tradeo.log import log
+from tradeo.singleton import Singleton
+from tradeo.files import (
     try_load_json, try_remove_file, try_read_file)
-from tradingbot.order_operations import OrderOperations
-from tradingbot.order_type import get_order_type_from_str
-from tradingbot.order import (
+from tradeo.order_operations import OrderOperations
+from tradeo.order_type import get_order_type_from_str
+from tradeo.order import (
     Order, MutableOrderDetails, ImmutableOrderDetails, OrderPrice)
-from tradingbot.ohlc import OHLC
-from tradingbot.trading_methods import get_pip
-from tradingbot.utils import string_to_date_utc
-from tradingbot.mt_message import MT_MessageError, MT_MessageInfo
+from tradeo.ohlc import OHLC
+from tradeo.trading_methods import get_pip
+from tradeo.utils import string_to_date_utc
+from tradeo.mt_message import MT_MessageError, MT_MessageInfo
 if TYPE_CHECKING:
-  from tradingbot.event_handlers.event_handler import EventHandler
+  from tradeo.event_handlers.event_handler import EventHandler
 
 
 # Typing types

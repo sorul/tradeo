@@ -1,10 +1,10 @@
 from unittest.mock import patch
 import os
 
-from tradingbot.context_managers.blocker import Blocker
+from tradeo.context_managers.blocker import Blocker
 
 
-@patch('tradingbot.files.get_default_path')
+@patch('tradeo.files.get_default_path')
 def test_blocker(mock_default_path, tmp_path):
 
   # Make data_path() return the temporary directory

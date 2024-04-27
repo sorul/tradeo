@@ -1,4 +1,4 @@
-from tradingbot import paths as p
+from tradeo import paths as p
 from pathlib import Path
 
 

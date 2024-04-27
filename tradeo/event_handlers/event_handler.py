@@ -4,9 +4,9 @@ from typing import List, Dict, TYPE_CHECKING
 from abc import ABC
 
 if TYPE_CHECKING:
-  from tradingbot.order import Order
-  from tradingbot.ohlc import OHLC
-  from tradingbot.mt_client import MT_Client
+  from tradeo.order import Order
+  from tradeo.ohlc import OHLC
+  from tradeo.mt_client import MT_Client
 
 
 class EventHandler(ABC):

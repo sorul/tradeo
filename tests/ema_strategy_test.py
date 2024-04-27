@@ -1,7 +1,7 @@
-from tradingbot.order import Order
+from tradeo.order import Order
 from pandas import DataFrame
-from tradingbot.ohlc import OHLC
-from tradingbot.strategies.basic_strategy import BasicStrategy
+from tradeo.ohlc import OHLC
+from tradeo.strategies.basic_strategy import BasicStrategy
 import numpy as np
 from datetime import datetime
 
