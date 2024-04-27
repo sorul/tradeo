@@ -7,16 +7,32 @@ This library is created **based on a linux installation of MetaTrader**.
 
 ## Installation
 
-### Library
-POETRY - In pyproject.toml file:
-```
-tradeo = { git = "git@github.com:sorul/tradeo.git", branch = "master" }
-// or
-tradeo = { git = "git@github.com:sorul/tradeo.git", tag = "v0.15.0" }
-```
-Use the **branch** or **tag** desired.
+### Install the library
 
-### Metatrader Config
+#### PIP
+```shell
+pip install tradeo
+```
+
+#### POETRY
+```shell
+poetry add tradeo
+```
+
+Or you can add manually in *pyproject.toml* file if you want download it from a specific branch:
+
+```shell
+tradeo = { git = "git@github.com:sorul/tradeo.git", branch = "master" }
+```
+
+And finally:
+```shell
+poetry install --without dev
+```
+
+
+
+### Configure Metatrader
 
 It is necessary to download the [mt_tb_expert.mq5](tradeo/mt_tb_expert.mq5) file and put it in the proper directory. This directory is usually: *MetaTrader/MQL5/Experts/Advisors/mt_tb_expert.mq5*.
 
@@ -37,7 +53,7 @@ Activate the expert in any symbol chart, it does not matter which chart you use.
 - An example of a main script using this library would be [basic_forex.py](tradeo/tradeo/executable/basic_forex.py) that inheriting *tradeo.executable.executable.Executable*.
 
 > [!NOTE]  
-> A real project that imports this wonderful library and you can watch for inspiration is [sorul_tradeo](https://github.com/sorul/sorul_tradeo)
+> A real project that imports this wonderful library and you can watch for inspiration is [sorul_tradingbot](https://github.com/sorul/sorul_tradingbot)
 
 
 
