@@ -8,19 +8,19 @@ import pytz
 from freezegun import freeze_time
 from os.path import join, exists
 
-from tradingbot.paths import resources_test_path
-from tradingbot.mt_client import MT_Client
-from tradingbot.config import Config
-from tradingbot.files import try_load_json, try_read_file
-from tradingbot.order import (
+from tradeo.paths import resources_test_path
+from tradeo.mt_client import MT_Client
+from tradeo.config import Config
+from tradeo.files import try_load_json, try_read_file
+from tradeo.order import (
     Order,
     MutableOrderDetails,
     ImmutableOrderDetails,
     OrderPrice
 )
-from tradingbot.mt_message import MT_MessageError, MT_MessageInfo
-from tradingbot.order_type import OrderType
-from tradingbot.files import Files
+from tradeo.mt_message import MT_MessageError, MT_MessageInfo
+from tradeo.order_type import OrderType
+from tradeo.files import Files
 
 
 def test_set_agent_paths():
@@ -28,7 +28,7 @@ def test_set_agent_paths():
   mock_config = Config
   mock_config.mt_files_path = resources_test_path()
 
-  with patch('tradingbot.mt_client.Config', mock_config):
+  with patch('tradeo.mt_client.Config', mock_config):
     mt_client = MT_Client()
     path_file = join(mock_config.mt_files_path, mt_client.prefix_files_path)
 
@@ -546,7 +546,7 @@ def test_transform_json_orders_to_orders():
   assert order.lots == 0.01
 
 
-@patch('tradingbot.log.debug')
+@patch('tradeo.log.debug')
 def test_place_break_even(mock_debug, tmp_path):
   mt_client = MT_Client()
   mt_client.path_commands_prefix = tmp_path / 'Commands_'
@@ -570,7 +570,7 @@ def test_place_break_even(mock_debug, tmp_path):
   mock_debug.assert_called_with(f'Break even placed in {order.magic}')
 
 
-@patch('tradingbot.files.get_default_path')
+@patch('tradeo.files.get_default_path')
 def test_create_new_order(mock_default_path, tmp_path):
   # Make data_path() return the temporary directory
   mock_default_path.return_value = tmp_path

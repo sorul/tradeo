@@ -1,6 +1,10 @@
 # CHANGELOG
 
-## ** V0.15.0 (in development) **
+## V0.16.0 (27/04/2024)
+- refactor:
+  - Change the package name from "tradingbot" to "tradeo".
+
+## ** V0.15.0 (16/04/2024) **
 - feat:
   - MT_MessageError and MT_MessageInfo for handle MetaTrader messages.
   - "get_error_messages" and "get_info_messages" new methods from MT_Client.

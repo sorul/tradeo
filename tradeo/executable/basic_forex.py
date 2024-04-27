@@ -3,19 +3,19 @@ from datetime import datetime, timedelta
 from random import randrange
 import traceback
 
-from tradingbot.mt_client import MT_Client
-from tradingbot.files import write_file
-from tradingbot.files import Files
-from tradingbot.config import Config
-from tradingbot.utils import reboot_mt
-from tradingbot.log import log
-from tradingbot.executable.executable import Executable
-from tradingbot.strategies.basic_strategy import BasicStrategy
-from tradingbot.event_handlers.basic_event_handler import BasicEventHandler
-from tradingbot.context_managers.blocker import Blocker
-from tradingbot.utils import (reset_consecutive_times_down,
-                              increment_consecutive_times_down,
-                              get_consecutive_times_down, get_last_balance)
+from tradeo.mt_client import MT_Client
+from tradeo.files import write_file
+from tradeo.files import Files
+from tradeo.config import Config
+from tradeo.utils import reboot_mt
+from tradeo.log import log
+from tradeo.executable.executable import Executable
+from tradeo.strategies.basic_strategy import BasicStrategy
+from tradeo.event_handlers.basic_event_handler import BasicEventHandler
+from tradeo.context_managers.blocker import Blocker
+from tradeo.utils import (reset_consecutive_times_down,
+                          increment_consecutive_times_down,
+                          get_consecutive_times_down, get_last_balance)
 
 
 class BasicForex(Executable):

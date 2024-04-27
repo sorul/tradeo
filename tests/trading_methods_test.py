@@ -1,8 +1,8 @@
-import tradingbot.trading_methods as tm
+import tradeo.trading_methods as tm
 from pandas import DataFrame
 import numpy as np
-from tradingbot.ohlc import OHLC
-from tradingbot.order_type import OrderType
+from tradeo.ohlc import OHLC
+from tradeo.order_type import OrderType
 
 
 def test_get_pivots():

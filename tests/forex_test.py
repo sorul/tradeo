@@ -4,13 +4,13 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
-from tradingbot.executable.basic_forex import BasicForex
-from tradingbot.files import Files
-from tradingbot.config import Config
-from tradingbot.mt_client import MT_Client
+from tradeo.executable.basic_forex import BasicForex
+from tradeo.files import Files
+from tradeo.config import Config
+from tradeo.mt_client import MT_Client
 
 
-@patch('tradingbot.files.get_default_path')
+@patch('tradeo.files.get_default_path')
 def test_is_locked(mock_data_path, tmp_path):
 
   # Make data_path() return the temporary directory
@@ -57,7 +57,7 @@ def test_check_time_viability():
     assert not bf.check_time_viability()
 
 
-@patch('tradingbot.files.get_default_path')
+@patch('tradeo.files.get_default_path')
 def test_send_profit_message(mock_data_path, tmp_path):
   tz = pytz.timezone(str(Config.local_timezone))
   bf = BasicForex()

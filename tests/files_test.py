@@ -1,5 +1,5 @@
-from tradingbot.paths import config_path
-import tradingbot.files as f
+from tradeo.paths import config_path
+import tradeo.files as f
 from pathlib import Path
 import tempfile
 import os

@@ -3,12 +3,12 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from tradingbot.event_handlers.event_handler import EventHandler
-from tradingbot.strategies.basic_strategy import BasicStrategy
-from tradingbot.config import Config
+from tradeo.event_handlers.event_handler import EventHandler
+from tradeo.strategies.basic_strategy import BasicStrategy
+from tradeo.config import Config
 if TYPE_CHECKING:
-  from tradingbot.ohlc import OHLC
-  from tradingbot.mt_client import MT_Client
+  from tradeo.ohlc import OHLC
+  from tradeo.mt_client import MT_Client
 
 
 class BasicEventHandler(EventHandler):

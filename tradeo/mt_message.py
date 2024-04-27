@@ -1,6 +1,6 @@
 """MT message classes."""
-from tradingbot.utils import string_to_date_utc
-from tradingbot.config import Config
+from tradeo.utils import string_to_date_utc
+from tradeo.config import Config
 
 
 class MT_MessageError:

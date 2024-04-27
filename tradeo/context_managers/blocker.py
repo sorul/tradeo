@@ -1,5 +1,5 @@
 """This class blocks the execution writing a .block file."""
-from tradingbot.files import write_file, remove_file, file_exists
+from tradeo.files import write_file, remove_file, file_exists
 
 
 class Blocker:

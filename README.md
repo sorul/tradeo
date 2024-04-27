@@ -1,4 +1,6 @@
-# FOREX TRADINGBOT - METATRADER
+# TRADEO - A forex trading framework using MetaTrader
+
+![alt text](docs/images/logo.PNG "Title")
 
 This library contains a series of tools to create a trading bot for Forex trading. It uses the [DWX Connect](https://github.com/darwinex/dwxconnect/) (modified) to send commands and receive information of MetaTrader.
 This library is created **based on a linux installation of MetaTrader**.
@@ -8,15 +10,15 @@ This library is created **based on a linux installation of MetaTrader**.
 ### Library
 POETRY - In pyproject.toml file:
 ```
-tradingbot = { git = "git@github.com:sorul/tradingbot.git", branch = "master" }
+tradeo = { git = "git@github.com:sorul/tradeo.git", branch = "master" }
 // or
-tradingbot = { git = "git@github.com:sorul/tradingbot.git", tag = "v0.15.0" }
+tradeo = { git = "git@github.com:sorul/tradeo.git", tag = "v0.15.0" }
 ```
 Use the **branch** or **tag** desired.
 
 ### Metatrader Config
 
-It is necessary to download the [mt_tb_expert.mq5](tradingbot/mt_tb_expert.mq5) file and put it in the proper directory. This directory is usually: *MetaTrader/MQL5/Experts/Advisors/mt_tb_expert.mq5*.
+It is necessary to download the [mt_tb_expert.mq5](tradeo/mt_tb_expert.mq5) file and put it in the proper directory. This directory is usually: *MetaTrader/MQL5/Experts/Advisors/mt_tb_expert.mq5*.
 
 We add the currency pairs in the timeframe we are going to use (in my case it would be 5 minutes). There is the option for the bot to open them automatically, but I do not recommend it.
 
@@ -28,14 +30,14 @@ Activate the expert in any symbol chart, it does not matter which chart you use.
 
 ## Usage
 
-- You can create strategies inheriting *tradingbot.strategies.strategy.Strategy* class. An example of this it would be [basic_strategy.py](tradingbot/strategies/basic_strategy.py)
+- You can create strategies inheriting *tradeo.strategies.strategy.Strategy* class. An example of this it would be [basic_strategy.py](tradeo/strategies/basic_strategy.py)
 
-- You can customize the handler of metatrader responses inheriting *tradingbot.event_handlers.event_handler.EventHandler* class. An example of this it would be [basic_handler.py](tradingbot/event_handlers/basic_event_handler.py)
+- You can customize the handler of metatrader responses inheriting *tradeo.event_handlers.event_handler.EventHandler* class. An example of this it would be [basic_handler.py](tradeo/event_handlers/basic_event_handler.py)
 
-- An example of a main script using this library would be [basic_forex.py](tradingbot/tradingbot/executable/basic_forex.py) that inheriting *tradingbot.executable.executable.Executable*.
+- An example of a main script using this library would be [basic_forex.py](tradeo/tradeo/executable/basic_forex.py) that inheriting *tradeo.executable.executable.Executable*.
 
 > [!NOTE]  
-> A real project that imports this wonderful library and you can watch for inspiration is [sorul_tradingbot](https://github.com/sorul/sorul_tradingbot)
+> A real project that imports this wonderful library and you can watch for inspiration is [sorul_tradeo](https://github.com/sorul/sorul_tradeo)
 
 
 

@@ -5,12 +5,12 @@ from freezegun import freeze_time
 import pytz
 import shutil
 
-from tradingbot.order_type import OrderType
-from tradingbot.config import Config
-from tradingbot.paths import resources_test_path
-from tradingbot.mt_client import MT_Client
-from tradingbot.strategies.strategy import Strategy
-from tradingbot.order import (
+from tradeo.order_type import OrderType
+from tradeo.config import Config
+from tradeo.paths import resources_test_path
+from tradeo.mt_client import MT_Client
+from tradeo.strategies.strategy import Strategy
+from tradeo.order import (
     Order,
     MutableOrderDetails,
     ImmutableOrderDetails,
@@ -49,7 +49,7 @@ def test_check_order_viability():
         mt_client, order, min_risk_profit=3)
 
 
-@patch('tradingbot.log.debug')
+@patch('tradeo.log.debug')
 def test_handle_pending_orders(mock_debug, tmp_path):
   mt_client = MT_Client()
   mt_client.path_commands_prefix = tmp_path
@@ -79,7 +79,7 @@ def test_handle_pending_orders(mock_debug, tmp_path):
         f'Close order {order.magic} due to time threshold')
 
 
-@patch('tradingbot.log.debug')
+@patch('tradeo.log.debug')
 def test_handle_filled_orders(mock_debug, tmp_path):
   mt_client = MT_Client()
   mt_client.path_commands_prefix = tmp_path

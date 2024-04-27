@@ -27,6 +27,7 @@ pytz
 raspberrypi
 selllimit
 sellstop
+tradeo
 tradingbot
 USDCAD
 USDCHF

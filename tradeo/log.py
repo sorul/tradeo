@@ -6,8 +6,8 @@ from logging.handlers import SysLogHandler
 from logging import Handler
 import requests
 
-from tradingbot.singleton import Singleton
-from tradingbot.config import Config
+from tradeo.singleton import Singleton
+from tradeo.config import Config
 
 
 """URL: https://my.papertrailapp.com/events ."""
@@ -47,7 +47,7 @@ class Log(metaclass=Singleton):
 
   def __init__(self):
     """Initialize the logger."""
-    self.logger = logging.getLogger('tradingbot')
+    self.logger = logging.getLogger('tradeo')
     self.logger.setLevel(logging.DEBUG)
     self._build_log()
     self._build_telegram_log()

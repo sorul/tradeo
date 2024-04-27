@@ -3,8 +3,8 @@ from typing import List, Tuple
 from pandas import Series
 from numpy import ndarray
 
-from tradingbot.ohlc import OHLC
-from tradingbot.order_type import OrderType
+from tradeo.ohlc import OHLC
+from tradeo.order_type import OrderType
 
 
 def get_pip(symbol: str) -> float:
