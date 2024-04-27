@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## V0.16.1 (27/04/2024)
+- docs:
+  - Updating install section of README.md file.
+
 ## V0.16.0 (27/04/2024)
 - refactor:
   - Change the package name from "tradingbot" to "tradeo".
