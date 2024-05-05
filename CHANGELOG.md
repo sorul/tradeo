@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## V0.17.0 (05/05/2024)
+- test:
+  - "pytest-cov" dependency added. A 90 percent coverage exceeded.
+
 ## V0.16.1 (27/04/2024)
 - docs:
   - Updating install section of README.md file.
