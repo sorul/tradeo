@@ -25,7 +25,7 @@ class BasicForex(Executable):
     """Initialize the forex bot."""
     self.name = 'BasicForex'
 
-  def entry_point(self):
+  def entry_point(self) -> None:
     """Entry point of the forex bot."""
     if not self.is_locked() and self.check_time_viability():
       mt_client = MT_Client(event_handler=BasicEventHandler())
@@ -40,7 +40,7 @@ class BasicForex(Executable):
         # Log the error
         log.error(traceback.format_exc())
 
-  def main(self, mt_client: MT_Client):
+  def main(self, mt_client: MT_Client) -> None:
     """Execute forex bot."""
     # First of all, we lock the execution of the forex bot.
     # To prevent another execution to run at the same time.

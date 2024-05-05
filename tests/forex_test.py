@@ -78,3 +78,13 @@ def test_send_profit_message(mock_data_path, tmp_path):
   # Doesn't send a message
   d = datetime(2024, 1, 1, 13, 5)
   assert not bf._send_profit_message(mt_client, tz.localize(d))
+
+
+@patch('tradeo.executable.basic_forex.BasicForex.is_locked')
+@patch('tradeo.executable.basic_forex.BasicForex.check_time_viability')
+def test_entry_point(mock_check_time_viability, mock_is_locked, tmp_path):
+  mock_is_locked.return_value = False
+  mock_check_time_viability.return_value = True
+  bf = BasicForex()
+  Config.mt_files_path = tmp_path
+  bf.entry_point()

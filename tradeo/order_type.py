@@ -37,6 +37,16 @@ class OrderType:
     elif not self.buy and not self.market:
       self.value = OrderOperations.SELLLIMIT
 
+  def __eq__(self, value: object) -> bool:
+    """Check if the object is equal to another object."""
+    return (
+        isinstance(value, OrderType)
+        and self.buy == value.buy
+        and self.sell == value.sell
+        and self.market == value.market
+        and self.pending == value.pending
+    )
+
 
 def get_order_type_from_str(order_type_str: str) -> OrderType:
   """Get the order type object from a string."""

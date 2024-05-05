@@ -20,7 +20,12 @@ class MT_MessageError:
     """Check if the object is equal to another object."""
     return (
         isinstance(value, MT_MessageError)
-        and str(self.time) == str(value.time)
+        and str(self.time.year) == str(value.time.year)
+        and str(self.time.month) == str(value.time.month)
+        and str(self.time.day) == str(value.time.day)
+        and str(self.time.hour) == str(value.time.hour)
+        and str(self.time.minute) == str(value.time.minute)
+        and str(self.time.second) == str(value.time.second)
         and self.error_type == value.error_type
         and self.description == value.description
     )
@@ -42,6 +47,11 @@ class MT_MessageInfo:
     """Check if the object is equal to another object."""
     return (
         isinstance(value, MT_MessageInfo)
-        and str(self.time) == str(value.time)
+        and str(self.time.year) == str(value.time.year)
+        and str(self.time.month) == str(value.time.month)
+        and str(self.time.day) == str(value.time.day)
+        and str(self.time.hour) == str(value.time.hour)
+        and str(self.time.minute) == str(value.time.minute)
+        and str(self.time.second) == str(value.time.second)
         and self.message == value.message
     )

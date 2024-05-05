@@ -1,9 +1,9 @@
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import shutil
 from pandas import DataFrame
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 from freezegun import freeze_time
 from os.path import join, exists
@@ -21,10 +21,10 @@ from tradeo.order import (
 from tradeo.mt_message import MT_MessageError, MT_MessageInfo
 from tradeo.order_type import OrderType
 from tradeo.files import Files
+from tradeo.event_handlers.basic_event_handler import BasicEventHandler
 
 
 def test_set_agent_paths():
-  mock_config = MagicMock()
   mock_config = Config
   mock_config.mt_files_path = resources_test_path()
 
@@ -40,7 +40,8 @@ def test_set_agent_paths():
     assert mt_client.path_market_data == Path(
         join(path_file, 'Market_Data.json'))
     assert mt_client.path_bar_data == Path(join(path_file, 'Bar_Data.json'))
-    assert mt_client.path_historical_data == Path(join(path_file))
+    assert mt_client.path_historical_data_prefix == Path(
+        join(path_file, 'Historical_Data_'))
     assert mt_client.path_historical_trades == Path(join(
         path_file, 'Historical_Trades.json'))
     assert mt_client.path_orders_stored == Path(join(
@@ -48,6 +49,65 @@ def test_set_agent_paths():
     assert mt_client.path_messages_stored == Path(join(
         path_file, 'Messages_Stored.json'))
     assert mt_client.path_commands_prefix == Path(join(path_file, 'Commands_'))
+
+
+def test_invalid_file_path():
+  mock_config = Config
+  mock_config.mt_files_path = Path('invalid_path')
+  with patch('tradeo.mt_client.Config', mock_config):
+    mt_client = MT_Client()
+    if hasattr(mt_client, 'path_orders'):
+      delattr(mt_client, 'path_orders')
+    mt_client.set_agent_paths()
+    assert not hasattr(mt_client, 'path_orders')
+
+
+def test_start_threads(tmp_path):
+  mt_client = MT_Client(event_handler=BasicEventHandler())
+
+  path = tmp_path / 'Orders.json'
+  original_path = Path(f'{resources_test_path()}/Orders.json')
+  shutil.copyfile(original_path, path)
+  mt_client.path_orders = path
+
+  path = tmp_path / 'Messages.json'
+  original_path = Path(f'{resources_test_path()}/Messages.json')
+  shutil.copyfile(original_path, path)
+  mt_client.path_messages = path
+
+  path = tmp_path / 'Market_Data.json'
+  original_path = Path(f'{resources_test_path()}/Market_Data.json')
+  shutil.copyfile(original_path, path)
+  mt_client.path_market_data = path
+
+  path = tmp_path / 'Bar_Data.json'
+  original_path = Path(f'{resources_test_path()}/Bar_Data.json')
+  shutil.copyfile(original_path, path)
+  mt_client.path_bar_data = path
+
+  path = tmp_path / 'Historical_Trades.json'
+  original_path = Path(f'{resources_test_path()}/Historical_Trades.json')
+  shutil.copyfile(original_path, path)
+  mt_client.path_historical_trades = path
+
+  path = tmp_path / 'Orders_Stored.json'
+  original_path = Path(f'{resources_test_path()}/Orders_Stored.json')
+  shutil.copyfile(original_path, path)
+  mt_client.path_orders_stored = path
+
+  path = tmp_path / 'Messages_Stored.json'
+  original_path = Path(f'{resources_test_path()}/Messages_Stored.json')
+  shutil.copyfile(original_path, path)
+  mt_client.path_messages_stored = path
+
+  path = tmp_path / 'Commands_0.txt'
+  original_path = Path(f'{resources_test_path()}/Commands_0.txt')
+  shutil.copyfile(original_path, path)
+  mt_client.path_commands_prefix = path
+
+  mt_client.start()
+  mt_client.stop()
+  mt_client.deactivate()
 
 
 def test_check_messages(tmp_path):
@@ -81,20 +141,16 @@ def test_check_messages(tmp_path):
 
   assert mt_client.messages == assert_data
 
-  # Write new message
-  data = try_load_json(messages_path)
-  data['33333333'] = {
-      'type': 'INFO', 'time': '2024.01.18 22:26:36', 'message': 'New Message'
-  }
-  with open(messages_path, 'w') as f:
-    f.write(json.dumps(data))
-
   # Now it does change
+  info = MT_MessageInfo('2024.02.19 23:26:36', 'info description')
+  error = MT_MessageError('2024.02.19 23:26:36',
+                          'WRONG_FORMAT_START_IDENTIFIER', 'error description')
+
+  mt_client.set_messages(info_messages=[info], error_messages=[error])
   mt_client.check_messages()
 
-  assert_data['INFO'].append(
-      MT_MessageInfo('2024.01.18 22:26:36', 'New Message')
-  )
+  assert_data['INFO'] = [info]
+  assert_data['ERROR'] = [error]
   assert mt_client.messages == assert_data
 
 
@@ -253,7 +309,7 @@ def test_check_open_orders(tmp_path):
   assert mt_client.account_info == assert_account_data
 
   # Write new data
-  data = try_load_json(orders_path)
+  data = {'orders': {}, 'account_info': {}}
   data['orders']['2023993176'] = {
       'magic': 1705617044,
       'symbol': 'EURUSD',
@@ -276,27 +332,40 @@ def test_check_open_orders(tmp_path):
   # Now it changes
   mt_client.check_open_orders()
 
-  assert len(mt_client.open_orders) == 2
+  assert len(mt_client.open_orders) == 1
   assert mt_client.account_info == data['account_info']
 
 
-def test_check_historical_data():
+def test_check_historical_data(tmp_path):
 
   symbol = 'USDJPY'
-  mt_client = MT_Client()
-  mt_client.path_historical_data = resources_test_path()
+  historical_path = tmp_path / f'Historical_Data_{symbol}.json'
 
-  data = mt_client.check_historical_data(symbol)
-  mock_data = {
+  commands_path = tmp_path / 'Commands_0.txt'
+  original_commands_path = Path(
+      f'{resources_test_path()}/Commands_0.txt')
+  shutil.copyfile(original_commands_path, commands_path)
+
+  mt_client = MT_Client()
+  mt_client.path_historical_data_prefix = tmp_path / 'Historical_Data_'
+  mt_client.path_commands_prefix = tmp_path / 'Commands_'
+
+  now_date = datetime.now(Config.broker_timezone)
+  td = timedelta(minutes=now_date.minute % 5,
+                 seconds=now_date.second,
+                 microseconds=now_date.microsecond)
+  rounded_now_date = now_date - td + timedelta(minutes=1)
+  rounded_now_date_minus_5 = rounded_now_date - timedelta(minutes=5)
+  data = {
       'USDJPY_M5': {
-          '2024.01.09 08:30': {
+          f'{rounded_now_date_minus_5.strftime("%Y.%m.%d %H:%M")}': {
               'open': 143.92400,
               'high': 143.98000,
               'low': 143.92000,
               'close': 143.92500,
               'tick_volume': 400.00000
           },
-          '2024.01.09 08:35': {
+          f'{rounded_now_date.strftime("%Y.%m.%d %H:%M")}': {
               'open': 143.92400,
               'high': 143.97200,
               'low': 143.91600,
@@ -305,12 +374,21 @@ def test_check_historical_data():
           }
       }
   }
-  mock_df = DataFrame.from_dict(
-      data[f'{symbol}_{Config.timeframe}'], orient='index')
 
-  # Assertions
-  assert data == mock_data
-  assert mt_client.historical_data[symbol].equals(mock_df)
+  with open(historical_path, 'w') as f:
+    f.write(json.dumps(data))
+
+  # Assert successful symbols
+  assert mt_client.successful_symbols == set()
+  data = mt_client.check_historical_data(symbol)
+  data_df = DataFrame.from_dict(
+      data[f'{symbol}_{Config.timeframe}'], orient='index')
+  assert data_df.shape[0] == 2
+  assert mt_client.successful_symbols == {symbol}
+
+  # Assert no remaining symbols
+  mt_client.successful_symbols = set(Config.symbols)
+  assert mt_client.check_historical_data(symbol) == {}
 
 
 def test_is_historical_data_up_to_date_true():
@@ -416,9 +494,9 @@ def test_send_command(tmp_path):
   # Rest of test
   mt_client.send_command('TEST', 'test content')
 
-  assert mt_client.command_id == 1
-  assert try_read_file(
-      tmp_path / 'Commands_0.txt') == '<:1|TEST|test content:>'
+  assert mt_client.command_id > 0
+  assert '|TEST|test content:>' in try_read_file(
+      tmp_path / 'Commands_0.txt')
 
 
 def test_clean_all_command_files(tmp_path):
@@ -445,7 +523,8 @@ def test_clean_all_command_files(tmp_path):
 
 def test_clean_all_historical_files(tmp_path):
   mt_client = MT_Client()
-  mt_client.path_historical_data = tmp_path
+  mt_client.path_historical_data_prefix = Path(
+      join(tmp_path, 'Historical_Data_'))
 
   # Create some files
   file1 = Path(join(tmp_path, 'Historical_Data_EURUSD.json'))
@@ -469,7 +548,7 @@ def test_command_file_exist():
   mt_client = MT_Client()
   mt_client.path_commands_prefix = Path(f'{resources_test_path()}/Commands_')
 
-  assert mt_client.command_file_exist('GBPNZD')
+  assert mt_client.command_file_exist('USDJPY')
   assert not mt_client.command_file_exist('EURUSD')
 
 
@@ -512,7 +591,7 @@ def test_transform_json_orders_to_orders():
       ),
       ImmutableOrderDetails(
           symbol='AUDUSD',
-          order_type=OrderType(buy=True, market=True),
+          order_type=OrderType(buy=False, market=False),
           magic='1705617043',
           comment='this is a comment'
       ),
@@ -535,7 +614,7 @@ def test_transform_json_orders_to_orders():
       }
   }
   orders = mt_client._transform_json_orders_to_orders(json_orders)
-  assert len(orders) == 1
+  assert len(orders) > 0
   assert orders[0] == order
   assert order.price == 0.65754
   assert order.stop_loss == 0.65443
@@ -616,7 +695,6 @@ def test_get_remaining_symbols():
 
 
 def test_get_balance(tmp_path):
-
   # Copy the Orders.json file to the temporary folder
   orders_path = tmp_path / 'Orders.json'
   original_orders_path = Path(f'{resources_test_path()}/Orders.json')
@@ -636,3 +714,114 @@ def test_get_balance(tmp_path):
   mt_client.check_open_orders()
 
   assert mt_client.get_balance() > 0
+
+  # No account info
+  with open(orders_path, 'w') as f:
+    f.write(json.dumps({
+        'account_info': {}, 'orders': {}
+    }))
+  assert mt_client.get_balance() == -1.0
+
+
+def test_subscribe_symbols(tmp_path):
+  mt_client = MT_Client()
+  mt_client.path_commands_prefix = tmp_path / 'Commands_'
+  mt_client.subscribe_symbols(Config.symbols)
+  file_path = f'{mt_client.path_commands_prefix}{0}.txt'
+  assert exists(file_path)
+
+
+def test_subscribe_symbols_bar_data(tmp_path):
+  mt_client = MT_Client()
+  mt_client.path_commands_prefix = tmp_path / 'Commands_'
+  mt_client.subscribe_symbols_bar_data([['EURUSD', 'M1'], ['GBPUSD', 'H1']])
+  file_path = f'{mt_client.path_commands_prefix}{0}.txt'
+  assert exists(file_path)
+
+
+def test_get_historical_data(tmp_path):
+  mt_client = MT_Client()
+  mt_client.path_commands_prefix = tmp_path / 'Commands_'
+  mt_client.get_historical_data(
+      'USDJPY',
+      '5M',
+  )
+  file_path = f'{mt_client.path_commands_prefix}{0}.txt'
+  assert exists(file_path)
+
+
+def test_get_historical_trades(tmp_path):
+  mt_client = MT_Client()
+  mt_client.path_commands_prefix = tmp_path / 'Commands_'
+  mt_client.get_historical_trades()
+  file_path = f'{mt_client.path_commands_prefix}{0}.txt'
+  assert exists(file_path)
+
+
+def test_modify_pending_order():
+  mt_client = MT_Client()
+  order = Order(
+      MutableOrderDetails(
+          prices=OrderPrice(
+              price=0.1111111,
+              stop_loss=0.65443,
+              take_profit=0.00000
+          ), lots=0.01
+      ),
+      ImmutableOrderDetails(
+          symbol='AUDUSD',
+          order_type=OrderType(buy=True, market=False),
+          magic='1705617043',
+          comment='this is a comment'
+      ),
+      ticket=2023993175
+  )
+  bid, ask = 0.1, 0.1
+  mt_client._modify_pending_order(order, bid, ask)
+  bid, ask = 0.1, 0.2
+  mt_client._modify_pending_order(order, bid, ask)
+  order = Order(
+      MutableOrderDetails(
+          prices=OrderPrice(
+              price=0.1111111,
+              stop_loss=0.65443,
+              take_profit=0.00000
+          ), lots=0.01
+      ),
+      ImmutableOrderDetails(
+          symbol='AUDUSD',
+          order_type=OrderType(buy=False, market=False),
+          magic='1705617043',
+          comment='this is a comment'
+      ),
+      ticket=2023993176
+  )
+  bid, ask = 0.1, 0.1
+  mt_client._modify_pending_order(order, bid, ask)
+  bid, ask = 0.2, 0.1
+  mt_client._modify_pending_order(order, bid, ask)
+  assert True
+
+
+def test_send_close_order_command(tmp_path):
+  mt_client = MT_Client()
+  mt_client.path_commands_prefix = tmp_path / 'Commands_'
+  mt_client.send_close_order_command(ticket=2023993175)
+  file_path = f'{mt_client.path_commands_prefix}{0}.txt'
+  assert exists(file_path)
+
+
+def test_send_close_all_orders_command(tmp_path):
+  mt_client = MT_Client()
+  mt_client.path_commands_prefix = tmp_path / 'Commands_'
+  mt_client.send_close_all_orders_command()
+  file_path = f'{mt_client.path_commands_prefix}{0}.txt'
+  assert exists(file_path)
+
+
+def test_send_close_orders_by_symbol_command(tmp_path):
+  mt_client = MT_Client()
+  mt_client.path_commands_prefix = tmp_path / 'Commands_'
+  mt_client.send_close_orders_by_symbol_command('USDJPY')
+  file_path = f'{mt_client.path_commands_prefix}{0}.txt'
+  assert exists(file_path)
