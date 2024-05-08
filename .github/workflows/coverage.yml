@@ -1,0 +1,26 @@
+name: Coverage using codecov
+on: workflow_dispatch
+# on: [push, pull_request]
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python version
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8.1'
+      - name: Install dependencies
+        run: pip install -r requirements_dev.txt
+      - name: Run tests and collect coverage
+        run: pytest --cov=tradeo tests
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          flags: smart-tests
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
