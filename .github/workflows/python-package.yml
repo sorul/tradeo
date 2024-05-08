@@ -9,10 +9,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.4
-      - name: Build and publish to pypi
-        uses: JRubics/poetry-publish@v2.0
+      - name: Set up Python
+        uses: actions/setup-python@v3
         with:
-          python_version: "3.8.1"
-          poetry_version: "==1.6.1"
-          poetry_install_options: "--without dev"
-          pypi_token: ${{ secrets.PYPI_TOKEN }}
+          python-version: '3.8.x'
+      - name: Install dependencies
+        run: python3 -m pip install --upgrade build twine
+      - name: Build
+        run: python3 -m build
+      - name: Publish to PyPI
+        run: python3 -m twine upload --repository pypi --username crv --password ${{ secrets.PYPI_TOKEN }} dist/*
