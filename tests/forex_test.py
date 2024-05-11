@@ -83,6 +83,7 @@ def test_send_profit_message(mock_data_path, tmp_path):
 @patch('tradeo.executable.basic_forex.BasicForex.is_locked')
 @patch('tradeo.executable.basic_forex.BasicForex.check_time_viability')
 def test_entry_point(mock_check_time_viability, mock_is_locked, tmp_path):
+  """This test is the longest because it runs the whole program."""
   mock_is_locked.return_value = False
   mock_check_time_viability.return_value = True
   bf = BasicForex()

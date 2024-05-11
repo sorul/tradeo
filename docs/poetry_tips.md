@@ -1,0 +1,1 @@
+- [Dependency specification](https://python-poetry.org/docs/dependency-specification/) 

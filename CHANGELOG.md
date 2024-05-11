@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## V0.17.1 (06/05/2024)
+- build:
+  - pyproject.toml updated to be more flexible
+
 ## V0.17.0 (05/05/2024)
 - test:
   - "pytest-cov" dependency added. A 90 percent coverage exceeded.
