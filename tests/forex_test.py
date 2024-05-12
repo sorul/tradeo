@@ -1,8 +1,9 @@
 import pytz
 from freezegun import freeze_time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import patch
+import shutil
 
 from tradeo.paths import resources_test_path
 from tradeo.executable.basic_forex import BasicForex
@@ -58,10 +59,8 @@ def test_check_time_viability():
     assert not bf.check_time_viability()
 
 
-@patch('tradeo.mt_client.Config')
 @patch('tradeo.files.get_default_path')
-def test_send_profit_message(mock_data_path, mock_config, tmp_path):
-  mock_config.mt_files_path = resources_test_path()
+def test_send_profit_message(mock_data_path, tmp_path):
   tz = pytz.timezone(str(Config.local_timezone))
   bf = BasicForex()
   mt_client = MT_Client()
@@ -83,12 +82,54 @@ def test_send_profit_message(mock_data_path, mock_config, tmp_path):
   assert not bf._send_profit_message(mt_client, tz.localize(d))
 
 
-@patch('tradeo.executable.basic_forex.BasicForex.is_locked')
-@patch('tradeo.executable.basic_forex.BasicForex.check_time_viability')
-def test_entry_point(mock_check_time_viability, mock_is_locked, tmp_path):
-  """This test is the longest because it runs the whole program."""
-  mock_is_locked.return_value = False
-  mock_check_time_viability.return_value = True
+@patch('tradeo.files.get_default_path')
+@patch('tradeo.mt_client.MT_Client.get_remaining_symbols')
+def test_handle_new_historical_data(
+        mock_remaining_symbols, mock_data_path, tmp_path):
+  mock_data_path.return_value = tmp_path
   bf = BasicForex()
   Config.mt_files_path = tmp_path
-  bf.entry_point()
+  mock_remaining_symbols.return_value = []
+  mt_client = MT_Client()
+  bf.handle_new_historical_data(
+      mt_client, datetime.now(Config.utc_timezone), timedelta(seconds=0)
+  )
+
+
+def test_handle_trades(tmp_path):
+  # Copy the Orders.json file to the temporary folder
+  orders_path = tmp_path / 'Orders.json'
+  original_orders_path = Path(
+      f'{resources_test_path()}/AgentFiles/Orders.json')
+  shutil.copyfile(original_orders_path, orders_path)
+
+  bf = BasicForex()
+  Config.mt_files_path = tmp_path
+  mt_client = MT_Client()
+  mt_client.path_orders = orders_path
+  bf.handle_trades(mt_client)
+
+
+@patch('tradeo.files.get_default_path')
+def test_check_mt_needs_to_restart(mock_data_path, tmp_path):
+  mock_data_path.return_value = tmp_path
+  bf = BasicForex()
+  bf._check_mt_needs_to_restart(1)
+
+
+@patch('tradeo.files.get_default_path')
+@patch('tradeo.mt_client.MT_Client.get_remaining_symbols')
+def test_main(mock_remaining_symbols, mock_data_path, tmp_path):
+  # Copy the Orders.json file to the temporary folder
+  orders_path = tmp_path / 'Orders.json'
+  original_orders_path = Path(
+      f'{resources_test_path()}/AgentFiles/Orders.json')
+  shutil.copyfile(original_orders_path, orders_path)
+  mock_data_path.return_value = tmp_path
+  Config.mt_files_path = tmp_path
+
+  bf = BasicForex()
+  mt_client = MT_Client()
+  mt_client.path_orders = orders_path
+  mock_remaining_symbols.return_value = []
+  bf.main(mt_client)

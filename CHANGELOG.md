@@ -1,8 +1,11 @@
 # CHANGELOG
 
-## V0.17.1 (06/05/2024)
+## V0.17.1 (develop)
 - build:
   - python version modified in pyproject.toml
+- fix:
+  - agentfile folder fixed
+  - there were tests that caused the execution not to finish
 
 ## V0.17.0 (05/05/2024)
 - test:

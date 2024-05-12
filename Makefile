@@ -2,9 +2,6 @@ flake8:
 	@flake8 --config config/tox.ini
 
 test:
-	@poetry run pytest -k "not test_entry_point"
-
-long_test:
 	@poetry run pytest --cov=tradeo
 
 requirements:
@@ -15,7 +12,7 @@ dev_requirements:
 
 tag:
 	@make flake8
-	@make long_test
+	@make test
 	@make requirements
 	@make dev_requirements
 	@git add .
