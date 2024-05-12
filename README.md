@@ -4,8 +4,8 @@
 This library contains a series of tools to create a trading bot for Forex trading. It uses the [DWX Connect](https://github.com/darwinex/dwxconnect/) (modified) to send commands and receive information of MetaTrader.
 This library is created **based on a linux installation of MetaTrader**.
 
-![Test](https://github.com/sorul/tradeo/actions/workflows/testing_coverage.yml/badge.svg?branch=develop)
-![codecov.io](https://codecov.io/github/sorul/tradeo/testing_coverage.svg?branch=develop)
+![Test](https://github.com/sorul/tradeo/actions/workflows/testing_coverage.yml/badge.svg?branch=master)
+![codecov.io](https://codecov.io/github/sorul/tradeo/coverage.svg?branch=master)
 
 ## Installation
 
