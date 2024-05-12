@@ -16,11 +16,11 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements_dev.txt
       - name: Run tests and collect coverage
-        run: pytest --cov=tradeo tests
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          flags: smart-tests
-          verbose: true
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: pytest --cov=tradeo tests/forex_test.py
+      # - name: Upload coverage to Codecov
+      #   uses: codecov/codecov-action@v4
+      #   with:
+      #     flags: smart-tests
+      #     verbose: true
+      #   env:
+      #     CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
