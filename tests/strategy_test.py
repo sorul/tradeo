@@ -113,7 +113,8 @@ def test_check_if_break_even_can_be_placed(tmp_path):
 
   # Prepare the test to obtain bid and ask
   market_data_path = tmp_path / 'Market_Data.json'
-  original_market_data_path = Path(f'{resources_test_path()}/Market_Data.json')
+  original_market_data_path = Path(
+      f'{resources_test_path()}/AgentFiles/Market_Data.json')
   shutil.copyfile(original_market_data_path, market_data_path)
   mt_client = MT_Client()
   mt_client.path_market_data = market_data_path

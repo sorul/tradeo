@@ -1,4 +1,4 @@
-name: Coverage using codecov
+name: Testing & Coverage
 on: workflow_dispatch
 # on: [push, pull_request]
 jobs:
@@ -12,7 +12,7 @@ jobs:
       - name: Set up Python version
         uses: actions/setup-python@v4
         with:
-          python-version: '3.8.1'
+          python-version: '3.8.x'
       - name: Install dependencies
         run: pip install -r requirements_dev.txt
       - name: Run tests and collect coverage

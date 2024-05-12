@@ -66,42 +66,45 @@ def test_start_threads(tmp_path):
   mt_client = MT_Client(event_handler=BasicEventHandler())
 
   path = tmp_path / 'Orders.json'
-  original_path = Path(f'{resources_test_path()}/Orders.json')
+  original_path = Path(f'{resources_test_path()}/AgentFiles/Orders.json')
   shutil.copyfile(original_path, path)
   mt_client.path_orders = path
 
   path = tmp_path / 'Messages.json'
-  original_path = Path(f'{resources_test_path()}/Messages.json')
+  original_path = Path(f'{resources_test_path()}/AgentFiles/Messages.json')
   shutil.copyfile(original_path, path)
   mt_client.path_messages = path
 
   path = tmp_path / 'Market_Data.json'
-  original_path = Path(f'{resources_test_path()}/Market_Data.json')
+  original_path = Path(f'{resources_test_path()}/AgentFiles/Market_Data.json')
   shutil.copyfile(original_path, path)
   mt_client.path_market_data = path
 
   path = tmp_path / 'Bar_Data.json'
-  original_path = Path(f'{resources_test_path()}/Bar_Data.json')
+  original_path = Path(f'{resources_test_path()}/AgentFiles/Bar_Data.json')
   shutil.copyfile(original_path, path)
   mt_client.path_bar_data = path
 
   path = tmp_path / 'Historical_Trades.json'
-  original_path = Path(f'{resources_test_path()}/Historical_Trades.json')
+  original_path = Path(
+      f'{resources_test_path()}/AgentFiles/Historical_Trades.json')
   shutil.copyfile(original_path, path)
   mt_client.path_historical_trades = path
 
   path = tmp_path / 'Orders_Stored.json'
-  original_path = Path(f'{resources_test_path()}/Orders_Stored.json')
+  original_path = Path(
+      f'{resources_test_path()}/AgentFiles/Orders_Stored.json')
   shutil.copyfile(original_path, path)
   mt_client.path_orders_stored = path
 
   path = tmp_path / 'Messages_Stored.json'
-  original_path = Path(f'{resources_test_path()}/Messages_Stored.json')
+  original_path = Path(
+      f'{resources_test_path()}/AgentFiles/Messages_Stored.json')
   shutil.copyfile(original_path, path)
   mt_client.path_messages_stored = path
 
   path = tmp_path / 'Commands_0.txt'
-  original_path = Path(f'{resources_test_path()}/Commands_0.txt')
+  original_path = Path(f'{resources_test_path()}/AgentFiles/Commands_0.txt')
   shutil.copyfile(original_path, path)
   mt_client.path_commands_prefix = path
 
@@ -114,7 +117,8 @@ def test_check_messages(tmp_path):
 
   # Copy the Messages.json file to the temporary folder
   messages_path = tmp_path / 'Messages.json'
-  original_messages_path = Path(f'{resources_test_path()}/Messages.json')
+  original_messages_path = Path(
+      f'{resources_test_path()}/AgentFiles/Messages.json')
   shutil.copyfile(original_messages_path, messages_path)
 
   mt_client = MT_Client()
@@ -158,7 +162,8 @@ def test_check_market_data(tmp_path):
 
   # Copy the Market_Data.json file to the temporary folder
   market_data_path = tmp_path / 'Market_Data.json'
-  original_market_data_path = Path(f'{resources_test_path()}/Market_Data.json')
+  original_market_data_path = Path(
+      f'{resources_test_path()}/AgentFiles/Market_Data.json')
   shutil.copyfile(original_market_data_path, market_data_path)
 
   mt_client = MT_Client()
@@ -206,7 +211,8 @@ def test_check_bar_data(tmp_path):
 
   # Copy the Bar_Data.json file to the temporary folder
   bar_data_path = tmp_path / 'Bar_Data.json'
-  original_bar_data_path = Path(f'{resources_test_path()}/Bar_Data.json')
+  original_bar_data_path = Path(
+      f'{resources_test_path()}/AgentFiles/Bar_Data.json')
   shutil.copyfile(original_bar_data_path, bar_data_path)
 
   mt_client = MT_Client()
@@ -256,13 +262,14 @@ def test_check_open_orders(tmp_path):
 
   # Copy the Orders.json file to the temporary folder
   orders_path = tmp_path / 'Orders.json'
-  original_orders_path = Path(f'{resources_test_path()}/Orders.json')
+  original_orders_path = Path(
+      f'{resources_test_path()}/AgentFiles/Orders.json')
   shutil.copyfile(original_orders_path, orders_path)
 
   # Copy the Orders_Stored.json file to the temporary folder
   orders_stored_path = tmp_path / 'Orders_Stored.json'
   original_orders_stored_path = Path(
-      f'{resources_test_path()}/Orders_Stored.json')
+      f'{resources_test_path()}/AgentFiles/Orders_Stored.json')
   shutil.copyfile(original_orders_stored_path, orders_stored_path)
 
   mt_client = MT_Client()
@@ -288,6 +295,22 @@ def test_check_open_orders(tmp_path):
               comment='this is a comment'
           ),
           ticket=2023993175
+      ),
+      Order(
+          MutableOrderDetails(
+              prices=OrderPrice(
+                  price=0.65754,
+                  stop_loss=0.65443,
+                  take_profit=0.00000
+              ), lots=0.01
+          ),
+          ImmutableOrderDetails(
+              symbol='AUDUSD',
+              order_type=OrderType(buy=False, market=False),
+              magic='1705617043',
+              comment='this is a comment'
+          ),
+          ticket=2023993176
       )
   ]
   assert_account_data = {
@@ -339,16 +362,19 @@ def test_check_open_orders(tmp_path):
 def test_check_historical_data(tmp_path):
 
   symbol = 'USDJPY'
-  historical_path = tmp_path / f'Historical_Data_{symbol}.json'
-
-  commands_path = tmp_path / 'Commands_0.txt'
+  prefix = 'AgentFiles'
+  Path(tmp_path / prefix).mkdir()
+  historical_path = tmp_path / f'{prefix}/Historical_Data_{symbol}.json'
+  commands_path = tmp_path / f'{prefix}/Commands_0.txt'
   original_commands_path = Path(
-      f'{resources_test_path()}/Commands_0.txt')
+      f'{resources_test_path()}/{prefix}/Commands_0.txt')
   shutil.copyfile(original_commands_path, commands_path)
 
   mt_client = MT_Client()
-  mt_client.path_historical_data_prefix = tmp_path / 'Historical_Data_'
-  mt_client.path_commands_prefix = tmp_path / 'Commands_'
+  mt_client.path_historical_data_prefix = Path(
+      tmp_path / f'{prefix}/Historical_Data_'
+  )
+  mt_client.path_commands_prefix = tmp_path / f'{prefix}/Commands_'
 
   now_date = datetime.now(Config.broker_timezone)
   td = timedelta(minutes=now_date.minute % 5,
@@ -387,7 +413,7 @@ def test_check_historical_data(tmp_path):
   assert mt_client.successful_symbols == {symbol}
 
   # Assert no remaining symbols
-  mt_client.successful_symbols = set(Config.symbols)
+  mt_client._successful_symbols = set(Config.symbols)
   assert mt_client.check_historical_data(symbol) == {}
 
 
@@ -422,7 +448,7 @@ def test_check_historical_trades(tmp_path):
   # Copy the Bar_Data.json file to the temporary folder
   historical_trades_path = tmp_path / 'Historical_Trades.json'
   original_historical_trades_path = Path(
-      f'{resources_test_path()}/Historical_Trades.json')
+      f'{resources_test_path()}/AgentFiles/Historical_Trades.json')
   shutil.copyfile(original_historical_trades_path, historical_trades_path)
 
   mt_client = MT_Client()
@@ -546,7 +572,8 @@ def test_clean_all_historical_files(tmp_path):
 
 def test_command_file_exist():
   mt_client = MT_Client()
-  mt_client.path_commands_prefix = Path(f'{resources_test_path()}/Commands_')
+  mt_client.path_commands_prefix = Path(
+      f'{resources_test_path()}/AgentFiles/Commands_')
 
   assert mt_client.command_file_exist('USDJPY')
   assert not mt_client.command_file_exist('EURUSD')
@@ -562,7 +589,8 @@ def test_clean_messages():
 
 def test_get_bid_ask(tmp_path):
   market_data_path = tmp_path / 'Market_Data.json'
-  original_market_data_path = Path(f'{resources_test_path()}/Market_Data.json')
+  original_market_data_path = Path(
+      f'{resources_test_path()}/AgentFiles/Market_Data.json')
   shutil.copyfile(original_market_data_path, market_data_path)
   mt_client = MT_Client()
   mt_client.path_market_data = market_data_path
@@ -656,7 +684,8 @@ def test_create_new_order(mock_default_path, tmp_path):
 
   # Market Data
   market_data_path = tmp_path / 'Market_Data.json'
-  original_market_data_path = Path(f'{resources_test_path()}/Market_Data.json')
+  original_market_data_path = Path(
+      f'{resources_test_path()}/AgentFiles/Market_Data.json')
   shutil.copyfile(original_market_data_path, market_data_path)
   mt_client = MT_Client()
   mt_client.path_market_data = market_data_path
@@ -688,7 +717,7 @@ def test_create_new_order(mock_default_path, tmp_path):
 
 def test_get_remaining_symbols():
   mt_client = MT_Client()
-  mt_client.successful_symbols = {'EURUSD', 'USDCAD'}
+  mt_client._successful_symbols = {'EURUSD', 'USDCAD'}
   result = mt_client.get_remaining_symbols()
   assert len(result) == len(Config.symbols) - 2
   assert 'EURUSD' not in result
@@ -697,7 +726,7 @@ def test_get_remaining_symbols():
 def test_get_balance(tmp_path):
   # Copy the Orders.json file to the temporary folder
   orders_path = tmp_path / 'Orders.json'
-  original_orders_path = Path(f'{resources_test_path()}/Orders.json')
+  original_orders_path = Path(f'{resources_test_path()}/AgentFiles/Orders.json')
   shutil.copyfile(original_orders_path, orders_path)
 
   # Copy the last_balance.txt file to the temporary folder

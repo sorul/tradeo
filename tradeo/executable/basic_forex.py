@@ -175,3 +175,4 @@ class BasicForex(Executable):
   def finish(self, mt_client: MT_Client) -> None:
     """Finish the forex bot."""
     mt_client.stop()
+    mt_client.deactivate()

@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## V0.17.1 (15/05/2024)
+- build:
+  - python version modified in pyproject.toml
+- fix:
+  - agentfile folder fixed
+  - there were tests that caused the execution not to finish
+
 ## V0.17.0 (05/05/2024)
 - test:
   - "pytest-cov" dependency added. A 90 percent coverage exceeded.
