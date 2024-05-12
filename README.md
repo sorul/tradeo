@@ -1,9 +1,11 @@
 # TRADEO - A forex trading framework using MetaTrader
-
-![alt text](docs/images/logo.PNG "Title")
+![Logo](docs/images/logo.PNG "Title")
 
 This library contains a series of tools to create a trading bot for Forex trading. It uses the [DWX Connect](https://github.com/darwinex/dwxconnect/) (modified) to send commands and receive information of MetaTrader.
 This library is created **based on a linux installation of MetaTrader**.
+
+![Test](https://github.com/sorul/tradeo/actions/workflows/testing_coverage.yml/badge.svg?branch=develop)
+![codecov.io](https://codecov.io/github/sorul/tradeo/testing_coverage.svg?branch=develop)
 
 ## Installation
 
