@@ -1,4 +1,4 @@
-name: Coverage using codecov
+name: Testing & Coverage
 on: workflow_dispatch
 # on: [push, pull_request]
 jobs:
