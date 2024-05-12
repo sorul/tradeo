@@ -61,10 +61,25 @@ def test_check_time_viability():
 
 @patch('tradeo.files.get_default_path')
 def test_send_profit_message(mock_data_path, tmp_path):
+  # Copy the Orders.json file to the temporary folder
+  orders_path = tmp_path / 'Orders.json'
+  original_orders_path = Path(
+      f'{resources_test_path()}/AgentFiles/Orders.json')
+  shutil.copyfile(original_orders_path, orders_path)
+
+  # Copy the Orders_Stored.json file to the temporary folder
+  orders_stored_path = tmp_path / 'Orders_Stored.json'
+  original_orders_stored_path = Path(
+      f'{resources_test_path()}/AgentFiles/Orders_Stored.json')
+  shutil.copyfile(original_orders_stored_path, orders_stored_path)
+
+  mt_client = MT_Client()
+  mt_client.path_orders = orders_path
+  mt_client.path_orders_stored = orders_stored_path
+  mt_client.account_info = {'balance': 100.0}
+
   tz = pytz.timezone(str(Config.local_timezone))
   bf = BasicForex()
-  mt_client = MT_Client()
-  mt_client.account_info = {'balance': 100.0}
 
   # Make data_path() return the temporary directory
   mock_data_path.return_value = tmp_path
@@ -87,26 +102,39 @@ def test_send_profit_message(mock_data_path, tmp_path):
 def test_handle_new_historical_data(
         mock_remaining_symbols, mock_data_path, tmp_path):
   mock_data_path.return_value = tmp_path
-  bf = BasicForex()
   Config.mt_files_path = tmp_path
-  mock_remaining_symbols.return_value = []
   mt_client = MT_Client()
+
+  mock_remaining_symbols.return_value = []
+  bf = BasicForex()
   bf.handle_new_historical_data(
       mt_client, datetime.now(Config.utc_timezone), timedelta(seconds=0)
   )
 
 
-def test_handle_trades(tmp_path):
+@patch('tradeo.mt_client.Config')
+def test_handle_trades(mock_config, tmp_path):
   # Copy the Orders.json file to the temporary folder
   orders_path = tmp_path / 'Orders.json'
   original_orders_path = Path(
       f'{resources_test_path()}/AgentFiles/Orders.json')
   shutil.copyfile(original_orders_path, orders_path)
 
-  bf = BasicForex()
-  Config.mt_files_path = tmp_path
+  # Copy the Orders_Stored.json file to the temporary folder
+  orders_stored_path = tmp_path / 'Orders_Stored.json'
+  original_orders_stored_path = Path(
+      f'{resources_test_path()}/AgentFiles/Orders_Stored.json')
+  shutil.copyfile(original_orders_stored_path, orders_stored_path)
+
+  mock_config.mt_files_path = tmp_path
+  mock_config.utc_timezone = pytz.utc
   mt_client = MT_Client()
   mt_client.path_orders = orders_path
+  mt_client.path_orders_stored = orders_stored_path
+  Path(tmp_path / 'AgentFiles').mkdir(exist_ok=True)
+  mt_client.path_commands_prefix = tmp_path / 'AgentFiles/Commands_'
+
+  bf = BasicForex()
   bf.handle_trades(mt_client)
 
 
@@ -125,11 +153,27 @@ def test_main(mock_remaining_symbols, mock_data_path, tmp_path):
   original_orders_path = Path(
       f'{resources_test_path()}/AgentFiles/Orders.json')
   shutil.copyfile(original_orders_path, orders_path)
-  mock_data_path.return_value = tmp_path
-  Config.mt_files_path = tmp_path
 
-  bf = BasicForex()
+  # Copy the Orders_Stored.json file to the temporary folder
+  orders_stored_path = tmp_path / 'Orders_Stored.json'
+  original_orders_stored_path = Path(
+      f'{resources_test_path()}/AgentFiles/Orders_Stored.json')
+  shutil.copyfile(original_orders_stored_path, orders_stored_path)
+
+  Config.mt_files_path = tmp_path
   mt_client = MT_Client()
   mt_client.path_orders = orders_path
+  mt_client.path_orders_stored = orders_stored_path
+  Path(tmp_path / 'AgentFiles').mkdir(exist_ok=True)
+  mt_client.path_commands_prefix = tmp_path / 'AgentFiles/Commands_'
+  mt_client.path_historical_data_prefix = Path(
+      tmp_path / 'AgentFiles/Historical_Data_'
+  )
+  mt_client.path_messages = Path(
+      tmp_path / 'AgentFiles/Messages.json'
+  )
+
+  mock_data_path.return_value = tmp_path
   mock_remaining_symbols.return_value = []
+  bf = BasicForex()
   bf.main(mt_client)
