@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## V0.17.1 (develop)
+## V0.17.1 (15/05/2024)
 - build:
   - python version modified in pyproject.toml
 - fix:
