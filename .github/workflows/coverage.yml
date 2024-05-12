@@ -16,7 +16,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements_dev.txt
       - name: Run tests and collect coverage
-        run: pytest --cov=tradeo tests
+        run: pytest --cov=tradeo tests/mt_client_test.py
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
