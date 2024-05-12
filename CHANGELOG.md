@@ -2,7 +2,7 @@
 
 ## V0.17.1 (06/05/2024)
 - build:
-  - pyproject.toml updated to be more flexible
+  - python version modified in pyproject.toml
 
 ## V0.17.0 (05/05/2024)
 - test:

@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
+from tradeo.paths import resources_test_path
 from tradeo.executable.basic_forex import BasicForex
 from tradeo.files import Files
 from tradeo.config import Config
@@ -57,8 +58,10 @@ def test_check_time_viability():
     assert not bf.check_time_viability()
 
 
+@patch('tradeo.mt_client.Config')
 @patch('tradeo.files.get_default_path')
-def test_send_profit_message(mock_data_path, tmp_path):
+def test_send_profit_message(mock_data_path, mock_config, tmp_path):
+  mock_config.mt_files_path = resources_test_path()
   tz = pytz.timezone(str(Config.local_timezone))
   bf = BasicForex()
   mt_client = MT_Client()
