@@ -20,7 +20,6 @@ from tradeo.order import (
 )
 from tradeo.mt_message import MT_MessageError, MT_MessageInfo
 from tradeo.order_type import OrderType
-from tradeo.files import Files
 from tradeo.event_handlers.basic_event_handler import BasicEventHandler
 
 
@@ -579,10 +578,12 @@ def test_command_file_exist():
   assert not mt_client.command_file_exist('EURUSD')
 
 
-def test_clean_messages():
-  m = {'INFO': ['test'], 'ERROR': ['error_test']}
+def test_clean_messages(tmp_path):
   mt_client = MT_Client()
+  mt_client.path_messages = tmp_path
+  m = {'INFO': ['test'], 'ERROR': ['error_test']}
   mt_client.messages = m  # type: ignore
+
   mt_client.clean_messages()
   assert mt_client.messages == {'INFO': [], 'ERROR': []}
 
@@ -726,18 +727,19 @@ def test_get_remaining_symbols():
 def test_get_balance(tmp_path):
   # Copy the Orders.json file to the temporary folder
   orders_path = tmp_path / 'Orders.json'
-  original_orders_path = Path(f'{resources_test_path()}/AgentFiles/Orders.json')
+  original_orders_path = Path(
+      f'{resources_test_path()}/AgentFiles/Orders.json')
   shutil.copyfile(original_orders_path, orders_path)
 
-  # Copy the last_balance.txt file to the temporary folder
-  last_balance_path = tmp_path / Files.LAST_BALANCE.value
-  original_last_balance_path = Path(
-      f'{resources_test_path()}/{Files.LAST_BALANCE.value}'
-  )
-  shutil.copyfile(original_last_balance_path, last_balance_path)
+  # Copy the Orders_Stored.json file to the temporary folder
+  orders_stored_path = tmp_path / 'Orders_Stored.json'
+  original_path = Path(
+      f'{resources_test_path()}/AgentFiles/Orders_Stored.json')
+  shutil.copyfile(original_path, orders_stored_path)
 
   mt_client = MT_Client()
   mt_client.path_orders = orders_path
+  mt_client.path_orders_stored = orders_stored_path
 
   # Call for the first time to read orders
   mt_client.check_open_orders()
@@ -854,3 +856,29 @@ def test_send_close_orders_by_symbol_command(tmp_path):
   mt_client.send_close_orders_by_symbol_command('USDJPY')
   file_path = f'{mt_client.path_commands_prefix}{0}.txt'
   assert exists(file_path)
+
+
+@patch('tradeo.mt_client.MT_Client.get_balance')
+@patch('tradeo.mt_client.MT_Client.get_bid_ask')
+def test_get_lot_size(bid_ask_mock, balance_mock):
+  bid_ask_mock.return_value = (1.08452, 1.08452)
+  balance_mock.return_value = 1000
+  mt_client = MT_Client()
+  order = Order(
+      MutableOrderDetails(
+          prices=OrderPrice(
+              price=1.08452,
+              stop_loss=1.08033,
+              take_profit=1.09040
+          )
+      ),
+      ImmutableOrderDetails(
+          symbol='EURUSD',
+          order_type=OrderType(buy=True, market=True),
+          magic='1705617043',
+          comment='this is a comment'
+      ),
+      ticket=2023993175
+  )
+  lots = mt_client.get_lot_size(order=order, risk_ratio=1)
+  assert lots == 0.03

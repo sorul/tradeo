@@ -48,6 +48,7 @@ class Config:
 
   # Trading configuration
   symbols = (os.getenv('TB_SYMBOLS') or 'EURUSD,USDJPY,USDCAD').split(',')
+  account_currency = os.getenv('TB_ACCOUNT_CURRENCY') or 'EUR'
   timeframe = os.getenv('TB_TIMEFRAME') or 'M5'
   lookback_days = int(os.getenv('TB_LOOKBACK_DAYS') or 10)
 

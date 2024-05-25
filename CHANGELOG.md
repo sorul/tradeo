@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## V0.18.0 (25/05/2024)
+- feat:
+  - MT_Client has a new method called "get_lot_size".
+- fix:
+  - "test_clean_messages" and "test_get_balance" fixed.
+
 ## V0.17.1 (15/05/2024)
 - build:
   - python version modified in pyproject.toml
