@@ -864,21 +864,8 @@ def test_get_lot_size(bid_ask_mock, balance_mock):
   bid_ask_mock.return_value = (1.08452, 1.08452)
   balance_mock.return_value = 1000
   mt_client = MT_Client()
-  order = Order(
-      MutableOrderDetails(
-          prices=OrderPrice(
-              price=1.08452,
-              stop_loss=1.08033,
-              take_profit=1.09040
-          )
-      ),
-      ImmutableOrderDetails(
-          symbol='EURUSD',
-          order_type=OrderType(buy=True, market=True),
-          magic='1705617043',
-          comment='this is a comment'
-      ),
-      ticket=2023993175
-  )
-  lots = mt_client.get_lot_size(order=order, risk_ratio=1)
+  symbol = 'EURUSD'
+  price = 1.08452
+  stop_loss = 1.08033
+  lots = mt_client.get_lot_size(symbol, price, stop_loss, risk_ratio=1)
   assert lots == 0.03
