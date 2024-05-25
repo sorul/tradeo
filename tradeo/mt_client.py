@@ -704,7 +704,10 @@ class MT_Client(metaclass=Singleton):
     ]
 
   def get_balance(self) -> float:
-    """Return the balance of the account."""
+    """Return the balance of the account.
+
+    Returns -1.0 if the balance is not a float.
+    """
     max_retries = 5
     for _ in range(max_retries):
       self.check_open_orders()
@@ -721,7 +724,11 @@ class MT_Client(metaclass=Singleton):
     return list(all_symbols - self.successful_symbols)
 
   def get_lot_size(self, order: Order, risk_ratio: float) -> float:
-    """Return the lot size based on the risk (0-100%) on your account."""
+    """Return the lot size based on the risk (0-100%) on your account.
+
+    Returns 0.01 if the bid and ask are not available or if the risk is lower
+    than 0.01.
+    """
     bid, ask = self.get_bid_ask(Config.account_currency + order.symbol[3:6])
     if bid != 0 and ask != 0:
       price = (bid + ask) / 2
@@ -729,7 +736,9 @@ class MT_Client(metaclass=Singleton):
       sl_pips = abs(order.price - order.stop_loss) / pip
       balance = self.get_balance()
       risk_ratio = risk_ratio / 100
-      lots = (risk_ratio * balance) / ((100000 / price * pip) * sl_pips)
-      return round(lots, 2)
+      lots = round(
+          (risk_ratio * balance) / ((100000 / price * pip) * sl_pips), 2
+      )
+      return lots if lots > 0 else 0.01
     else:
       return 0.01
