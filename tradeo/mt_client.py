@@ -723,17 +723,23 @@ class MT_Client(metaclass=Singleton):
     all_symbols = set(Config.symbols)
     return list(all_symbols - self.successful_symbols)
 
-  def get_lot_size(self, order: Order, risk_ratio: float) -> float:
+  def get_lot_size(
+      self,
+      symbol: str,
+      entry_price: float,
+      stop_loss: float,
+      risk_ratio: float
+  ) -> float:
     """Return the lot size based on the risk (0-100%) on your account.
 
     Returns 0.01 if the bid and ask are not available or if the risk is lower
     than 0.01.
     """
-    bid, ask = self.get_bid_ask(Config.account_currency + order.symbol[3:6])
+    bid, ask = self.get_bid_ask(Config.account_currency + symbol[3:6])
     if bid != 0 and ask != 0:
       price = (bid + ask) / 2
-      pip = get_pip(order.symbol)
-      sl_pips = abs(order.price - order.stop_loss) / pip
+      pip = get_pip(symbol)
+      sl_pips = abs(entry_price - stop_loss) / pip
       balance = self.get_balance()
       risk_ratio = risk_ratio / 100
       lots = round(
