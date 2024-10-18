@@ -23,6 +23,7 @@ class Blocker:
     _, _, _ = exc_type, exc_value, traceback
     remove_file(self.name)
     return True
-  
+
   def remove_block(self) -> None:
+    """Manually the user can remove the block."""
     remove_file(self.name)

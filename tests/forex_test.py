@@ -139,13 +139,6 @@ def test_handle_trades(mock_config, tmp_path):
 
 
 @patch('tradeo.files.get_default_path')
-def test_check_mt_needs_to_restart(mock_data_path, tmp_path):
-  mock_data_path.return_value = tmp_path
-  bf = BasicForex()
-  bf._check_mt_needs_to_restart(1)
-
-
-@patch('tradeo.files.get_default_path')
 @patch('tradeo.mt_client.MT_Client.get_remaining_symbols')
 def test_main(mock_remaining_symbols, mock_data_path, tmp_path):
   # Copy the Orders.json file to the temporary folder

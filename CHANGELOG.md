@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## V0.19.0
+- refactor:
+  - "_check_mt_needs_to_restart" function remove from BasicForex class.
+- feat:
+  - New "remove_block" function to Blocker class.
+
 ## V0.18.0 (25/05/2024)
 - feat:
   - MT_Client has a new method called "get_lot_size".
