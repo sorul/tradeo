@@ -4,7 +4,6 @@ buylimit
 buystop
 Darwinex
 dataframe
-dotenv
 EURGBP
 EURUSD
 Fibo

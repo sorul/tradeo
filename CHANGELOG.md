@@ -2,6 +2,7 @@
 
 ## V0.19.0
 - refactor:
+  - python versions updated (>= 3.9.0, <4.0.0)
   - "_check_mt_needs_to_restart" function remove from BasicForex class.
 - feat:
   - New "remove_block" function to Blocker class.

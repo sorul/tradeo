@@ -21,6 +21,7 @@ from tradeo.order import (
 from tradeo.mt_message import MT_MessageError, MT_MessageInfo
 from tradeo.order_type import OrderType
 from tradeo.event_handlers.basic_event_handler import BasicEventHandler
+from tradeo.log import log
 
 
 def test_set_agent_paths():
@@ -654,7 +655,7 @@ def test_transform_json_orders_to_orders():
   assert order.lots == 0.01
 
 
-@patch('tradeo.log.debug')
+@patch.object(log, 'debug')
 def test_place_break_even(mock_debug, tmp_path):
   mt_client = MT_Client()
   mt_client.path_commands_prefix = tmp_path / 'Commands_'
