@@ -24,26 +24,17 @@ poetry add tradeo
 Or you can add manually in *pyproject.toml* file if you want download it from a specific branch:
 
 ```shell
-tradeo = { git = "git@github.com:sorul/tradeo.git", branch = "master" }
+tradeo = { git = "git@github.com:sorul/tradeo.git", branch = "develop" }
 ```
-
-And finally:
-```shell
-poetry install --without dev
-```
-
 
 
 ### Configure Metatrader
 
-It is necessary to download the [mt_tb_expert.mq5](tradeo/mt_tb_expert.mq5) file and put it in the proper directory. This directory is usually: *MetaTrader/MQL5/Experts/Advisors/mt_tb_expert.mq5*.
+It is necessary to download the [mt_tb_expert.ex5](docs/files/mt_tb_expert.ex5) file and put it in the proper directory. This directory is usually: *MetaTrader/MQL5/Experts/Advisors/mt_tb_expert.ex5*.
 
 We add the currency pairs in the timeframe we are going to use (in my case it would be 5 minutes). There is the option for the bot to open them automatically, but I do not recommend it.
 
 Activate the expert in any symbol chart, it does not matter which chart you use. But only in one of them.
-
-> [!TIP]
-> If you want to execute MetaTrader in the background, your can use this [execute_mt5.sh](https://github.com/sorul/sorul_tradingbot/blob/master/scripts/execute_mt5.sh) script.
 
 
 ## Usage
@@ -101,25 +92,18 @@ export TB_TG_FOREX_CHAT_ID=-999999999
 
 The different possibilities for exporting environment variables depend on
 the user's preference. For example, we can place all the variables in a
-".env" file and then execute the command using Poetry:
+".env" file and then execute the command using a Makefile and poetry:
 
-*main_forex.sh*
-```bash
-#!/bin/bash
-PATH=/home/pi/.poetry/bin:/home/pi/.pyenv/shims:/home/pi/.pyenv/bin:/home/pi/.poetry/bin:/home/pi/.pyenv/shims:/home/pi/.pyenv/bin:/home/pi/.cargo/bin:/home/pi/.poetry/bin:/home/pi/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/games:/usr/games
-SHELL=/usr/bin/bash
-DISPLAY=:10.0
-XAUTHORITY=/home/pi/.Xauthority
-touch ~/.bashrc
-cd <path_to_project>
-source .env
-poetry run run_forex
+*Makefile*
+```makefile
+run_forex:
+	source .env && ~/.local/bin/poetry run run_forex
 ```
 
 Edit the crontab (crontab -e):
 
 ```console
-@reboot /usr/bin/env bash <path_to_your_project>/execute_mt5.sh
+@reboot cd <path_to_your_project> && make start_metatrader
 
-*/5 * * * 0-5 <path_to_your_project>/main_forex.sh >> /tmp/crontab_script_log.txt 2>&1
+*/5 * * * 0-5  cd <path_to_your_project> && make run_forex
 ```

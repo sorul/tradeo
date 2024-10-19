@@ -4,6 +4,7 @@
 - refactor:
   - python versions updated (>= 3.9.0, <4.0.0)
   - "_check_mt_needs_to_restart" function remove from BasicForex class.
+  - compile file "mt_tb_expert.ex5" uploaded
 - feat:
   - New "remove_block" function to Blocker class.
 
