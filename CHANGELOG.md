@@ -7,6 +7,7 @@
   - compile file "mt_tb_expert.ex5" uploaded
 - feat:
   - New "remove_block" function to Blocker class.
+  - "reboot_mt" function removed.
 
 ## V0.18.0 (25/05/2024)
 - feat:

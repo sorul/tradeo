@@ -1,17 +1,13 @@
 """Script to collect different utilities."""
-from time import sleep
 from datetime import datetime
-import subprocess
 import typing as ty
-from os.path import join
 from pytz import BaseTzInfo
 from pytz.tzinfo import DstTzInfo, StaticTzInfo
 
 from tradeo.config import Config
-from tradeo.paths import bash_path, get_default_path
+from tradeo.paths import get_default_path
 from tradeo.files import Files
 from tradeo.files import write_file, try_read_file
-from tradeo.log import log
 
 timezone_type = ty.Union[DstTzInfo, BaseTzInfo, StaticTzInfo]
 
@@ -24,16 +20,6 @@ def string_to_date_utc(
   """Convert a string to a datetime object in UTC timezone."""
   r = from_timezone.localize(datetime.strptime(str_date, date_format))
   return r.astimezone(Config.utc_timezone)
-
-
-def reboot_mt():
-  """Reboot MetaTrader."""
-  log.warning('Rebooting MetaTrader ...')
-  scripts_path = bash_path()
-  subprocess.Popen(['/usr/bin/sh', join(scripts_path, 'stop-mt.sh')])
-  sleep(3)
-  subprocess.Popen(['/usr/bin/sh', join(scripts_path, 'launch-mt5.sh')])
-  sleep(60)
 
 
 def create_magic_number() -> str:

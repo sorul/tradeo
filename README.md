@@ -74,7 +74,6 @@ export TB_CHECK_HISTORICAL_DATA_THREAD=true
 export TB_CHECK_HISTORICAL_TRADES_THREAD=false
 
 # Metatrader configuration
-export TB_WINE_PATH=/usr/local/bin/wine
 export TB_WINE_HOME="${HOME}/.wine"
 export TB_MT_TERMINAL_EXE="${TB_WINE_HOME}/drive_c/Program Files/MetaTrader/terminal.exe"
 export TB_MT_FILES_PATH="${TB_WINE_HOME}/drive_c/Program Files/MetaTrader/MQL5/Files"

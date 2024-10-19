@@ -11,8 +11,8 @@ from tradeo.config import Config
 from tradeo.log import log
 from tradeo.mt_client import MT_Client
 from tradeo.utils import (
-    string_to_date_utc, create_magic_number, get_last_balance,
-    reboot_mt, reset_consecutive_times_down, increment_consecutive_times_down,
+    string_to_date_utc, create_magic_number, get_last_balance, 
+    reset_consecutive_times_down, increment_consecutive_times_down,
     get_consecutive_times_down
 )
 from tradeo.ohlc import OHLC
