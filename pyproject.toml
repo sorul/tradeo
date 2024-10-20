@@ -1,9 +1,40 @@
 [tool.poetry]
 name = "tradeo"
 version = "0.18.0"
-description = ""
-authors = ["sorul <cromerovargas2d@gmail.com>"]
+description = "This library contains a series of tools to create a trading bot for Forex trading using Metatrader."
 readme = "README.md"
+authors = [
+  "Cayetano Romero Vargas <cromerovargas2d@gmail.com>",
+]
+license = "MIT"
+keywords = [
+  "trading",
+  "forex",
+  "metatrader",
+  "bot",
+  "investment",
+  "finance",
+  "trading-bot",
+  "trading-strategy",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Office/Business :: Financial :: Investment",
+  "Topic :: Office/Business :: Financial :: Accounting",
+  "Topic :: Office/Business :: Financial :: Trading",
+  "Topic :: Office/Business :: Financial",
+]
+
+[project.urls]
+"Repository" = "https://github.com/sorul/tradeo"
+"Changelog" = "https://github.com/sorul/tradeo/blob/master/CHANGELOG.md"
 
 [tool.poetry.dependencies]
 python = "^3.9.0"
