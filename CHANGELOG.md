@@ -5,8 +5,8 @@
   - python versions updated (>= 3.9.0, <4.0.0)
   - "_check_mt_needs_to_restart" function remove from BasicForex class.
   - compile file "mt_tb_expert.ex5" uploaded
+  - New Blocker class to lock the executions
 - feat:
-  - New "remove_block" function to Blocker class.
   - "reboot_mt" function removed.
 
 ## V0.18.0 (25/05/2024)

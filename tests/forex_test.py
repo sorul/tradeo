@@ -12,23 +12,6 @@ from tradeo.config import Config
 from tradeo.mt_client import MT_Client
 
 
-@patch('tradeo.files.get_default_path')
-def test_is_locked(mock_data_path, tmp_path):
-
-  # Make data_path() return the temporary directory
-  mock_data_path.return_value = tmp_path
-
-  bf = BasicForex()
-  lock_file = Path(tmp_path / f'{bf.name}.block')
-  lock_file.touch()
-
-  assert bf.is_locked()
-
-  # Test when lock file does not exist
-  lock_file.unlink()
-  assert not bf.is_locked()
-
-
 def test_check_time_viability():
   tz = pytz.timezone(str(Config.broker_timezone))
   bf = BasicForex()

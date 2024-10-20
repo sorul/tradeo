@@ -11,7 +11,7 @@ from tradeo.log import log
 from tradeo.executable.executable import Executable
 from tradeo.strategies.basic_strategy import BasicStrategy
 from tradeo.event_handlers.basic_event_handler import BasicEventHandler
-from tradeo.context_managers.blocker import Blocker
+from tradeo.blocker import Blocker
 from tradeo.utils import (reset_consecutive_times_down, get_last_balance)
 
 
@@ -24,17 +24,14 @@ class BasicForex(Executable):
 
   def entry_point(self) -> None:
     """Entry point of the forex bot."""
-    if not self.is_locked() and self.check_time_viability():
+    if self.check_time_viability():
       mt_client = MT_Client(event_handler=BasicEventHandler())
       try:
         # Lock the execution of the forex bot.
         # Another thread can not run at the same time.
-        block = Blocker(name=self.name)
-        with block:
+        with Blocker(lockfile=self.name):
           self.main(mt_client)
       except Exception:  # noqa
-        # Remove block
-        block.remove_block()
         # Finish the bot
         self.finish(mt_client)
         # Log the error
@@ -145,10 +142,6 @@ class BasicForex(Executable):
       return True
     else:
       return False
-
-  def is_locked(self) -> bool:
-    """Return True if the forex-bot is running."""
-    return Blocker(name=self.name).is_blocked()
 
   def check_time_viability(self) -> bool:
     """Check if the forex bot is viable to run."""

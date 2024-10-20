@@ -21,7 +21,7 @@ from tradeo.order_type import OrderType
 from tradeo.order import (
     Order, MutableOrderDetails, ImmutableOrderDetails, OrderPrice
 )
-from tradeo.context_managers.blocker import Blocker
+from tradeo.blocker import Blocker
 from tradeo.trading_methods import (get_pip, get_pivots, EMA, RSI, SAR,
                                     confirmation_pattern,
                                     three_bar_reversal, pinbar_pattern,
