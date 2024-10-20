@@ -384,14 +384,14 @@ def test_check_historical_data(tmp_path):
   rounded_now_date_minus_5 = rounded_now_date - timedelta(minutes=5)
   data = {
       'USDJPY_M5': {
-          f'{rounded_now_date_minus_5.strftime("%Y.%m.%d %H:%M")}': {
+          f'''{rounded_now_date_minus_5.strftime('%Y.%m.%d %H:%M')}''': {
               'open': 143.92400,
               'high': 143.98000,
               'low': 143.92000,
               'close': 143.92500,
               'tick_volume': 400.00000
           },
-          f'{rounded_now_date.strftime("%Y.%m.%d %H:%M")}': {
+          f'''{rounded_now_date.strftime('%Y.%m.%d %H:%M')}''': {
               'open': 143.92400,
               'high': 143.97200,
               'low': 143.91600,

@@ -10,6 +10,7 @@ python = "^3.9.0"
 pytz = "^2024.2"
 pandas = "^2.2.3"
 requests = "^2.32.3"
+psutil = "^6.1.0"
 
 [tool.poetry.group.dev.dependencies]
 freezegun = "^1.5.1"
