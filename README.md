@@ -30,7 +30,7 @@ tradeo = { git = "git@github.com:sorul/tradeo.git", branch = "develop" }
 
 ### Configure Metatrader
 
-It is necessary to download the [mt_tb_expert.ex5](docs/files/mt_tb_expert.ex5) file and put it in the proper directory. This directory is usually: *MetaTrader/MQL5/Experts/Advisors/mt_tb_expert.ex5*.
+It is necessary to download the [mt_tb_expert.ex5](https://github.com/sorul/tradeo/raw/refs/heads/master/docs/files/mt_tb_expert.ex5) file and put it in the proper directory. This directory is usually: *MetaTrader/MQL5/Experts/Advisors/mt_tb_expert.ex5*.
 
 We add the currency pairs in the timeframe we are going to use (in my case it would be 5 minutes). There is the option for the bot to open them automatically, but I do not recommend it.
 
