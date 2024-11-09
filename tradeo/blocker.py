@@ -86,7 +86,7 @@ class Blocker:
     # If we get here, it's because the file didn't exist
     # or was stale and we removed it. Create the new lock file
     with open(self.lockfile, 'w') as lock_fh:
-      lock_fh.write(f"{os.getpid()},{time.time()}")
+      lock_fh.write(f'{os.getpid()},{time.time()}')
 
   def __exit__(self, _exc_type, _exc_val, _exc_tb):
     """Exit the context and remove the lock file."""

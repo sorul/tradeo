@@ -10,6 +10,11 @@ requirements:
 dev_requirements:
 	@poetry export --with dev -f requirements.txt --output requirements_dev.txt --without-hashes
 
+push_develop:
+	@make requirements
+	@make dev_requirements
+	@git push
+
 tag:
 	@make flake8
 	@make test
