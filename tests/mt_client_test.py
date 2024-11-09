@@ -21,6 +21,7 @@ from tradeo.order import (
 from tradeo.mt_message import MT_MessageError, MT_MessageInfo
 from tradeo.order_type import OrderType
 from tradeo.event_handlers.basic_event_handler import BasicEventHandler
+from tradeo.log import log
 
 
 def test_set_agent_paths():
@@ -383,14 +384,14 @@ def test_check_historical_data(tmp_path):
   rounded_now_date_minus_5 = rounded_now_date - timedelta(minutes=5)
   data = {
       'USDJPY_M5': {
-          f'{rounded_now_date_minus_5.strftime("%Y.%m.%d %H:%M")}': {
+          f'''{rounded_now_date_minus_5.strftime('%Y.%m.%d %H:%M')}''': {
               'open': 143.92400,
               'high': 143.98000,
               'low': 143.92000,
               'close': 143.92500,
               'tick_volume': 400.00000
           },
-          f'{rounded_now_date.strftime("%Y.%m.%d %H:%M")}': {
+          f'''{rounded_now_date.strftime('%Y.%m.%d %H:%M')}''': {
               'open': 143.92400,
               'high': 143.97200,
               'low': 143.91600,
@@ -407,7 +408,7 @@ def test_check_historical_data(tmp_path):
   assert mt_client.successful_symbols == set()
   data = mt_client.check_historical_data(symbol)
   data_df = DataFrame.from_dict(
-      data[f'{symbol}_{Config.timeframe}'], orient='index')
+      data[f'{symbol}_{Config.timeframe}'], orient='index')  # type: ignore
   assert data_df.shape[0] == 2
   assert mt_client.successful_symbols == {symbol}
 
@@ -654,7 +655,7 @@ def test_transform_json_orders_to_orders():
   assert order.lots == 0.01
 
 
-@patch('tradeo.log.debug')
+@patch.object(log, 'debug')
 def test_place_break_even(mock_debug, tmp_path):
   mt_client = MT_Client()
   mt_client.path_commands_prefix = tmp_path / 'Commands_'

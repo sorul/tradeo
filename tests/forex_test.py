@@ -12,23 +12,6 @@ from tradeo.config import Config
 from tradeo.mt_client import MT_Client
 
 
-@patch('tradeo.files.get_default_path')
-def test_is_locked(mock_data_path, tmp_path):
-
-  # Make data_path() return the temporary directory
-  mock_data_path.return_value = tmp_path
-
-  bf = BasicForex()
-  lock_file = Path(tmp_path / f'{bf.name}.block')
-  lock_file.touch()
-
-  assert bf.is_locked()
-
-  # Test when lock file does not exist
-  lock_file.unlink()
-  assert not bf.is_locked()
-
-
 def test_check_time_viability():
   tz = pytz.timezone(str(Config.broker_timezone))
   bf = BasicForex()
@@ -59,8 +42,9 @@ def test_check_time_viability():
     assert not bf.check_time_viability()
 
 
+@patch('tradeo.utils.get_default_path')
 @patch('tradeo.files.get_default_path')
-def test_send_profit_message(mock_data_path, tmp_path):
+def test_send_profit_message(mock_data_path, mock_data_path2, tmp_path):
   # Copy the Orders.json file to the temporary folder
   orders_path = tmp_path / 'Orders.json'
   original_orders_path = Path(
@@ -82,6 +66,7 @@ def test_send_profit_message(mock_data_path, tmp_path):
   bf = BasicForex()
 
   # Make data_path() return the temporary directory
+  mock_data_path2.return_value = tmp_path
   mock_data_path.return_value = tmp_path
 
   # Create the file with some content
@@ -138,16 +123,11 @@ def test_handle_trades(mock_config, tmp_path):
   bf.handle_trades(mt_client)
 
 
-@patch('tradeo.files.get_default_path')
-def test_check_mt_needs_to_restart(mock_data_path, tmp_path):
-  mock_data_path.return_value = tmp_path
-  bf = BasicForex()
-  bf._check_mt_needs_to_restart(1)
-
-
+@patch('tradeo.utils.get_default_path')
 @patch('tradeo.files.get_default_path')
 @patch('tradeo.mt_client.MT_Client.get_remaining_symbols')
-def test_main(mock_remaining_symbols, mock_data_path, tmp_path):
+def test_main(
+        mock_remaining_symbols, mock_data_path, mock_data_path2, tmp_path):
   # Copy the Orders.json file to the temporary folder
   orders_path = tmp_path / 'Orders.json'
   original_orders_path = Path(
@@ -159,6 +139,10 @@ def test_main(mock_remaining_symbols, mock_data_path, tmp_path):
   original_orders_stored_path = Path(
       f'{resources_test_path()}/AgentFiles/Orders_Stored.json')
   shutil.copyfile(original_orders_stored_path, orders_stored_path)
+
+  # Create the last_balance file with some content
+  with open(tmp_path / Files.LAST_BALANCE.value, 'w') as file:
+    file.write('20')
 
   Config.mt_files_path = tmp_path
   mt_client = MT_Client()
@@ -174,6 +158,7 @@ def test_main(mock_remaining_symbols, mock_data_path, tmp_path):
   )
 
   mock_data_path.return_value = tmp_path
+  mock_data_path2.return_value = tmp_path
   mock_remaining_symbols.return_value = []
   bf = BasicForex()
   bf.main(mt_client)

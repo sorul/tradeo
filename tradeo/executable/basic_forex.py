@@ -7,15 +7,12 @@ from tradeo.mt_client import MT_Client
 from tradeo.files import write_file
 from tradeo.files import Files
 from tradeo.config import Config
-from tradeo.utils import reboot_mt
 from tradeo.log import log
 from tradeo.executable.executable import Executable
 from tradeo.strategies.basic_strategy import BasicStrategy
 from tradeo.event_handlers.basic_event_handler import BasicEventHandler
-from tradeo.context_managers.blocker import Blocker
-from tradeo.utils import (reset_consecutive_times_down,
-                          increment_consecutive_times_down,
-                          get_consecutive_times_down, get_last_balance)
+from tradeo.blocker import Blocker
+from tradeo.utils import (reset_consecutive_times_down, get_last_balance)
 
 
 class BasicForex(Executable):
@@ -27,12 +24,12 @@ class BasicForex(Executable):
 
   def entry_point(self) -> None:
     """Entry point of the forex bot."""
-    if not self.is_locked() and self.check_time_viability():
+    if self.check_time_viability():
       mt_client = MT_Client(event_handler=BasicEventHandler())
       try:
         # Lock the execution of the forex bot.
         # Another thread can not run at the same time.
-        with Blocker(name=self.name):
+        with Blocker(lockfile=self.name):
           self.main(mt_client)
       except Exception:  # noqa
         # Finish the bot
@@ -131,9 +128,6 @@ class BasicForex(Executable):
     else:
       reset_consecutive_times_down()
 
-    # Check if MT needs to restart
-    self._check_mt_needs_to_restart(len(rs))
-
   def _send_profit_message(
           self, mt_client: MT_Client, local_date: datetime) -> bool:
     """Get the balance of the account."""
@@ -148,19 +142,6 @@ class BasicForex(Executable):
       return True
     else:
       return False
-
-  def _check_mt_needs_to_restart(self, n_remaining_symbols: int) -> None:
-    """Check if MT needs to restart."""
-    ctd = get_consecutive_times_down()
-    symbols_len = len(Config.symbols)
-    if n_remaining_symbols > int(symbols_len / 2) and ctd > 4:
-      reboot_mt()
-    else:
-      increment_consecutive_times_down()
-
-  def is_locked(self) -> bool:
-    """Return True if the forex-bot is running."""
-    return Blocker(name=self.name).is_blocked()
 
   def check_time_viability(self) -> bool:
     """Check if the forex bot is viable to run."""

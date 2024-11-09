@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## V0.19.0 (09/11/2024)
+- refactor:
+  - python versions updated (>= 3.9.0, <4.0.0)
+  - "_check_mt_needs_to_restart" function remove from BasicForex class.
+  - compile file "mt_tb_expert.ex5" uploaded
+  - New Blocker class to lock the executions
+- feat:
+  - "reboot_mt" function removed.
+  - the folder to write agent files is a new input in the MT Advisor
+
 ## V0.18.0 (25/05/2024)
 - feat:
   - MT_Client has a new method called "get_lot_size".

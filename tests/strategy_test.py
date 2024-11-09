@@ -16,6 +16,7 @@ from tradeo.order import (
     ImmutableOrderDetails,
     OrderPrice
 )
+from tradeo.log import log
 
 
 def test_check_order_viability():
@@ -49,7 +50,7 @@ def test_check_order_viability():
         mt_client, order, min_risk_profit=3)
 
 
-@patch('tradeo.log.debug')
+@patch.object(log, 'debug')
 def test_handle_pending_orders(mock_debug, tmp_path):
   mt_client = MT_Client()
   mt_client.path_commands_prefix = tmp_path
@@ -79,7 +80,7 @@ def test_handle_pending_orders(mock_debug, tmp_path):
         f'Close order {order.magic} due to time threshold')
 
 
-@patch('tradeo.log.debug')
+@patch.object(log, 'debug')
 def test_handle_filled_orders(mock_debug, tmp_path):
   mt_client = MT_Client()
   mt_client.path_commands_prefix = tmp_path

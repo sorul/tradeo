@@ -30,10 +30,6 @@ class Executable(ABC):
     """Handle the new historical data."""
 
   @abstractmethod
-  def is_locked(self) -> bool:
-    """Return True if the executable is running."""
-
-  @abstractmethod
   def check_time_viability(self) -> bool:
     """Check if the time is viable to execute the executable."""
 

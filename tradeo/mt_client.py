@@ -387,7 +387,7 @@ class MT_Client(metaclass=Singleton):
     if len(data) > 0:
       # The dataframe is built
       df = DataFrame.from_dict(
-          data[f'{symbol}_{Config.timeframe}'], orient='index')
+          data[f'{symbol}_{Config.timeframe}'], orient='index')  # type: ignore
       self.historical_data[symbol] = df
 
       # The date and time corresponding to the last load are calculated
