@@ -37,13 +37,23 @@ def reset_consecutive_times_down() -> None:
 def get_last_balance() -> float:
   """Get the balance of the account."""
   path = get_default_path()
-  return float(try_read_file(path / Files.LAST_BALANCE.value))
+  balance = try_read_file(path / Files.LAST_BALANCE.value)
+  try:
+    return float(balance)
+  except ValueError:
+    write_file(Files.LAST_BALANCE.value, '0')
+    return -1
 
 
 def get_consecutive_times_down() -> int:
   """Get the consecutive times down."""
   path = get_default_path()
-  return int(try_read_file(path / Files.CONSECUTIVE_TIMES_DOWN.value))
+  times_down = try_read_file(path / Files.CONSECUTIVE_TIMES_DOWN.value)
+  try:
+    return int(times_down)
+  except ValueError:
+    write_file(Files.CONSECUTIVE_TIMES_DOWN.value, '0')
+    return 0
 
 
 def increment_consecutive_times_down() -> None:

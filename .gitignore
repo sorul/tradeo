@@ -159,5 +159,5 @@ cython_debug/
 #.idea/
 
 # Project-specific files
-data/*.lock
 main.py
+tradeo/data/*.txt
