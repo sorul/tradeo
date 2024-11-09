@@ -408,7 +408,7 @@ def test_check_historical_data(tmp_path):
   assert mt_client.successful_symbols == set()
   data = mt_client.check_historical_data(symbol)
   data_df = DataFrame.from_dict(
-      data[f'{symbol}_{Config.timeframe}'], orient='index')
+      data[f'{symbol}_{Config.timeframe}'], orient='index')  # type: ignore
   assert data_df.shape[0] == 2
   assert mt_client.successful_symbols == {symbol}
 

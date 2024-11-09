@@ -31,20 +31,18 @@ python:
 
 //--- object for performing trade operations
 CTrade  trade;
-input string t0 = "--- General Parameters ---";
 // if the timer is too small, we might have problems accessing the files from python (mql will write to file every update time). 
 input int MILLISECOND_TIMER = 25;
 input int numLastMessages = 50;
-input string t1 = "If true, it will open charts for bar data symbols, ";
-input string t2 = "which reduces the delay on a new bar.";
 input bool openChartsForBarData = false;
 input bool openChartsForHistoricalData = false;
-input string t3 = "--- Trading Parameters ---";
 input int MaximumOrders = 1000;
 input double MaximumLotSize = 2;
 input int SlippagePoints = 3;
 input int lotSizeDigits = 2;
 input bool asyncMode = false;
+input string folderName = "AgentFiles";
+
 int maxCommandFiles = 50;
 int maxNumberOfCharts = 100;
 long lastMessageMillis = 0;
@@ -53,7 +51,6 @@ long lastUpdateMillis = GetTickCount(), lastUpdateOrdersMillis = GetTickCount();
 string startIdentifier = "<:";
 string endIdentifier = ":>";
 string delimiter = "|";
-string folderName = "AgentFiles";
 string filePathOrders = folderName + "/Orders.json";
 string filePathMessages = folderName + "/Messages.json";
 string filePathMarketData = folderName + "/Market_Data.json";

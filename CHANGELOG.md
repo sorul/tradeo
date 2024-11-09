@@ -8,6 +8,7 @@
   - New Blocker class to lock the executions
 - feat:
   - "reboot_mt" function removed.
+  - the folder to write agent files is a new input in the MT Advisor
 
 ## V0.18.0 (25/05/2024)
 - feat:
