@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tradeo"
-version = "0.19.0"
+version = "0.20.0"
 description = "This library contains a series of tools to create a trading bot for Forex trading using Metatrader."
 readme = "README.md"
 authors = [

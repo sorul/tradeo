@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## V0.19.1
+## V0.20.0 (16/11/2024)
 - fix:
  - Now there is an option to disable the loggings feature.
 
