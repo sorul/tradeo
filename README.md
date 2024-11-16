@@ -78,11 +78,13 @@ export TB_WINE_HOME="${HOME}/.wine"
 export TB_MT_FILES_PATH="${TB_WINE_HOME}/drive_c/Program Files/MetaTrader/MQL5/Files"
 
 # Logging configuration
+export TB_ACTIVATE_SYSLOG=false
 export TB_LOG_LEVEL=INFO
 export TB_SYSLOG_ADDRESS=logs2.papertrailapp.com
 export TB_SYSLOG_PORT=43931
 
 # Telegram configuration
+export TB_ACTIVATE_TELEGRAM=false
 export TB_TG_LOG_LEVEL=INFO
 export TB_TG_FOREX_TOKEN=0000000000:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 export TB_TG_FOREX_CHAT_ID=-999999999

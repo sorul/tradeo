@@ -67,11 +67,13 @@ class Config:
       'TB_CHECK_HISTORICAL_TRADES_THREAD') or True
 
   # Logging configuration
+  activate_syslog = _get_bool_from_env('TB_ACTIVATE_SYSLOG') or False
   syslog_address = os.getenv('TB_SYSLOG_ADDRESS') or 'logs2.papertrailapp.com'
   syslog_port = int(os.getenv('TB_SYSLOG_PORT') or 43931)
   log_level = _get_logging_level(os.getenv('TB_LOG_LEVEL') or 'DEBUG')
 
   # Telegram configuration
+  activate_telegram = _get_bool_from_env('TB_ACTIVATE_TELEGRAM') or False
   forex_telegram_token = os.getenv(
       'TB_TG_FOREX_TOKEN') or ''
   forex_telegram_chat_id = int(os.getenv('TB_TG_FOREX_CHAT_ID') or 0)

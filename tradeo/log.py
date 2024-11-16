@@ -49,8 +49,10 @@ class Log(metaclass=Singleton):
     """Initialize the logger."""
     self.logger = logging.getLogger('tradeo')
     self.logger.setLevel(logging.DEBUG)
-    self._build_log()
-    self._build_telegram_log()
+    if Config.activate_syslog:
+      self._build_log()
+    if Config.activate_telegram:
+      self._build_telegram_log()
 
   def _build_log(self) -> None:
     handler = SysLogHandler(
