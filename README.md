@@ -81,7 +81,7 @@ export TB_MT_FILES_PATH="${TB_WINE_HOME}/drive_c/Program Files/MetaTrader/MQL5/F
 export TB_ACTIVATE_SYSLOG=false
 export TB_LOG_LEVEL=INFO
 export TB_SYSLOG_ADDRESS=logs2.papertrailapp.com
-export TB_SYSLOG_PORT=43931
+export TB_SYSLOG_PORT=12345
 
 # Telegram configuration
 export TB_ACTIVATE_TELEGRAM=false
