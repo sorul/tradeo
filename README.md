@@ -27,16 +27,6 @@ Or you can add manually in *pyproject.toml* file if you want download it from a 
 tradeo = { git = "git@github.com:sorul/tradeo.git", branch = "develop" }
 ```
 
-
-### Configure Metatrader
-
-It is necessary to download the [mt_tb_expert.ex5](https://github.com/sorul/tradeo/raw/refs/heads/master/docs/files/mt_tb_expert.ex5) file and put it in the proper directory. This directory is usually: *MetaTrader/MQL5/Experts/Advisors/mt_tb_expert.ex5*.
-
-We add the currency pairs in the timeframe we are going to use (in my case it would be 5 minutes). There is the option for the bot to open them automatically, but I do not recommend it.
-
-Activate the expert in any symbol chart, it does not matter which chart you use. But only in one of them.
-
-
 ## Usage
 
 - You can create strategies inheriting *tradeo.strategies.strategy.Strategy* class. An example of this it would be [basic_strategy.py](tradeo/strategies/basic_strategy.py)
@@ -46,7 +36,7 @@ Activate the expert in any symbol chart, it does not matter which chart you use.
 - An example of a main script using this library would be [basic_forex.py](tradeo/tradeo/executable/basic_forex.py) that inheriting *tradeo.executable.executable.Executable*.
 
 > [!NOTE]  
-> A real project that imports this wonderful library and you can watch for inspiration is [sorul_tradingbot](https://github.com/sorul/sorul_tradingbot)
+> **The configuration of Metatrader is necessary for the functioning of Tradeo.** There is an example of both the configuration and the use of the library in a real project: [sorul_tradingbot](https://github.com/sorul/sorul_tradingbot)
 
 
 
