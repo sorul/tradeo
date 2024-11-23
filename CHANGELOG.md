@@ -2,7 +2,7 @@
 
 ## V0.20.0 (16/11/2024)
 - fix:
- - Now there is an option to disable the loggings feature.
+  - Now there is an option to disable the loggings feature.
 
 ## V0.19.0 (09/11/2024)
 - refactor:
