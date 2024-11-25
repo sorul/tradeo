@@ -65,7 +65,7 @@ export TB_CHECK_HISTORICAL_TRADES_THREAD=false
 
 # Metatrader configuration
 export TB_WINE_HOME="${HOME}/.wine"
-export TB_MT_FILES_PATH="${TB_WINE_HOME}/drive_c/users/.../MQL5/Files"
+export TB_MT_FILES_PATH="${TB_WINE_HOME}/drive_c/.../MQL5/Files"
 
 # Logging configuration
 export TB_ACTIVATE_SYSLOG=false
