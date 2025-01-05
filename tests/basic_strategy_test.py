@@ -1,26 +1,48 @@
-from unittest.mock import patch
+from pandas import DataFrame
+import numpy as np
 from datetime import datetime
+from unittest.mock import patch
 from pathlib import Path
 from freezegun import freeze_time
 import pytz
 import shutil
 
+from tradeo.log import log
 from tradeo.order_type import OrderType
 from tradeo.config import Config
 from tradeo.paths import resources_test_path
 from tradeo.mt_client import MT_Client
-from tradeo.strategies.strategy import Strategy
+from tradeo.ohlc import OHLC
+from tradeo.strategies.basic_strategy import BasicStrategy
 from tradeo.order import (
     Order,
     MutableOrderDetails,
     ImmutableOrderDetails,
     OrderPrice
 )
-from tradeo.log import log
+
+
+def test_indicator():
+  highs = np.array([1, 2, 3, 4, 5, 6, 50, 1, 2, 3, 4, 5, 6, 100, 1, 2, 3])
+  opens = highs
+  lows = np.array(
+      [11, 12, 13, 14, 15, 16, 1, 11, 12, 13, 14, 15, 16, 5, 11, 12, 13])
+  closes = lows
+
+  data = OHLC(DataFrame({
+      'open': opens,
+      'high': highs,
+      'low': lows,
+      'close': closes
+  }))
+  mt_client = MT_Client()
+  strategy = BasicStrategy(mt_client)
+  assert isinstance(strategy.indicator(data, 'EURUSD', datetime.now()), Order)
 
 
 def test_check_order_viability():
   mt_client = MT_Client()
+  strategy = BasicStrategy(mt_client)
   order = Order(
       MutableOrderDetails(
           prices=OrderPrice(
@@ -41,18 +63,17 @@ def test_check_order_viability():
   tz = pytz.timezone(str(Config.utc_timezone))
   d = datetime(2024, 1, 9, 12, 5)
   with freeze_time(tz.localize(d)):
-    assert Strategy.check_order_viability(
-        mt_client, order, min_risk_profit=1.5)
+    assert strategy.check_order_viability(order, min_risk_profit=1.5)
 
   # Not viable profit risk
   with freeze_time(tz.localize(d)):
-    assert not Strategy.check_order_viability(
-        mt_client, order, min_risk_profit=3)
+    assert not strategy.check_order_viability(order, min_risk_profit=3)
 
 
 @patch.object(log, 'debug')
 def test_handle_pending_orders(mock_debug, tmp_path):
   mt_client = MT_Client()
+  strategy = BasicStrategy(mt_client)
   mt_client.path_commands_prefix = tmp_path
 
   order = Order(
@@ -75,7 +96,7 @@ def test_handle_pending_orders(mock_debug, tmp_path):
   tz = pytz.timezone(str(Config.broker_timezone))
   d = datetime(2024, 1, 1, 0, 0)
   with freeze_time(tz.localize(d)):
-    Strategy.handle_pending_orders(mt_client, order, time_threshold)
+    strategy.handle_pending_orders(order, time_threshold)
     mock_debug.assert_called_with(
         f'Close order {order.magic} due to time threshold')
 
@@ -83,6 +104,7 @@ def test_handle_pending_orders(mock_debug, tmp_path):
 @patch.object(log, 'debug')
 def test_handle_filled_orders(mock_debug, tmp_path):
   mt_client = MT_Client()
+  strategy = BasicStrategy(mt_client)
   mt_client.path_commands_prefix = tmp_path
 
   order = Order(
@@ -105,7 +127,7 @@ def test_handle_filled_orders(mock_debug, tmp_path):
   tz = pytz.timezone(str(Config.broker_timezone))
   d = datetime(2024, 1, 1, 0, 0)
   with freeze_time(tz.localize(d)):
-    Strategy.handle_filled_orders(mt_client, order, time_threshold, 0)
+    strategy.handle_filled_orders(order, time_threshold, 0)
     mock_debug.assert_called_with(
         f'Close order {order.magic} due to time threshold')
 
@@ -143,8 +165,8 @@ def test_check_if_break_even_can_be_placed(tmp_path):
   break_even_time_threshold = 60
   break_even_per_threshold = 0
 
-  assert Strategy._check_if_break_even_can_be_placed(
-      mt_client,
+  strategy = BasicStrategy(mt_client)
+  assert strategy._check_if_break_even_can_be_placed(
       order,
       open_time,
       current_datetime,

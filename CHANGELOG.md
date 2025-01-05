@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## V0.21.0 (16/11/2024)
+- refactor:
+  - The mt_client parameter is now in the Strategy constructor.
+
 ## V0.20.0 (16/11/2024)
 - fix:
   - Now there is an option to disable the loggings feature.

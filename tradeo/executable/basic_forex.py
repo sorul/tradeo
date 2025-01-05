@@ -85,12 +85,12 @@ class BasicForex(Executable):
   def handle_trades(self, mt_client: MT_Client) -> None:
     """Handle the existing trades."""
     orders = mt_client.check_open_orders()
-    strategy = BasicStrategy()
+    strategy = BasicStrategy(mt_client)
     for order in orders:
       if order.order_type.pending:
-        strategy.handle_pending_orders(mt_client, order)
+        strategy.handle_pending_orders(order)
       elif order.order_type.market:
-        strategy.handle_filled_orders(mt_client, order)
+        strategy.handle_filled_orders(order)
 
     len_orders = len(orders)
     message = f'Number of open orders: {len_orders}'
