@@ -26,8 +26,7 @@ class BasicEventHandler(EventHandler):
   ) -> None:
     """Handle the return of GET_HISTORICAL_DATA command."""
     now_date = datetime.now(Config.utc_timezone)
-    strategy = BasicStrategy()
+    strategy = BasicStrategy(mt_client)
     possible_order = strategy.indicator(data, symbol, now_date)
-    if possible_order and strategy.check_order_viability(
-            mt_client, possible_order):
+    if possible_order and strategy.check_order_viability(possible_order):
       mt_client.create_new_order(possible_order)

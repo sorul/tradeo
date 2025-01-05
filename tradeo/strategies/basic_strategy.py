@@ -6,6 +6,7 @@ from tradeo.trading_methods import EMA, get_pivots, get_pip
 from tradeo.ohlc import OHLC
 from tradeo.utils import create_magic_number
 from tradeo.strategies.strategy import Strategy
+from tradeo.mt_client import MT_Client
 from tradeo.order import (Order,
                           MutableOrderDetails,
                           ImmutableOrderDetails,
@@ -16,9 +17,9 @@ from tradeo.order import (Order,
 class BasicStrategy(Strategy):
   """Strategy based on EMAs and price tendency."""
 
-  def __init__(self):
+  def __init__(self, mt_client: MT_Client):
     """Initialize the attributes."""
-    super().__init__('BasicStrategy')
+    super().__init__('BasicStrategy', mt_client)
 
   def indicator(
       self,
