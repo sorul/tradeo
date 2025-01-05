@@ -18,4 +18,4 @@ jobs:
       - name: Build
         run: python -m build
       - name: Publish to PyPI
-        run: python -m twine upload --repository pypi --username __token__ --password pypi-${{ secrets.PYPI_TOKEN }} dist/*
+        run: python -m twine upload --repository pypi --username __token__ --password ${{ secrets.PYPI_TOKEN }} dist/*
