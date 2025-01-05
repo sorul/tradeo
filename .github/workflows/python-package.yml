@@ -1,9 +1,9 @@
 name: Python package
-# on: workflow_dispatch
-on:
-  workflow_dispatch:
-  release:
-    types: [published]
+on: workflow_dispatch
+# on:
+#   workflow_dispatch:
+#   release:
+#     types: [published]
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -12,10 +12,10 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
-          python-version: '3.8.x'
+          python-version: '3.12.x'
       - name: Install dependencies
         run: python3 -m pip install --upgrade build twine
       - name: Build
         run: python3 -m build
       - name: Publish to PyPI
-        run: python3 -m twine upload --repository pypi --username crv --password ${{ secrets.PYPI_TOKEN }} dist/*
+        run: python3 -m twine upload --repository pypi --username ${{ secrets.PYPI_TOKEN }} --password pypi-${{ secrets.PYPI_TOKEN }} dist/*
