@@ -28,7 +28,6 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
   "Topic :: Office/Business :: Financial :: Investment",
   "Topic :: Office/Business :: Financial :: Accounting",
-  "Topic :: Office/Business :: Financial :: Trading",
   "Topic :: Office/Business :: Financial",
 ]
 
