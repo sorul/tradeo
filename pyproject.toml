@@ -1,10 +1,10 @@
-[tool.poetry]
+[project]
 name = "tradeo"
 version = "0.21.0"
 description = "This library contains a series of tools to create a trading bot for Forex trading using Metatrader."
 readme = "README.md"
 authors = [
-  "Cayetano Romero Vargas <cromerovargas2d@gmail.com>",
+  { name = "Cayetano Romero Vargas", email = "cromerovargas2d@gmail.com" },
 ]
 license = "MIT"
 keywords = [
@@ -27,6 +27,7 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Topic :: Software Development :: Libraries :: Python Modules",
   "Topic :: Office/Business :: Financial :: Investment",
+  "Topic :: Office/Business :: Financial :: Accounting",
   "Topic :: Office/Business :: Financial",
 ]
 
