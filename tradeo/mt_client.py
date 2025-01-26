@@ -1,6 +1,7 @@
 """Script of MT_Client what it sends commands to MT4/MT5."""
 from __future__ import annotations
 from datetime import datetime, timedelta
+import time
 from typing import List, Dict, Union, Callable, Tuple, TYPE_CHECKING, Set, cast
 from threading import Thread, Lock
 from os.path import join, exists
@@ -10,6 +11,7 @@ from pathlib import Path
 from time import sleep
 import glob
 import json
+import threading
 
 from tradeo.config import Config
 from tradeo.log import log
@@ -46,13 +48,29 @@ class MT_Client(metaclass=Singleton):
                event_handler: Union[EventHandler, None] = None,
                sleep_delay: float = 0.005,
                max_retry_command_seconds: int = 10,
-               files_subfolder: str = 'AgentFiles'
+               files_subfolder: str = 'AgentFiles',
+               convert_to_utc: bool = True,
                ):
-    """Initialize the attributes."""
+    """Initialize the MT_Client instance with specified parameters.
+
+    Args:
+      event_handler (Union[EventHandler, None], optional): Handler for events
+        related to messages, ticks, bar data, etc. Defaults to None.
+      sleep_delay (float, optional): Delay in seconds for thread sleeps.
+        Defaults to 0.005.
+      max_retry_command_seconds (int, optional): Maximum seconds to retry
+      sending a command. Defaults to 10.
+      files_subfolder (str, optional): Subfolder for agent files. Defaults to
+        'AgentFiles'.
+      convert_to_utc (bool, optional): Whether to convert timestamps to UTC in
+      "check_historical_data" method.
+        Defaults to True.
+    """
     # Parameter attributes
     self.sleep_delay = sleep_delay
     self.max_retry_command_seconds = max_retry_command_seconds
     self.num_command_files = 50
+    self.convert_to_utc = convert_to_utc
 
     # Paths to output MT files
     self.prefix_files_path = files_subfolder
@@ -63,6 +81,7 @@ class MT_Client(metaclass=Singleton):
     self.lock = Lock()
     self._last_messages_millis = 0
     self.command_id = 0
+    self.symbol_locks: Dict[str, threading.Lock] = {}
 
     # Data attributes
     self.messages: messages_type = {'INFO': [], 'ERROR': []}
@@ -149,6 +168,12 @@ class MT_Client(metaclass=Singleton):
     """Deactivate the threads."""
     self.ACTIVE = False
 
+  def _get_lock(self, symbol: str) -> threading.Lock:
+    """Retrieve or create a lock for a specific symbol."""
+    if symbol not in self.symbol_locks:
+      self.symbol_locks[symbol] = threading.Lock()
+    return self.symbol_locks[symbol]
+
   def start_thread_check_messages(self) -> None:
     """Start the thread to check messages."""
     while self.ACTIVE:
@@ -167,24 +192,30 @@ class MT_Client(metaclass=Singleton):
           self._last_messages_millis = int(millis)
 
           message_content = list(message.values())
-          if 'ERROR' in message_content:
-            time = message_content[1]
-            error_type = message_content[2]
-            description = message_content[3]
-            self.messages['ERROR'].append(
-                MT_MessageError(time, error_type, description)
-            )
-          else:
-            time = message_content[1]
-            message = message_content[2]
-            self.messages['INFO'].append(
-                MT_MessageInfo(time, message)
-            )
-
-          if self.event_handler:
-            self.event_handler.on_message(self, message_content)
-
+          time = string_to_date_utc(
+              str_date=message_content[1],
+              date_format='%Y.%m.%d %H:%M:%S',
+              from_timezone=Config.broker_timezone
+          )
+          if self._is_current_datetime(time):
+            self._add_new_message(message_content, time)
     return self.messages
+
+  def _add_new_message(self, message: List, time: datetime) -> None:
+    if 'ERROR' in message:
+      error_type = message[2]
+      description = message[3]
+      self.messages['ERROR'].append(
+          MT_MessageError(time, error_type, description)
+      )
+    else:
+      message = message[2]
+      self.messages['INFO'].append(
+          MT_MessageInfo(time, message)
+      )
+
+    if self.event_handler:
+      self.event_handler.on_message(self, message)
 
   def get_error_messages(self) -> List[MT_MessageError]:
     """Return the error messages."""
@@ -240,20 +271,29 @@ class MT_Client(metaclass=Singleton):
 
     return self.market_data
 
-  def get_bid_ask(self, symbol: str) -> Tuple[float, float]:
-    """Return the bid and ask price of a symbol.
-
-    Return 0,0 if symbol not found.
-
-    Bid: sell price
-    Ask: buy price
+  def get_bid_ask(
+          self, symbol: str, timeout: float = 5.0) -> Tuple[float, float]:
     """
-    try:
-      bid_ask = self.market_data[symbol]
-      return bid_ask['bid'], bid_ask['ask']
-    except KeyError:
-      log.warning(f'Symbol {symbol} not found in market data.')
-      return 0, 0
+    Return the bid and ask price of a symbol, retrying if necessary.
+
+    Args:
+      symbol: The symbol to look up.
+      timeout: Total time in seconds to keep retrying.
+
+    Returns:
+      A tuple (bid, ask) with prices, or (0, 0) if not found.
+    """
+    start_time = time.time()
+
+    while (time.time() - start_time) < timeout:
+      try:
+        bid_ask = self.market_data[symbol]
+        return bid_ask['bid'], bid_ask['ask']
+      except KeyError:
+        time.sleep(1)
+
+    log.warning(f'Symbol {symbol} not found after {timeout}s.')
+    return 0, 0
 
   def start_thread_check_bar_data(self) -> None:
     """Start the thread to check bar data."""
@@ -384,29 +424,42 @@ class MT_Client(metaclass=Singleton):
     file_path = Path(f'{self.path_historical_data_prefix}{symbol}.json')
     data = try_load_json(file_path)
 
-    if len(data) > 0:
-      # The dataframe is built
-      df = DataFrame.from_dict(
-          data[f'{symbol}_{Config.timeframe}'], orient='index')  # type: ignore
-      self.historical_data[symbol] = df
-
-      # The date and time corresponding to the last load are calculated
-      if self._is_historical_data_up_to_date(df):
-        log.debug(f'{symbol} -> {(df.index[0], df.index[-1])}')
-
-        self.successful_symbols.add(symbol)
-        if self.event_handler:
-          self.event_handler.on_historical_data(self, symbol, OHLC(df))
-
-        # We delete the command file(s) in case it hasn't been deleted.
-        command_files = self.command_file_exist(symbol)
-        for com in command_files:
-          try_remove_file(com)
+    lock = self._get_lock(symbol)
+    # If data is already loaded and there is no another thread running
+    if len(data) > 0 and lock.acquire(blocking=False):
+      try:
+        self._process_historical_data(symbol, data)
+      finally:
+        lock.release()
 
     return data
 
+  def _process_historical_data(self, symbol: str, data: Dict) -> None:
+    # The dataframe is built
+    df = DataFrame.from_dict(
+        data[f'{symbol}_{Config.timeframe}'], orient='index')  # type: ignore
+    self.historical_data[symbol] = df
+
+    # The date and time corresponding to the last load are calculated
+    last_date_from_df = string_to_date_utc(
+        str_date=df.index[-1], from_timezone=Config.broker_timezone)
+    if self._is_current_datetime(last_date_from_df):
+
+      self.successful_symbols.add(symbol)
+      if self.event_handler:
+        if self.convert_to_utc:
+          ohlc = OHLC(df, convert_to_utc=Config.broker_timezone)
+        else:
+          ohlc = OHLC(df)
+        self.event_handler.on_historical_data(self, symbol, ohlc)
+
+      # We delete the command file(s) in case it hasn't been deleted.
+      command_files = self.command_file_exist(symbol)
+      for com in command_files:
+        try_remove_file(com)
+
   @staticmethod
-  def _is_historical_data_up_to_date(df: DataFrame) -> bool:
+  def _is_current_datetime(date_utc: datetime) -> bool:
     """Check if the historical data is up to date."""
     now_date = datetime.now(Config.utc_timezone)
     td = timedelta(minutes=now_date.minute % 5,
@@ -415,11 +468,7 @@ class MT_Client(metaclass=Singleton):
     rounded_now_date = now_date - td
     start_range = rounded_now_date
     end_range = rounded_now_date + timedelta(minutes=5)
-    last_date_from_df = string_to_date_utc(
-        str_date=df.index[-1], from_timezone=Config.broker_timezone)
-
-    return (last_date_from_df >= start_range
-            and last_date_from_df < end_range)
+    return (date_utc >= start_range and date_utc < end_range)
 
   def start_thread_check_historical_trades(self) -> None:
     """Start the thread to check historical trades."""
@@ -573,7 +622,7 @@ class MT_Client(metaclass=Singleton):
     ]
     self.send_command('MODIFY_ORDER', ','.join(str(p) for p in data))
 
-  def place_break_even(self, order: Order) -> None:
+  def place_break_even(self, order: Order, log_comment: str = '') -> None:
     """Modify the order to place a break even."""
     pip = get_pip(order.symbol)
     buy = order.order_type.buy
@@ -582,15 +631,17 @@ class MT_Client(metaclass=Singleton):
         order.ticket,
         MutableOrderDetails(
             prices=OrderPrice(
-                price=break_even,
-                stop_loss=order.stop_loss,
+                stop_loss=break_even,
                 take_profit=order.take_profit
             ),
             lots=order.lots,
             expiration=order.expiration
         )
     )
-    log.debug(f'Break even placed in {order.magic}')
+    log.debug((
+      f'Break even placed ({break_even}) in ticket {order.ticket}. '
+      f'{log_comment}'
+    ))
 
   def send_close_order_command(self, ticket: int, lots: float = 0) -> None:
     """To send a CLOSE_ORDER command to close an order.

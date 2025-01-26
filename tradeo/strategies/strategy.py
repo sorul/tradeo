@@ -112,10 +112,10 @@ class Strategy(ABC):
     result = False
     # First check if a previous break even has been placed
     break_even_placed_buy = (
-        order.order_type.buy and order.stop_loss > order.price
+        order.order_type.buy and order.stop_loss >= order.price
     )
     break_even_placed_sell = (
-        order.order_type.sell and order.stop_loss < order.price
+        order.order_type.sell and order.stop_loss <= order.price
     )
     break_even_placed = break_even_placed_buy or break_even_placed_sell
 
@@ -139,8 +139,12 @@ class Strategy(ABC):
     if not break_even_placed and (
         price_reached_threshold or reached_even_time_threshold
     ):
+      if price_reached_threshold:
+        reason = 'Price percentage reached'
+      else:
+        reason = 'Time threshold reached'
       # We place a break even
-      self.mt_client.place_break_even(order)
+      self.mt_client.place_break_even(order, log_comment=reason)
       result = True
 
     return result

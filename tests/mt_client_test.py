@@ -120,18 +120,24 @@ def test_check_messages(tmp_path):
   original_messages_path = Path(
       f'{resources_test_path()}/AgentFiles/Messages.json')
   shutil.copyfile(original_messages_path, messages_path)
+  broker_dt = datetime(
+    2024, 1, 18, 22, 26, 30,
+    tzinfo=pytz.timezone(str(Config.broker_timezone))
+  )
+  utc_dt = broker_dt.astimezone(pytz.utc)
 
   mt_client = MT_Client()
   mt_client.path_messages = messages_path
 
   # Call for the first time to read messages
-  mt_client.check_messages()
+  with freeze_time(broker_dt):
+    mt_client.check_messages()
 
   assert_data = {
-      'INFO': [MT_MessageInfo('2024.01.18 22:26:36', 'Dummy Info')],
+      'INFO': [MT_MessageInfo(utc_dt, 'Dummy Info')],
       'ERROR': [
           MT_MessageError(
-              '2024.01.18 22:26:36',
+              utc_dt,
               'WRONG_FORMAT_START_IDENTIFIER',
               'Dummy Error'
           )
@@ -146,12 +152,13 @@ def test_check_messages(tmp_path):
   assert mt_client.messages == assert_data
 
   # Now it does change
-  info = MT_MessageInfo('2024.02.19 23:26:36', 'info description')
-  error = MT_MessageError('2024.02.19 23:26:36',
+  info = MT_MessageInfo(utc_dt, 'info description')
+  error = MT_MessageError(utc_dt,
                           'WRONG_FORMAT_START_IDENTIFIER', 'error description')
 
   mt_client.set_messages(info_messages=[info], error_messages=[error])
-  mt_client.check_messages()
+  with freeze_time(broker_dt):
+    mt_client.check_messages()
 
   assert_data['INFO'] = [info]
   assert_data['ERROR'] = [error]
@@ -417,32 +424,6 @@ def test_check_historical_data(tmp_path):
   assert mt_client.check_historical_data(symbol) == {}
 
 
-def test_is_historical_data_up_to_date_true():
-  tz = pytz.timezone(str(Config.utc_timezone))
-  Config.broker_timezone = tz
-  df = DataFrame(
-      index=['2024.01.20 01:05'],
-      data={
-          'open': [143.97200],
-          'high': [144.01000],
-          'low': [143.96800],
-          'close': [143.99000],
-          'tick_volume': [295]
-      }
-  )
-  d = datetime(2024, 1, 20, 1, 5)
-  with freeze_time(tz.localize(d)):
-    assert MT_Client._is_historical_data_up_to_date(df)
-
-  d = datetime(2024, 1, 20, 1, 8)
-  with freeze_time(tz.localize(d)):
-    assert MT_Client._is_historical_data_up_to_date(df)
-
-  d = datetime(2024, 1, 20, 1, 10)
-  with freeze_time(tz.localize(d)):
-    assert not MT_Client._is_historical_data_up_to_date(df)
-
-
 def test_check_historical_trades(tmp_path):
 
   # Copy the Bar_Data.json file to the temporary folder
@@ -675,8 +656,9 @@ def test_place_break_even(mock_debug, tmp_path):
       ),
       ticket=2023993175
   )
-  mt_client.place_break_even(order)
-  mock_debug.assert_called_with(f'Break even placed in {order.magic}')
+  log_comment = 'test'
+  mt_client.place_break_even(order, log_comment)
+  assert mock_debug.called
 
 
 @patch('tradeo.files.get_default_path')

@@ -1,12 +1,12 @@
 {
   "11111111": {
     "type": "INFO",
-    "time": "2024.01.18 22:26:36",
+    "time": "2024.01.18 22:26:30",
     "message": "Dummy Info"
   },
   "22222222": {
     "type": "ERROR",
-    "time": "2024.01.18 22:26:36",
+    "time": "2024.01.18 22:26:30",
     "error_type": "WRONG_FORMAT_START_IDENTIFIER",
     "description": "Dummy Error"
   }

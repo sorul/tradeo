@@ -1,18 +1,13 @@
 """MT message classes."""
-from tradeo.utils import string_to_date_utc
-from tradeo.config import Config
+from datetime import datetime
 
 
 class MT_MessageError:
   """Class for handling errors in MT messages."""
 
-  def __init__(self, time: str, error_type: str, description: str):
+  def __init__(self, time: datetime, error_type: str, description: str):
     """Initialize the attributes."""
-    self.time = string_to_date_utc(
-        time,
-        date_format='%Y.%m.%d %H:%M:%S',
-        from_timezone=Config.broker_timezone
-    )
+    self.time = time
     self.error_type = error_type
     self.description = description
 
@@ -30,17 +25,17 @@ class MT_MessageError:
         and self.description == value.description
     )
 
+  def __str__(self) -> str:
+    """Return a string representation."""
+    return f'{self.time}: {self.error_type} - {self.description}'
+
 
 class MT_MessageInfo:
   """Class for handling info messages in MT messages."""
 
-  def __init__(self, time: str, message: str):
+  def __init__(self, time: datetime, message: str):
     """Initialize the attributes."""
-    self.time = string_to_date_utc(
-        time,
-        date_format='%Y.%m.%d %H:%M:%S',
-        from_timezone=Config.broker_timezone
-    )
+    self.time = time
     self.message = message
 
   def __eq__(self, value: object) -> bool:
@@ -55,3 +50,7 @@ class MT_MessageInfo:
         and str(self.time.second) == str(value.time.second)
         and self.message == value.message
     )
+
+  def __str__(self) -> str:
+    """Return a string representation."""
+    return f'{self.time}: {self.message}'
