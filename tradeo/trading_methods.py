@@ -1,7 +1,8 @@
 """Common methods in trading strategies."""
-from typing import List, Tuple
-from pandas import Series
-from numpy import ndarray
+from typing import List, Tuple, Dict
+from pandas import Series, to_datetime, DataFrame
+import numpy as np
+from datetime import time, date
 
 from tradeo.ohlc import OHLC
 from tradeo.order_type import OrderType
@@ -13,7 +14,7 @@ def get_pip(symbol: str) -> float:
 
 
 def get_pivots(
-        data: ndarray,
+        data: np.ndarray,
         left: int,
         right: int,
         n_pivot: int,
@@ -63,7 +64,7 @@ def get_pivots(
 
 
 def EMA(
-    data: ndarray,
+    data: np.ndarray,
     lookback: int,
     smoothing: int = 2
 ) -> List[float]:
@@ -77,7 +78,7 @@ def EMA(
   return ema
 
 
-def RSI(data: ndarray, lookback: int) -> List[float]:
+def RSI(data: np.ndarray, lookback: int) -> List[float]:
   """Relative Strength Index."""
   ret = Series(data).diff()
   up = []
@@ -214,3 +215,203 @@ def harami_pattern(data: OHLC, order_type: OrderType) -> bool:
   else:
     return opens[-2] < closes[-2] and opens[-1] > closes[-1] and \
         highs[-1] < highs[-2] and lows[-1] > lows[-2]
+
+
+def calculate_poc_vah_val(
+    ohlc: OHLC,
+    session_start: str,
+    session_end: str,
+    value_area: float = 0.7
+) -> Dict[date, Dict]:
+  """
+  Point of Control (POC), Value Area High (VAH), and Value Area Low (VAL).
+
+  Args:
+      ohlc (OHLC): An OHLC object containing market data.
+      session_start (str): Start time of the session (e.g., '09:30').
+      session_end (str): End time of the session (e.g., '16:00').
+      value_area (float): Fraction of total volume for the value area.
+
+  Returns:
+      Dict: Dictionary with session dates as keys and POC, VAH, VAL as values.
+  """
+  session_start_time = to_datetime(session_start).time()
+  session_end_time = to_datetime(session_end).time()
+
+  dates = np.array([dt.date() for dt in ohlc.datetime])
+  times = np.array([dt.time() for dt in ohlc.datetime])
+
+  results = []
+
+  for session_date in np.unique(dates):
+    session_high, session_low, session_volume = _filter_session_data(
+        dates, times, session_date, session_start_time, session_end_time,
+        ohlc.high, ohlc.low, ohlc.volume
+    )
+
+    if len(session_high) == 0:
+      continue
+
+    price_bins, volume_profile = _calculate_volume_profile(
+        session_high, session_low, session_volume
+    )
+
+    poc, vah, val = _calculate_poc_vah_val_from_profile(
+        price_bins, volume_profile, value_area
+    )
+
+    results.append({
+        'session_date': session_date,
+        'POC': poc,
+        'VAH': vah,
+        'VAL': val
+    })
+
+  return {
+      row['session_date']: {
+          'poc': row['POC'], 'vah': row['VAH'], 'val': row['VAL']
+      } for row in results
+  }
+
+
+def _filter_session_data(
+    dates: np.ndarray,
+    times: np.ndarray,
+    session_date: np.datetime64,
+    session_start_time: time,
+    session_end_time: time,
+    high: np.ndarray,
+    low: np.ndarray,
+    volume: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+  """
+  Filter the data for a specific session.
+
+  Args:
+      dates: Array of dates.
+      times: Array of times.
+      session_date: Current session date.
+      session_start_time: Start time of the session.
+      session_end_time: End time of the session.
+      high: High prices.
+      low: Low prices.
+      volume: Volume data.
+
+  Returns:
+      Filtered high, low, and volume data for the session.
+  """
+  session_mask = (dates == session_date) & \
+                 (times >= session_start_time) & \
+                 (times < session_end_time)
+  return high[session_mask], low[session_mask], volume[session_mask]
+
+
+def _calculate_volume_profile(
+    session_high: np.ndarray,
+    session_low: np.ndarray,
+    session_volume: np.ndarray,
+    num_bins: int = 100
+) -> Tuple[np.ndarray, np.ndarray]:
+  """
+  Calculate the volume profile for a session.
+
+  Args:
+      session_high: High prices of the session.
+      session_low: Low prices of the session.
+      session_volume: Volume of the session.
+      num_bins: Number of bins for the price range.
+
+  Returns:
+      Price bins and volume profile.
+  """
+  price_bins = np.linspace(session_low.min(), session_high.max(), num=num_bins)
+  volume_profile = np.zeros(len(price_bins))
+
+  for low, high, volume in zip(session_low, session_high, session_volume):
+    price_range = np.linspace(low, high, num=10)
+    vol_dist = volume / len(price_range)
+    for price in price_range:
+      idx = np.argmin(np.abs(price_bins - price))
+      volume_profile[idx] += vol_dist
+
+  return price_bins, volume_profile
+
+
+def _calculate_poc_vah_val_from_profile(
+    price_bins: np.ndarray,
+    volume_profile: np.ndarray,
+    value_area: float
+) -> Tuple[float, float, float]:
+  """
+  Calculate POC, VAH, and VAL from a volume profile.
+
+  Args:
+      price_bins: Price bins.
+      volume_profile: Volume profile.
+      value_area: Fraction of total volume for the value area.
+
+  Returns:
+      POC, VAH, and VAL values.
+  """
+  poc_idx = np.argmax(volume_profile)
+  poc = float(price_bins[poc_idx])
+
+  sorted_volumes = sorted(volume_profile, reverse=True)
+  cumulative_volume = np.cumsum(sorted_volumes)
+  total_volume = cumulative_volume[-1]
+  vah, val = poc, poc
+
+  for idx, cum_vol in enumerate(cumulative_volume):
+    if cum_vol >= total_volume * value_area:
+      vah_idx = np.where(
+          volume_profile == sorted_volumes[:idx + 1][-1])[0][0]
+      vah = float(price_bins[vah_idx])
+      break
+
+  for idx, cum_vol in enumerate(cumulative_volume[::-1]):
+    if cum_vol >= total_volume * value_area:
+      val_idx = np.where(volume_profile == sorted_volumes[-(idx + 1)])[0][0]
+      val = float(price_bins[val_idx])
+      break
+
+  return poc, vah, val
+
+
+def calculate_heikin_ashi(data: OHLC) -> OHLC:
+  """
+  Calculate Heikin-Ashi OHLC data from an OHLC object.
+
+  Args:
+      data (OHLC): Input OHLC object with standard OHLC data.
+
+  Returns:
+      OHLC: New OHLC object with Heikin-Ashi calculated data.
+  """
+  # Calculate Heikin-Ashi close
+  ha_close = (data.open + data.high + data.low + data.close) / 4
+
+  # Calculate Heikin-Ashi open (iterative approach)
+  ha_open = np.empty_like(ha_close)
+  ha_open[0] = data.open[0]  # Initial value
+  for i in range(1, len(ha_close)):
+    ha_open[i] = (ha_open[i - 1] + ha_close[i - 1]) / 2
+
+  # Calculate Heikin-Ashi high and low
+  ha_high = np.maximum.reduce([data.high, ha_open, ha_close])
+  ha_low = np.minimum.reduce([data.low, ha_open, ha_close])
+
+  # Create the Heikin-Ashi OHLC object
+  return OHLC(
+      df=DataFrame({
+          'datetime': data.datetime,
+          'open': ha_open,
+          'high': ha_high,
+          'low': ha_low,
+          'close': ha_close
+      }),
+      open_column_name='open',
+      high_column_name='high',
+      low_column_name='low',
+      close_column_name='close',
+      datetime_column_name='datetime'
+  )

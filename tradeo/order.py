@@ -104,7 +104,7 @@ class Order:
 
   def __str__(self) -> str:
     """Return a string representation of the order."""
-    return f'{self.comment} {self.symbol} {self.price} {self.magic}'
+    return f'{self.comment} {self.symbol} price: {self.price} ID: {self.magic}'
 
   @property
   def symbol(self) -> str:

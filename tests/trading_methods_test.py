@@ -1,6 +1,8 @@
-import tradeo.trading_methods as tm
-from pandas import DataFrame
+import pytest
+import pandas as pd
 import numpy as np
+
+import tradeo.trading_methods as tm
 from tradeo.ohlc import OHLC
 from tradeo.order_type import OrderType
 
@@ -45,14 +47,14 @@ def test_RSI():
 
 
 def test_SAR():
-  data = OHLC(DataFrame({
+  data = OHLC(pd.DataFrame({
       'high': [1, 2, 3],
       'low': [1, 2, 3],
       'close': [0, 0, 0],
       'open': [0, 0, 0],
   }))
   assert tm.SAR(data) == [1.0, 1.0, 1.04]
-  data = OHLC(DataFrame({
+  data = OHLC(pd.DataFrame({
       'high': [0, 0, 3],
       'low': [0, 0, 100],
       'close': [0, 0, 0],
@@ -64,7 +66,7 @@ def test_SAR():
 
 
 def test_buy_three_bar_reversal():
-  data = OHLC(DataFrame({
+  data = OHLC(pd.DataFrame({
       'high': [5, 3, 6],
       'open': [4, 2, 1],
       'close': [2, 1, 5],
@@ -74,7 +76,7 @@ def test_buy_three_bar_reversal():
 
 
 def test_sell_three_bar_reversal():
-  data = OHLC(DataFrame({
+  data = OHLC(pd.DataFrame({
       'high': [5, 6, 5.5],
       'open': [2, 4, 5],
       'close': [4, 5, 1],
@@ -84,7 +86,7 @@ def test_sell_three_bar_reversal():
 
 
 def test_buy_pinbar():
-  data = OHLC(DataFrame({
+  data = OHLC(pd.DataFrame({
       'high': [6],
       'open': [4],
       'close': [5],
@@ -94,7 +96,7 @@ def test_buy_pinbar():
 
 
 def test_sell_pinbar():
-  data = OHLC(DataFrame({
+  data = OHLC(pd.DataFrame({
       'high': [6],
       'open': [2],
       'close': [1],
@@ -104,7 +106,7 @@ def test_sell_pinbar():
 
 
 def test_buy_harami():
-  data = OHLC(DataFrame({
+  data = OHLC(pd.DataFrame({
       'high': [6, 5],
       'open': [5, 1],
       'close': [1, 4],
@@ -114,7 +116,7 @@ def test_buy_harami():
 
 
 def test_sell_harami():
-  data = OHLC(DataFrame({
+  data = OHLC(pd.DataFrame({
       'high': [6, 5.5],
       'open': [1, 5],
       'close': [5, 2],
@@ -126,3 +128,78 @@ def test_sell_harami():
 def test_get_pip():
   assert tm.get_pip('GBPUSD') == 0.0001
   assert tm.get_pip('USDJPY') == 0.01
+
+
+def test_calculate_poc_vah_val_ohlc():
+  data = {
+      'datetime': [
+          '2023-01-01 09:00', '2023-01-01 10:00', '2023-01-01 11:00',
+          '2023-01-01 12:00', '2023-01-01 13:00'
+      ],
+      'open': [1.1, 1.2, 1.3, 1.4, 1.5],
+      'high': [1.5, 1.6, 1.7, 1.8, 1.9],
+      'low': [1.0, 1.1, 1.2, 1.3, 1.4],
+      'close': [1.3, 1.4, 1.5, 1.6, 1.7],
+      'tick_volume': [100, 200, 300, 400, 500],
+  }
+  df = pd.DataFrame(data)
+  df['datetime'] = pd.to_datetime(df['datetime'])
+
+  ohlc = OHLC(
+      df=df,
+      datetime_column_name='datetime'
+  )
+
+  session_start = '09:00'
+  session_end = '12:00'
+  value_area = 0.7
+
+  result = tm.calculate_poc_vah_val(
+      ohlc=ohlc,
+      session_start=session_start,
+      session_end=session_end,
+      value_area=value_area
+  )
+
+  expected_result = {
+      pd.Timestamp('2023-01-01').date(): {
+          'poc': pytest.approx(1.197979797979798, 0.01),
+          'vah': pytest.approx(1.098989898989899, 0.01),
+          'val': pytest.approx(1.007070707070707, 0.01),
+      }
+  }
+
+  assert result == expected_result
+
+
+def test_calculate_heikin_ashi():
+  data = {
+      'datetime': [
+          '2023-01-01 09:00', '2023-01-01 10:00', '2023-01-01 11:00'
+      ],
+      'open': [1.0, 1.1, 1.2],
+      'high': [1.2, 1.3, 1.4],
+      'low': [0.9, 1.0, 1.1],
+      'close': [1.1, 1.2, 1.3],
+      'tick_volume': [100, 200, 300]
+  }
+  df = pd.DataFrame(data)
+  df['datetime'] = pd.to_datetime(df['datetime'])
+
+  ohlc = OHLC(
+      df=df,
+      datetime_column_name='datetime',
+      convert_to_utc='Europe/Madrid'
+  )
+
+  heikin_ashi = tm.calculate_heikin_ashi(ohlc)
+
+  expected_ha_open = np.array([1.0, 1.025, 1.0875])
+  expected_ha_close = np.array([1.05, 1.15, 1.25])
+  expected_ha_high = np.array([1.2, 1.3, 1.4])
+  expected_ha_low = np.array([0.9, 1.0, 1.0875])
+
+  assert np.allclose(heikin_ashi.open, expected_ha_open)
+  assert np.allclose(heikin_ashi.close, expected_ha_close)
+  assert np.allclose(heikin_ashi.high, expected_ha_high)
+  assert np.allclose(heikin_ashi.low, expected_ha_low)

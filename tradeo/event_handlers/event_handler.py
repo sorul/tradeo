@@ -24,7 +24,7 @@ class EventHandler(ABC):
       ask: float
   ) -> None:
     """Handle the return of SUBSCRIBE_SYMBOLS command."""
-    return None
+    return None  # pragma: no cover
 
   def on_bar_data(
       self,
@@ -36,7 +36,7 @@ class EventHandler(ABC):
       tick_volume: float
   ) -> None:
     """Handle the return of SUBSCRIBE_SYMBOLS_BAR_DATA command."""
-    return None
+    return None  # pragma: no cover
 
   def on_historical_data(
           self,
@@ -45,14 +45,14 @@ class EventHandler(ABC):
           data: OHLC
   ) -> None:
     """Handle the return of GET_HISTORICAL_DATA command."""
-    return None
+    return None  # pragma: no cover
 
   def on_historical_trades(
       self,
       mt_client: MT_Client
   ) -> None:
     """Handle the return of GET_HISTORICAL_TRADES command."""
-    return None
+    return None  # pragma: no cover
 
   def on_message(
           self,
@@ -68,4 +68,4 @@ class EventHandler(ABC):
           open_orders: List[Order]
   ) -> None:
     """Handle when a new order event or removed order is received."""
-    return None
+    return None  # pragma: no cover

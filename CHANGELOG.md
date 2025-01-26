@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## v0.22.0 (26/01/2025)
+- feat:
+  - New methods in "trading_methods" script:
+    - calculate_poc_vah_val
+    - calculate_heikin_ashi
+  - MT_client constructor has a new parameter "convert_to_utc".
+- fix:
+  - Now MT_Client uses a system to block threads so that the same symbol cannot enter the function "check_historical_data" multiple times.
+  - Only new messages are included in MT_Client.messages object.
+  - get_bid_ask improved to obtain bid and ask values.
+  - The "place_break_even" and "_check_if_break_even_can_be_placed" methods are fixed.
+- refactor:
+  - Log improvements to work in multithreading.
+  - Message constructor receives a datetime instead of a string for "time" parameter.
+  - The OHLC class is improved to support different inputs formats.
+
 ## V0.21.0 (16/11/2024)
 - refactor:
   - The mt_client parameter is now in the Strategy constructor.

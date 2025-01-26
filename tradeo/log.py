@@ -5,6 +5,7 @@ import socket
 from logging.handlers import SysLogHandler
 from logging import Handler
 import requests
+import threading
 
 from tradeo.singleton import Singleton
 from tradeo.config import Config
@@ -49,10 +50,19 @@ class Log(metaclass=Singleton):
     """Initialize the logger."""
     self.logger = logging.getLogger('tradeo')
     self.logger.setLevel(logging.DEBUG)
-    if Config.activate_syslog:
-      self._build_log()
-    if Config.activate_telegram:
-      self._build_telegram_log()
+
+    # Thread-local storage for handlers
+    self.thread_local = threading.local()
+
+  def _initialize_thread_handlers(self):
+    """Initialize unique handlers for each thread."""
+    if not hasattr(self.thread_local, 'handlers_initialized'):
+      self.thread_local.handlers_initialized = True
+
+      if Config.activate_syslog:
+        self._build_log()
+      if Config.activate_telegram:
+        self._build_telegram_log()
 
   def _build_log(self) -> None:
     handler = SysLogHandler(
@@ -84,18 +94,22 @@ class Log(metaclass=Singleton):
 
   def debug(self, msg: str):
     """Log debug message."""
+    self._initialize_thread_handlers()
     self.logger.debug(msg)
 
   def info(self, msg: str):
     """Log info message."""
+    self._initialize_thread_handlers()
     self.logger.info(msg)
 
   def warning(self, msg: str):
     """Log warning message."""
+    self._initialize_thread_handlers()
     self.logger.warning(f'🟡 {msg}')
 
   def error(self, msg: str):
     """Log error message."""
+    self._initialize_thread_handlers()
     msg = msg.replace('\n', ' ')
     self.logger.error(f'🔴 {msg}')
 
