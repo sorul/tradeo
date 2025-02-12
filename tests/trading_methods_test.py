@@ -1,10 +1,13 @@
 import pytest
 import pandas as pd
 import numpy as np
+from pathlib import Path
 
 import tradeo.trading_methods as tm
 from tradeo.ohlc import OHLC
 from tradeo.order_type import OrderType
+from tradeo.files import try_load_json
+from tradeo.paths import resources_test_path
 
 
 def test_get_pivots():
@@ -198,8 +201,21 @@ def test_calculate_heikin_ashi():
   expected_ha_close = np.array([1.05, 1.15, 1.25])
   expected_ha_high = np.array([1.2, 1.3, 1.4])
   expected_ha_low = np.array([0.9, 1.0, 1.0875])
+  expected_ha_volume = np.array([100, 200, 300])
 
   assert np.allclose(heikin_ashi.open, expected_ha_open)
   assert np.allclose(heikin_ashi.close, expected_ha_close)
   assert np.allclose(heikin_ashi.high, expected_ha_high)
   assert np.allclose(heikin_ashi.low, expected_ha_low)
+  assert np.allclose(heikin_ashi.volume, expected_ha_volume)
+
+
+def _load_data() -> OHLC:
+  file_path = Path(
+    f'{resources_test_path()}/AgentFiles/Historical_Data_SP500.json')
+  data = try_load_json(file_path)
+  df = pd.DataFrame.from_dict(
+        data['SP500_M5'], orient='index')  # type: ignore
+  return OHLC(
+      df=df,
+  )

@@ -75,7 +75,7 @@ class OHLC:
     self.volume = (
         df[volume_column_name].to_numpy()
         if volume_column_name and volume_column_name in df.columns
-        else np.array([])
+        else np.zeros_like(self.open)
     )
 
   def __len__(self):

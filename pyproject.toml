@@ -1,8 +1,9 @@
 [project]
 name = "tradeo"
-version = "0.22.0"
+version = "0.23.0"
 description = "This library contains a series of tools to create a trading bot for Forex trading using Metatrader."
 readme = "README.md"
+requires-python = ">=3.10.0"
 authors = [
   { name = "Cayetano Romero Vargas", email = "cromerovargas2d@gmail.com" },
 ]
@@ -36,7 +37,7 @@ classifiers = [
 "Changelog" = "https://github.com/sorul/tradeo/blob/master/CHANGELOG.md"
 
 [tool.poetry.dependencies]
-python = "^3.9.0"
+python = ">=3.10.0, <4.0.0"
 pytz = "^2024.2"
 pandas = "^2.2.3"
 requests = "^2.32.3"

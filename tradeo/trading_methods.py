@@ -407,7 +407,8 @@ def calculate_heikin_ashi(data: OHLC) -> OHLC:
           'open': ha_open,
           'high': ha_high,
           'low': ha_low,
-          'close': ha_close
+          'close': ha_close,
+          'tick_volume': data.volume
       }),
       open_column_name='open',
       high_column_name='high',
