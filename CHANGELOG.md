@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.23.0 (12/02/2025)
+- refactor:
+  - From now on, the minimum python version is 3.10.0
+- fix:
+ - calculate_heikin_ashi method preservs the volume from input data.
+
 ## v0.22.0 (26/01/2025)
 - feat:
   - New methods in "trading_methods" script:
