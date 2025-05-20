@@ -5,12 +5,10 @@ from tradeo.order_type import OrderType
 class OrderPrice:
   """Class to hold order price."""
 
-  def __init__(
-      self,
-      price: float = 0,
-      stop_loss: float = 0,
-      take_profit: float = 0
-  ):
+  def __init__(self,
+               price: float = 0,
+               stop_loss: float = 0,
+               take_profit: float = 0):
     """Initialize the attributes."""
     self.price = price
     self.stop_loss = stop_loss
@@ -20,12 +18,10 @@ class OrderPrice:
 class MutableOrderDetails:
   """Class to hold order details."""
 
-  def __init__(
-      self,
-      prices: OrderPrice,
-      lots: float = 0.01,
-      expiration: int = 0
-  ):
+  def __init__(self,
+               prices: OrderPrice,
+               lots: float = 0.01,
+               expiration: int = 0):
     """Initialize the attributes."""
     self._prices = prices
     self.lots = lots
@@ -51,11 +47,11 @@ class ImmutableOrderDetails:
   """Class to hold order metadata."""
 
   def __init__(
-          self,
-          symbol: str,
-          order_type: OrderType,
-          magic: str,
-          comment: str,
+      self,
+      symbol: str,
+      order_type: OrderType,
+      magic: str,
+      comment: str,
   ):
     """Initialize the attributes."""
     self.symbol = symbol
@@ -85,13 +81,11 @@ class Order:
 
   """
 
-  def __init__(
-      self,
-      mutable_details: MutableOrderDetails,
-      immutable_details: ImmutableOrderDetails,
-      ticket: int = 0,
-      pnl: float = 0
-  ):
+  def __init__(self,
+               mutable_details: MutableOrderDetails,
+               immutable_details: ImmutableOrderDetails,
+               ticket: int = 0,
+               pnl: float = 0):
     """Initialize the attributes."""
     self._mutable_details = mutable_details
     self._immutable_details = immutable_details
@@ -104,7 +98,9 @@ class Order:
 
   def __str__(self) -> str:
     """Return a string representation of the order."""
-    return f'{self.comment} {self.symbol} price: {self.price} ID: {self.magic}'
+    return (f'Ticket: {self.ticket} - {self.comment} {self.symbol} '
+            f'price: {self.price} SL: {self.stop_loss} '
+            f'TP: {self.take_profit} ID: {self.magic}')
 
   @property
   def symbol(self) -> str:

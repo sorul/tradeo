@@ -1,14 +1,16 @@
 flake8:
-	@flake8 --config config/tox.ini
+	@poetry run flake8 --config config/tox.ini
 
 test:
 	@poetry run pytest --cov=tradeo
 
 requirements:
-	@poetry export -f requirements.txt --output requirements.txt --without-hashes
+	poetry lock
+	poetry export -f requirements.txt --output requirements.txt --without-hashes
 
 dev_requirements:
-	@poetry export --with dev -f requirements.txt --output requirements_dev.txt --without-hashes
+	poetry lock
+	poetry export --with dev -f requirements.txt --output requirements_dev.txt --without-hashes
 
 push_develop:
 	@make requirements
