@@ -1,10 +1,14 @@
 # CHANGELOG
 
+## v0.23.1 (12/05/2025)
+- fix:
+  - Update setuptools dev dependecy to 80.8.0 version for fixing vulnerability issue.
+
 ## v0.23.0 (12/02/2025)
 - refactor:
   - From now on, the minimum python version is 3.10.0
 - fix:
- - calculate_heikin_ashi method preservs the volume from input data.
+  - calculate_heikin_ashi method preservs the volume from input data.
 
 ## v0.22.0 (26/01/2025)
 - feat:

@@ -1,6 +1,6 @@
 [project]
 name = "tradeo"
-version = "0.23.0"
+version = "0.23.1"
 description = "This library contains a series of tools to create a trading bot for Forex trading using Metatrader."
 readme = "README.md"
 requires-python = ">=3.10.0"
@@ -21,7 +21,6 @@ keywords = [
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -67,6 +66,7 @@ flake8-pytest = "^1.4"
 flake8-annotations = "^3.1.1"
 pytest-cov = "^5.0.0"
 pytest-env = "^1.1.5"
+ipython = "8.18.1"
 
 [tool.pytest.ini_options]
 env = [
