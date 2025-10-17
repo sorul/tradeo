@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.24.0 (17/10/2025)
+- feat:
+	- New attribute "open_time" in Order class.
+
 ## v0.23.1 (12/05/2025)
 - fix:
   - Update setuptools dev dependecy to 80.8.0 version for fixing vulnerability issue.

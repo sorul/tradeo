@@ -22,6 +22,7 @@ from tradeo.mt_message import MT_MessageError, MT_MessageInfo
 from tradeo.order_type import OrderType
 from tradeo.event_handlers.basic_event_handler import BasicEventHandler
 from tradeo.log import log
+from tradeo.utils import string_to_date_utc
 
 
 def test_set_agent_paths():
@@ -604,7 +605,12 @@ def test_transform_json_orders_to_orders():
           symbol='AUDUSD',
           order_type=OrderType(buy=False, market=False),
           magic='1705617043',
-          comment='this is a comment'
+          comment='this is a comment',
+          open_time=string_to_date_utc(
+              str_date='2024.01.19 00:30:43',
+              date_format='%Y.%m.%d %H:%M:%S',
+              from_timezone=Config.broker_timezone,
+          )
       ),
       ticket=2023993175
   )
