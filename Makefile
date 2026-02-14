@@ -52,8 +52,8 @@ tag:
 	@git add .
 	@git commit -am "v$$(poetry version -s)"
 	@git push
-	@git merge --no-edit --log developer
+	@git merge --no-edit --log develop
 	@git tag v$$(poetry version -s)
 	@git push --tags
 	@poetry version
-	@echo "Tagging complete. Make a pull request to merge developer into master -> https://github.com/sorul/xnb/compare/developer?expand=1"
+	@echo "Tagging complete. Make a pull request to merge develop into master -> https://github.com/sorul/tradeo/compare/develop?expand=1"
