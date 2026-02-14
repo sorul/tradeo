@@ -14,11 +14,11 @@ def get_pip(symbol: str) -> float:
 
 
 def get_pivots(
-        data: np.ndarray,
-        left: int,
-        right: int,
-        n_pivot: int,
-        max_min: str
+    data: np.ndarray,
+    left: int,
+    right: int,
+    n_pivot: int,
+    max_min: str,
 ) -> List[Tuple[int, int]]:
   """Calculate the bar indices when a maximum or minimum occurs.
 
@@ -63,17 +63,13 @@ def get_pivots(
   return [(i[0], -i[1] - 1) for i in pivots]
 
 
-def EMA(
-    data: np.ndarray,
-    lookback: int,
-    smoothing: int = 2
-) -> List[float]:
+def EMA(data: np.ndarray, lookback: int, smoothing: int = 2) -> List[float]:
   """Exponential Moving Average."""
   ema = [sum(data[:lookback]) / lookback]
   for price in data[lookback:]:
     ema.append(
-        (price * (smoothing / (1 + lookback)))
-        + ema[-1] * (1 - (smoothing / (1 + lookback)))
+        (price * (smoothing / (1 + lookback))) + ema[-1] *
+        (1 - (smoothing / (1 + lookback)))
     )
   return ema
 
@@ -99,9 +95,7 @@ def RSI(data: np.ndarray, lookback: int) -> List[float]:
 
 
 def SAR(  # noqa
-  data: OHLC,
-  af: float = 0.02,
-  maxi: float = 0.2
+    data: OHLC, af: float = 0.02, maxi: float = 0.2
 ) -> List[float]:
   """Calculate Simple Average Reversion."""
   high, low = data.high, data.low
@@ -179,24 +173,16 @@ def pinbar_pattern(data: OHLC, order_type: OrderType) -> bool:
     upper_third = highs[-1] - (highs[-1] - lows[-1]) / 3
     body = abs(opens[-1] - closes[-1])
     lower_wick = opens[-1] - lows[-1]
-    return (
-        opens[-1] >= upper_third
-    ) and (
-        closes[-1] > upper_third
-    ) and (
-        lower_wick >= body * 3
-    )
+    return (opens[-1]
+            >= upper_third) and (closes[-1]
+                                 > upper_third) and (lower_wick >= body * 3)
   else:
     lower_third = lows[-1] + (highs[-1] - lows[-1]) / 3
     body = abs(opens[-1] - closes[-1])
     upper_wick = highs[-1] - closes[-1]
-    return (
-        opens[-1] <= lower_third
-    ) and (
-        closes[-1] < lower_third
-    ) and (
-        upper_wick >= body * 3
-    )
+    return (opens[-1]
+            <= lower_third) and (closes[-1]
+                                 < lower_third) and (upper_wick >= body * 3)
 
 
 def harami_pattern(data: OHLC, order_type: OrderType) -> bool:
@@ -260,17 +246,23 @@ def calculate_poc_vah_val(
         price_bins, volume_profile, value_area
     )
 
-    results.append({
-        'session_date': session_date,
-        'POC': poc,
-        'VAH': vah,
-        'VAL': val
-    })
+    results.append(
+        {
+            'session_date': session_date,
+            'POC': poc,
+            'VAH': vah,
+            'VAL': val
+        }
+    )
 
   return {
-      row['session_date']: {
-          'poc': row['POC'], 'vah': row['VAH'], 'val': row['VAL']
-      } for row in results
+      row['session_date']:
+          {  # noqa: E131
+              'POC': row['POC'],
+              'VAH': row['VAH'],
+              'VAL': row['VAL']
+          }
+      for row in results
   }
 
 
@@ -282,7 +274,7 @@ def _filter_session_data(
     session_end_time: time,
     high: np.ndarray,
     low: np.ndarray,
-    volume: np.ndarray
+    volume: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
   """
   Filter the data for a specific session.
@@ -339,50 +331,96 @@ def _calculate_volume_profile(
 
 def _calculate_poc_vah_val_from_profile(
     price_bins: np.ndarray,
-    volume_profile: np.ndarray,
-    value_area: float
+    volume: np.ndarray,
+    value_area: float,
 ) -> Tuple[float, float, float]:
-  """
-  Calculate POC, VAH, and VAL from a volume profile.
+  if not _is_valid_volume_profile(price_bins, volume):
+    return (np.nan, np.nan, np.nan)
 
-  Args:
-      price_bins: Price bins.
-      volume_profile: Volume profile.
-      value_area: Fraction of total volume for the value area.
+  va = float(np.clip(value_area, 0.0, 1.0))
+  total = float(volume.sum())
+  if not np.isfinite(total) or total <= 0.0:
+    return (np.nan, np.nan, np.nan)
 
-  Returns:
-      POC, VAH, and VAL values.
-  """
-  poc_idx = np.argmax(volume_profile)
+  poc_idx = int(np.argmax(volume))
   poc = float(price_bins[poc_idx])
 
-  sorted_volumes = sorted(volume_profile, reverse=True)
-  cumulative_volume = np.cumsum(sorted_volumes)
-  total_volume = cumulative_volume[-1]
-  vah, val = poc, poc
+  target = total * va
+  if float(volume[poc_idx]) >= target:
+    return (poc, poc, poc)
 
-  for idx, cum_vol in enumerate(cumulative_volume):
-    if cum_vol >= total_volume * value_area:
-      vah_idx = np.where(
-          volume_profile == sorted_volumes[:idx + 1][-1])[0][0]
-      vah = float(price_bins[vah_idx])
+  left_idx, right_idx = _expand_value_area(volume, poc_idx, target)
+  val = float(price_bins[left_idx])
+  vah = float(price_bins[right_idx])
+  return (poc, vah, val)
+
+
+def _expand_value_area(volume: np.ndarray, poc_idx: int,
+                       target: float) -> Tuple[int, int]:
+  left_idx = poc_idx
+  right_idx = poc_idx
+  accumulated = float(volume[poc_idx])
+
+  while accumulated < target:
+    side = _select_next_side(volume, left_idx, right_idx, poc_idx)
+    if side is None:
       break
+    if side == 'left':
+      left_idx -= 1
+      accumulated += float(volume[left_idx])
+    else:
+      right_idx += 1
+      accumulated += float(volume[right_idx])
 
-  for idx, cum_vol in enumerate(cumulative_volume[::-1]):
-    if cum_vol >= total_volume * value_area:
-      val_idx = np.where(volume_profile == sorted_volumes[-(idx + 1)])[0][0]
-      val = float(price_bins[val_idx])
-      break
-
-  return poc, vah, val
+  return left_idx, right_idx
 
 
-def calculate_heikin_ashi(data: OHLC) -> OHLC:
+def _select_next_side(
+    volume: np.ndarray, left_idx: int, right_idx: int, poc_index: int
+) -> str | None:
+  has_left = left_idx > 0
+  has_right = right_idx < len(volume) - 1
+
+  if not has_left and not has_right:
+    return None
+  if has_left and not has_right:
+    return 'left'
+  if has_right and not has_left:
+    return 'right'
+
+  left_volume = float(volume[left_idx - 1])
+  right_volume = float(volume[right_idx + 1])
+  if left_volume > right_volume:
+    return 'left'
+  if right_volume > left_volume:
+    return 'right'
+
+  left_distance = poc_index - left_idx
+  right_distance = right_idx - poc_index
+  return 'left' if left_distance <= right_distance else 'right'
+
+
+def _is_valid_volume_profile(
+    price_bins: np.ndarray, volume: np.ndarray
+) -> bool:
+  if price_bins.ndim != 1 or volume.ndim != 1:
+    return False
+  if len(price_bins) != len(volume):
+    return False
+  if len(price_bins) == 0:
+    return False
+  return bool(np.all(np.diff(price_bins) > 0))
+
+
+def calculate_heikin_ashi(data: OHLC, stable_seed: bool = True) -> OHLC:
   """
   Calculate Heikin-Ashi OHLC data from an OHLC object.
 
   Args:
       data (OHLC): Input OHLC object with standard OHLC data.
+      stable_seed (bool): When True, seed the first HA open with the
+        average of the first open/close to reduce sensitivity to the
+        start of the series. When False, use the first open value.
 
   Returns:
       OHLC: New OHLC object with Heikin-Ashi calculated data.
@@ -392,7 +430,10 @@ def calculate_heikin_ashi(data: OHLC) -> OHLC:
 
   # Calculate Heikin-Ashi open (iterative approach)
   ha_open = np.empty_like(ha_close)
-  ha_open[0] = data.open[0]  # Initial value
+  if stable_seed:
+    ha_open[0] = (data.open[0] + data.close[0]) / 2
+  else:
+    ha_open[0] = data.open[0]  # Initial value
   for i in range(1, len(ha_close)):
     ha_open[i] = (ha_open[i - 1] + ha_close[i - 1]) / 2
 
@@ -402,14 +443,16 @@ def calculate_heikin_ashi(data: OHLC) -> OHLC:
 
   # Create the Heikin-Ashi OHLC object
   return OHLC(
-      df=DataFrame({
-          'datetime': data.datetime,
-          'open': ha_open,
-          'high': ha_high,
-          'low': ha_low,
-          'close': ha_close,
-          'tick_volume': data.volume
-      }),
+      df=DataFrame(
+          {
+              'datetime': data.datetime,
+              'open': ha_open,
+              'high': ha_high,
+              'low': ha_low,
+              'close': ha_close,
+              'volume': data.volume
+          }
+      ),
       open_column_name='open',
       high_column_name='high',
       low_column_name='low',
