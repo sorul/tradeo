@@ -111,8 +111,7 @@ class Order:
     """Return a string representation of the order."""
     return (f'Ticket: {self.ticket} - {self.comment} {self.symbol} '
             f'price: {self.price} SL: {self.stop_loss} '
-            f'TP: {self.take_profit} ID: {self.magic}'
-            f'Executed at: {self.open_time}')
+            f'TP: {self.take_profit} ID: {self.magic}')
 
   @property
   def open_time(self) -> Optional[datetime]:
