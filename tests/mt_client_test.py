@@ -18,10 +18,17 @@ from tradeo.order import (
     ImmutableOrderDetails,
     OrderPrice
 )
+from tradeo.trade import (
+    Trade,
+    TradeMetadata,
+    TradeFinancials,
+    TradeTimes,
+)
 from tradeo.mt_message import MT_MessageError, MT_MessageInfo
 from tradeo.order_type import OrderType
 from tradeo.event_handlers.basic_event_handler import BasicEventHandler
 from tradeo.log import log
+from tradeo.utils import string_to_date_utc
 
 
 def test_set_agent_paths():
@@ -235,7 +242,7 @@ def test_check_bar_data(tmp_path):
           'low': [1.08967, 1.08969],
           'close': [1.08975, 1.08977],
           'time': '2024-01-01T00:00:00.000Z',
-          'tick_volume': 0.91761
+          'volume': 0.91761
       }
   }
 
@@ -254,7 +261,7 @@ def test_check_bar_data(tmp_path):
       'low': [1.08975, 1.08980],
       'close': [1.08995, 1.09000],
       'time': '2024-02-01T00:00:00.000Z',
-      'tick_volume': 0.11111
+      'volume': 0.11111
   }
   with open(bar_data_path, 'w') as f:
     f.write(json.dumps(data))
@@ -396,14 +403,14 @@ def test_check_historical_data(tmp_path):
               'high': 143.98000,
               'low': 143.92000,
               'close': 143.92500,
-              'tick_volume': 400.00000
+              'volume': 400.00000
           },
           f'''{rounded_now_date.strftime('%Y.%m.%d %H:%M')}''': {
               'open': 143.92400,
               'high': 143.97200,
               'low': 143.91600,
               'close': 143.92100,
-              'tick_volume': 305.00000
+              'volume': 305.00000
           }
       }
   }
@@ -426,7 +433,7 @@ def test_check_historical_data(tmp_path):
 
 def test_check_historical_trades(tmp_path):
 
-  # Copy the Bar_Data.json file to the temporary folder
+  # Copy the Historical_Trades.json file to the temporary folder
   historical_trades_path = tmp_path / 'Historical_Trades.json'
   original_historical_trades_path = Path(
       f'{resources_test_path()}/AgentFiles/Historical_Trades.json')
@@ -438,28 +445,49 @@ def test_check_historical_trades(tmp_path):
   # Call for the first time to read data
   mt_client.check_historical_trades()
 
-  assert_data = {
-      '2015257378': {
-          'magic': 1696018543,
-          'symbol': 'GBPCAD',
-          'lots': 0.01,
-          'type': 'sell',
-          'entry': 'entry_out',
-          'deal_time': '2023.09.29 23:52:28',
-          'deal_price': 1.65396,
-          'pnl': -2.45,
-          'commission': -0.03,
-          'swap': 0.00,
-          'comment': '[sl 1.65410]'
-      }
-  }
+  date_format = '%Y.%m.%d %H:%M:%S'
+  expected_trades = [
+      Trade(
+          TradeMetadata(
+              symbol='GBPCAD',
+              trade_type='sell',
+              entry='entry_out',
+              magic=1696018543,
+              comment='[sl 1.65410]',
+          ),
+          TradeFinancials(
+              deal_price=1.65396,
+              lots=0.01,
+              pnl=-2.45,
+              commission=-0.03,
+              swap=0.00,
+          ),
+          TradeTimes(
+              deal_time=string_to_date_utc(
+                  '2023.09.29 23:52:28',
+                  date_format=date_format,
+                  from_timezone=Config.broker_timezone,
+              ),
+              execution_time=string_to_date_utc(
+                  '2023.09.29 23:52:28',
+                  date_format=date_format,
+                  from_timezone=Config.broker_timezone,
+              ),
+          ),
+          ticket=2015257378,
+      )
+  ]
 
-  assert mt_client.historical_trades == assert_data
+  assert mt_client.historical_trades == expected_trades
+  first_trade = mt_client.historical_trades[0]
+  assert first_trade.symbol == 'GBPCAD'
+  assert first_trade.deal_price == 1.65396
+  assert first_trade.execution_time == expected_trades[0].execution_time
 
   # Does not change on second call
   mt_client.check_historical_trades()
 
-  assert mt_client.historical_trades == assert_data
+  assert mt_client.historical_trades == expected_trades
 
   # Write new data
   data = try_load_json(historical_trades_path)
@@ -470,6 +498,7 @@ def test_check_historical_trades(tmp_path):
       'type': 'buy',
       'entry': 'entry_out',
       'deal_time': '2023.09.29 23:52:28',
+      'execution_time': '2023.09.29 23:52:28',
       'deal_price': 1.65396,
       'pnl': -2.45,
       'commission': -0.03,
@@ -482,7 +511,40 @@ def test_check_historical_trades(tmp_path):
   # Now it does change
   mt_client.check_historical_trades()
 
-  assert mt_client.historical_trades == data
+  updated_expected_trades = expected_trades + [
+      Trade(
+          TradeMetadata(
+              symbol='EURUSD',
+              trade_type='buy',
+              entry='entry_out',
+              magic=1696018343,
+              comment='[sl 1.65410]',
+          ),
+          TradeFinancials(
+              deal_price=1.65396,
+              lots=0.01,
+              pnl=-2.45,
+              commission=-0.03,
+              swap=0.00,
+          ),
+          TradeTimes(
+              deal_time=string_to_date_utc(
+                  '2023.09.29 23:52:28',
+                  date_format=date_format,
+                  from_timezone=Config.broker_timezone,
+              ),
+              execution_time=string_to_date_utc(
+                  '2023.09.29 23:52:28',
+                  date_format=date_format,
+                  from_timezone=Config.broker_timezone,
+              ),
+          ),
+          ticket=2015257379,
+      )
+  ]
+
+  assert mt_client.historical_trades == updated_expected_trades
+  assert len(mt_client.historical_trades) == 2
 
 
 def test_send_command(tmp_path):
@@ -604,7 +666,12 @@ def test_transform_json_orders_to_orders():
           symbol='AUDUSD',
           order_type=OrderType(buy=False, market=False),
           magic='1705617043',
-          comment='this is a comment'
+          comment='this is a comment',
+          open_time=string_to_date_utc(
+              str_date='2024.01.19 00:30:43',
+              date_format='%Y.%m.%d %H:%M:%S',
+              from_timezone=Config.broker_timezone,
+          )
       ),
       ticket=2023993175
   )

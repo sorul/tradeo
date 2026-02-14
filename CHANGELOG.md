@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v0.24.0 (2026/02/14)
+- feat:
+	- New attribute "open_time" in Order class.
+	- New Trade class to handle trades information.
+- refactor:
+	- EventHandler attribute "tick_volume" renamed to "volume".
+	- Refactor `_calculate_poc_vah_val_from_profile` in `trading_methods` to reduce cognitive complexity. And solving some bugs.
+
 ## v0.23.1 (12/05/2025)
 - fix:
   - Update setuptools dev dependecy to 80.8.0 version for fixing vulnerability issue.

@@ -33,7 +33,7 @@ class EventHandler(ABC):
       time_frame: str,
       time: str,
       ohlc: OHLC,
-      tick_volume: float
+      volume: float
   ) -> None:
     """Handle the return of SUBSCRIBE_SYMBOLS_BAR_DATA command."""
     return None  # pragma: no cover

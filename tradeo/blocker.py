@@ -76,11 +76,11 @@ class Blocker:
       # If the file exists, check if it's stale
       if not self.is_stale():
         # If it's not stale, exit the program
-        log.warning('Another instance is running. Exiting...')
+        log.debug('Another instance is running. Exiting...')
         exit(0)
       else:
         # If the file is stale, remove it
-        log.warning('The lock file is stale. Removing it...')
+        log.debug('The lock file is stale. Removing it...')
         os.remove(self.lockfile)
 
     # If we get here, it's because the file didn't exist

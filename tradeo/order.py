@@ -1,14 +1,19 @@
 """Class to hold order data."""
+from datetime import datetime
+from typing import Optional
+
 from tradeo.order_type import OrderType
 
 
 class OrderPrice:
   """Class to hold order price."""
 
-  def __init__(self,
-               price: float = 0,
-               stop_loss: float = 0,
-               take_profit: float = 0):
+  def __init__(
+      self,
+      price: float = 0,
+      stop_loss: float = 0,
+      take_profit: float = 0,
+  ):
     """Initialize the attributes."""
     self.price = price
     self.stop_loss = stop_loss
@@ -18,10 +23,12 @@ class OrderPrice:
 class MutableOrderDetails:
   """Class to hold order details."""
 
-  def __init__(self,
-               prices: OrderPrice,
-               lots: float = 0.01,
-               expiration: int = 0):
+  def __init__(
+      self,
+      prices: OrderPrice,
+      lots: float = 0.01,
+      expiration: int = 0,
+  ):
     """Initialize the attributes."""
     self._prices = prices
     self.lots = lots
@@ -52,8 +59,10 @@ class ImmutableOrderDetails:
       order_type: OrderType,
       magic: str,
       comment: str,
+      open_time: Optional[datetime] = None,
   ):
     """Initialize the attributes."""
+    self.open_time = open_time
     self.symbol = symbol
     self.order_type = order_type
     self.magic = magic
@@ -81,11 +90,13 @@ class Order:
 
   """
 
-  def __init__(self,
-               mutable_details: MutableOrderDetails,
-               immutable_details: ImmutableOrderDetails,
-               ticket: int = 0,
-               pnl: float = 0):
+  def __init__(
+      self,
+      mutable_details: MutableOrderDetails,
+      immutable_details: ImmutableOrderDetails,
+      ticket: int = 0,
+      pnl: float = 0,
+  ):
     """Initialize the attributes."""
     self._mutable_details = mutable_details
     self._immutable_details = immutable_details
@@ -101,6 +112,11 @@ class Order:
     return (f'Ticket: {self.ticket} - {self.comment} {self.symbol} '
             f'price: {self.price} SL: {self.stop_loss} '
             f'TP: {self.take_profit} ID: {self.magic}')
+
+  @property
+  def open_time(self) -> Optional[datetime]:
+    """Get the open_time."""
+    return self._immutable_details.open_time
 
   @property
   def symbol(self) -> str:

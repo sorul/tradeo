@@ -663,13 +663,13 @@ void GetHistoricalData(string dataStr) {
          text += ", ";
       }
       // maybe use integer instead of time string? IntegerToString(rates_array[i].time)
-      text += StringFormat("\"%s\": {\"open\": %.5f, \"high\": %.5f, \"low\": %.5f, \"close\": %.5f, \"tick_volume\": %.5f}", 
+      text += StringFormat("\"%s\": {\"open\": %.5f, \"high\": %.5f, \"low\": %.5f, \"close\": %.5f, \"volume\": %.5f}", 
                            TimeToString(rates_array[i].time), 
                            rates_array[i].open, 
                            rates_array[i].high, 
                            rates_array[i].low, 
                            rates_array[i].close, 
-                           rates_array[i].tick_volume);
+                           rates_array[i].volume);
       first = false;
    }
    text += "}}";
@@ -701,11 +701,15 @@ void GetHistoricalTrades(string dataStr) {
    for(int i=HistoryDealsTotal()-1; i>=0; i--) {
       ulong ticket = HistoryDealGetTicket(i);
       if (HistoryDealGetInteger(ticket, DEAL_TIME) < TimeCurrent() - lookbackDays * (24 * 60 * 60)) continue;
-      // long orderTicket = HistoryDealGetInteger(ticket, DEAL_ORDER);  // get order which belongs to the deal. 
-      // if (!HistoryOrderSelect(orderTicket)) continue;
+      ulong orderTicket = HistoryDealGetInteger(ticket, DEAL_ORDER);
+      datetime executionTime = 0;
+      if (orderTicket > 0 && HistoryOrderSelect(orderTicket)) {
+         executionTime = (datetime)HistoryOrderGetInteger(orderTicket, ORDER_TIME_SETUP);
+      }
+      string executionTimeStr = executionTime > 0 ? TimeToString(executionTime, TIME_DATE|TIME_SECONDS) : "";
       if (!first) text += ", ";
       else first = false;
-      text += StringFormat("\"%llu\": {\"magic\": %d, \"symbol\": \"%s\", \"lots\": %.2f, \"type\": \"%s\", \"entry\": \"%s\", \"deal_time\": \"%s\", \"deal_price\": %.5f, \"pnl\": %.2f, \"commission\": %.2f, \"swap\": %.2f, \"comment\": \"%s\"}", 
+      text += StringFormat("\"%llu\": {\"magic\": %d, \"symbol\": \"%s\", \"lots\": %.2f, \"type\": \"%s\", \"entry\": \"%s\", \"deal_time\": \"%s\", \"execution_time\": \"%s\", \"deal_price\": %.5f, \"pnl\": %.2f, \"commission\": %.2f, \"swap\": %.2f, \"comment\": \"%s\"}", 
                            ticket, 
                            HistoryDealGetInteger(ticket, DEAL_MAGIC), 
                            HistoryDealGetString(ticket, DEAL_SYMBOL), 
@@ -713,6 +717,7 @@ void GetHistoricalTrades(string dataStr) {
                            HistoryDealTypeToString((int)HistoryDealGetInteger(ticket, DEAL_TYPE)),
                            HistoryDealEntryTypeToString((int)HistoryDealGetInteger(ticket, DEAL_ENTRY)), 
                            TimeToString(HistoryDealGetInteger(ticket, DEAL_TIME), TIME_DATE|TIME_SECONDS), 
+                           executionTimeStr,
                            HistoryDealGetDouble(ticket, DEAL_PRICE), 
                            HistoryDealGetDouble(ticket, DEAL_PROFIT), 
                            HistoryDealGetDouble(ticket, DEAL_COMMISSION), 
@@ -763,14 +768,14 @@ void CheckBarData() {
       int count = BarDataInstruments[s].GetRates(curr_rate, 1);
       // if last rate is returned and its timestamp is greater than the last published...
       if(count > 0 && curr_rate[0].time > BarDataInstruments[s].getLastPublishTimestamp()) {
-         string rates = StringFormat("\"%s\": {\"time\": \"%s\", \"open\": %f, \"high\": %f, \"low\": %f, \"close\": %f, \"tick_volume\":%d}, ", 
+         string rates = StringFormat("\"%s\": {\"time\": \"%s\", \"open\": %f, \"high\": %f, \"low\": %f, \"close\": %f, \"volume\":%d}, ", 
                                      BarDataInstruments[s].name(), 
                                      TimeToString(curr_rate[0].time), 
                                      curr_rate[0].open, 
                                      curr_rate[0].high, 
                                      curr_rate[0].low, 
                                      curr_rate[0].close, 
-                                     curr_rate[0].tick_volume);
+                                     curr_rate[0].volume);
          text += rates;
          newData = true;
          // updates the timestamp

@@ -1,6 +1,6 @@
 """OHLC class to encapsulate OHLC data."""
 
-from pandas import DataFrame, to_datetime
+from pandas import DataFrame, DatetimeIndex, to_datetime
 import numpy as np
 from typing import Optional
 import pytz
@@ -16,7 +16,7 @@ class OHLC:
       high_column_name: str = 'high',
       low_column_name: str = 'low',
       close_column_name: str = 'close',
-      volume_column_name: Optional[str] = 'tick_volume',
+      volume_column_name: Optional[str] = 'volume',
       datetime_column_name: Optional[str] = None,
       convert_to_utc: Optional[str | pytz.BaseTzInfo] = None,
   ):
@@ -48,26 +48,33 @@ class OHLC:
     df = df.set_index(datetime_column_name) if datetime_column_name else df
 
     try:
-      df.index = to_datetime(df.index)
+      datetime_index = to_datetime(df.index)
     except Exception as e:
       raise ValueError(
           'The index could not be converted to datetime. '
           'Ensure it is properly formatted.'
       ) from e
 
+    if not isinstance(datetime_index, DatetimeIndex):
+      raise ValueError(
+          'The index could not be converted to a DatetimeIndex. '
+          'Ensure it contains valid datetime values.'
+      )
+
     if convert_to_utc:
-      if isinstance(convert_to_utc, str):
-        df.index = df.index.tz_localize(convert_to_utc).tz_convert('UTC')
-      elif isinstance(convert_to_utc, pytz.BaseTzInfo):
-        df.index = df.index.tz_localize(convert_to_utc).tz_convert('UTC')
+      if isinstance(convert_to_utc, (str, pytz.BaseTzInfo)):
+        datetime_index = datetime_index.tz_localize(
+            convert_to_utc).tz_convert('UTC')
       else:
         raise TypeError((
           'convert_to_utc must be a pytz.BaseTzInfo'
           ' or a str representing a timezone.'
         ))
 
+    df.index = datetime_index
+
     # Convert datetime to Python datetime objects
-    self.datetime = np.array(df.index.to_pydatetime())
+    self.datetime = np.array(datetime_index.to_pydatetime())
     self.open = df[open_column_name].to_numpy()
     self.high = df[high_column_name].to_numpy()
     self.low = df[low_column_name].to_numpy()
