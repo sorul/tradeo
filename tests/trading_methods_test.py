@@ -143,7 +143,7 @@ def test_calculate_poc_vah_val_ohlc():
       'high': [1.5, 1.6, 1.7, 1.8, 1.9],
       'low': [1.0, 1.1, 1.2, 1.3, 1.4],
       'close': [1.3, 1.4, 1.5, 1.6, 1.7],
-      'tick_volume': [100, 200, 300, 400, 500],
+      'volume': [100, 200, 300, 400, 500],
   }
   df = pd.DataFrame(data)
   df['datetime'] = pd.to_datetime(df['datetime'])
@@ -166,13 +166,43 @@ def test_calculate_poc_vah_val_ohlc():
 
   expected_result = {
       pd.Timestamp('2023-01-01').date(): {
-          'poc': pytest.approx(1.197979797979798, 0.01),
-          'vah': pytest.approx(1.098989898989899, 0.01),
-          'val': pytest.approx(1.007070707070707, 0.01),
+          'POC': pytest.approx(1.197979797979798, 0.01),
+          'VAH': pytest.approx(1.4878787878787878, 0.01),
+          'VAL': pytest.approx(1.0, 0.01),
       }
   }
 
   assert result == expected_result
+
+
+def test_calculate_poc_vah_val_from_profile_invalid_inputs():
+  result = tm._calculate_poc_vah_val_from_profile(
+      np.array([[1.0, 2.0, 3.0]]),
+      np.array([1.0, 2.0, 3.0]),
+      value_area=0.7
+  )
+  assert np.isnan(result).all()
+
+  result = tm._calculate_poc_vah_val_from_profile(
+      np.array([1.0, 2.0, 3.0]),
+      np.array([1.0, 2.0]),
+      value_area=0.7
+  )
+  assert np.isnan(result).all()
+
+  result = tm._calculate_poc_vah_val_from_profile(
+      np.array([1.0, 1.0, 1.0]),
+      np.array([1.0, 2.0, 3.0]),
+      value_area=0.7
+  )
+  assert np.isnan(result).all()
+
+  result = tm._calculate_poc_vah_val_from_profile(
+      np.array([]),
+      np.array([]),
+      value_area=0.7
+  )
+  assert np.isnan(result).all()
 
 
 def test_calculate_heikin_ashi():
@@ -184,7 +214,7 @@ def test_calculate_heikin_ashi():
       'high': [1.2, 1.3, 1.4],
       'low': [0.9, 1.0, 1.1],
       'close': [1.1, 1.2, 1.3],
-      'tick_volume': [100, 200, 300]
+      'volume': [100, 200, 300]
   }
   df = pd.DataFrame(data)
   df['datetime'] = pd.to_datetime(df['datetime'])
@@ -197,10 +227,10 @@ def test_calculate_heikin_ashi():
 
   heikin_ashi = tm.calculate_heikin_ashi(ohlc)
 
-  expected_ha_open = np.array([1.0, 1.025, 1.0875])
+  expected_ha_open = np.array([1.05, 1.05, 1.1])
   expected_ha_close = np.array([1.05, 1.15, 1.25])
   expected_ha_high = np.array([1.2, 1.3, 1.4])
-  expected_ha_low = np.array([0.9, 1.0, 1.0875])
+  expected_ha_low = np.array([0.9, 1.0, 1.1])
   expected_ha_volume = np.array([100, 200, 300])
 
   assert np.allclose(heikin_ashi.open, expected_ha_open)
