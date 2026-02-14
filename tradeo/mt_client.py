@@ -19,15 +19,18 @@ from tradeo.singleton import Singleton
 from tradeo.files import (try_load_json, try_remove_file, try_read_file)
 from tradeo.order_operations import OrderOperations
 from tradeo.order_type import get_order_type_from_str
-from tradeo.order import (Order, MutableOrderDetails, ImmutableOrderDetails,
-                          OrderPrice)
+from tradeo.order import (
+    Order, MutableOrderDetails, ImmutableOrderDetails, OrderPrice
+)
+from tradeo.trade import (Trade, TradeMetadata, TradeFinancials, TradeTimes)
 from tradeo.ohlc import OHLC
 from tradeo.trading_methods import get_pip
 from tradeo.utils import string_to_date_utc
 from tradeo.mt_message import MT_MessageError, MT_MessageInfo
 if TYPE_CHECKING:
-  from tradeo.event_handlers.event_handler import (EventHandler
-                                                   )  # pragma: no cover
+  from tradeo.event_handlers.event_handler import (
+      EventHandler
+  )  # pragma: no cover
 
 # Typing types
 attributes_data_type = Dict[str, Dict]
@@ -41,7 +44,6 @@ class MT_Client(metaclass=Singleton):
 
   This includes all of the functions needed for communication with MT4/MT5.
   """
-
   def __init__(
       self,
       event_handler: Union[EventHandler, None] = None,
@@ -89,7 +91,7 @@ class MT_Client(metaclass=Singleton):
     self.market_data: attributes_data_type = {}
     self.bar_data: attributes_data_type = {}
     self.historical_data: historical_data_type = {}
-    self.historical_trades: attributes_data_type = {}
+    self.historical_trades: List[Trade] = []
     self._successful_symbols: Set[str] = set()
 
     # State attributes
@@ -102,23 +104,32 @@ class MT_Client(metaclass=Singleton):
       prefix_folder = Path(mt_files_path / self.prefix_files_path)
       prefix_folder.mkdir(exist_ok=True)
       self.path_orders = Path(
-          join(mt_files_path, self.prefix_files_path, 'Orders.json'))
+          join(mt_files_path, self.prefix_files_path, 'Orders.json')
+      )
       self.path_messages = Path(
-          join(mt_files_path, self.prefix_files_path, 'Messages.json'))
+          join(mt_files_path, self.prefix_files_path, 'Messages.json')
+      )
       self.path_market_data = Path(
-          join(mt_files_path, self.prefix_files_path, 'Market_Data.json'))
+          join(mt_files_path, self.prefix_files_path, 'Market_Data.json')
+      )
       self.path_bar_data = Path(
-          join(mt_files_path, self.prefix_files_path, 'Bar_Data.json'))
+          join(mt_files_path, self.prefix_files_path, 'Bar_Data.json')
+      )
       self.path_historical_data_prefix = Path(
-          join(mt_files_path, self.prefix_files_path, 'Historical_Data_'))
+          join(mt_files_path, self.prefix_files_path, 'Historical_Data_')
+      )
       self.path_historical_trades = Path(
-          join(mt_files_path, self.prefix_files_path, 'Historical_Trades.json'))
+          join(mt_files_path, self.prefix_files_path, 'Historical_Trades.json')
+      )
       self.path_orders_stored = Path(
-          join(mt_files_path, self.prefix_files_path, 'Orders_Stored.json'))
+          join(mt_files_path, self.prefix_files_path, 'Orders_Stored.json')
+      )
       self.path_messages_stored = Path(
-          join(mt_files_path, self.prefix_files_path, 'Messages_Stored.json'))
+          join(mt_files_path, self.prefix_files_path, 'Messages_Stored.json')
+      )
       self.path_commands_prefix = Path(
-          join(mt_files_path, self.prefix_files_path, 'Commands_'))
+          join(mt_files_path, self.prefix_files_path, 'Commands_')
+      )
     else:
       log.error(f'mt_files_path: {mt_files_path} does not exist!')
 
@@ -188,9 +199,11 @@ class MT_Client(metaclass=Singleton):
           self._last_messages_millis = int(millis)
 
           message_content = list(message.values())
-          time = string_to_date_utc(str_date=message_content[1],
-                                    date_format='%Y.%m.%d %H:%M:%S',
-                                    from_timezone=Config.broker_timezone)
+          time = string_to_date_utc(
+              str_date=message_content[1],
+              date_format='%Y.%m.%d %H:%M:%S',
+              from_timezone=Config.broker_timezone
+          )
           if self._is_current_datetime(time):
             self._add_new_message(message_content, time)
     return self.messages
@@ -200,7 +213,8 @@ class MT_Client(metaclass=Singleton):
       error_type = message[2]
       description = message[3]
       self.messages['ERROR'].append(
-          MT_MessageError(time, error_type, description))
+          MT_MessageError(time, error_type, description)
+      )
     else:
       message = message[2]
       self.messages['INFO'].append(MT_MessageInfo(time, str(message)))
@@ -216,13 +230,17 @@ class MT_Client(metaclass=Singleton):
     """Return the info messages."""
     return cast(List[MT_MessageInfo], self.messages['INFO'])
 
-  def set_messages(self, info_messages: List[MT_MessageInfo],
-                   error_messages: List[MT_MessageError]) -> None:
+  def set_messages(
+      self, info_messages: List[MT_MessageInfo],
+      error_messages: List[MT_MessageError]
+  ) -> None:
     """Set manually the messages object."""
-    self.messages['INFO'] = cast(List[Union[MT_MessageInfo, MT_MessageError]],
-                                 info_messages)
-    self.messages['ERROR'] = cast(List[Union[MT_MessageInfo, MT_MessageError]],
-                                  error_messages)
+    self.messages['INFO'] = cast(
+        List[Union[MT_MessageInfo, MT_MessageError]], info_messages
+    )
+    self.messages['ERROR'] = cast(
+        List[Union[MT_MessageInfo, MT_MessageError]], error_messages
+    )
 
   def clean_messages(self):
     """Clean the messages object."""
@@ -247,8 +265,9 @@ class MT_Client(metaclass=Singleton):
           cond = symbol not in self.market_data
           cond = cond or data[symbol] != self.market_data.get(symbol)
           if cond:
-            self.event_handler.on_tick(self, symbol, data[symbol]['bid'],
-                                       data[symbol]['ask'])
+            self.event_handler.on_tick(
+                self, symbol, data[symbol]['bid'], data[symbol]['ask']
+            )
       self.market_data = data
 
     return self.market_data
@@ -300,12 +319,16 @@ class MT_Client(metaclass=Singleton):
             self.event_handler.on_bar_data(
                 self, symbol, time_frame, data[st]['time'],
                 OHLC(
-                    DataFrame({
-                        'open': data[st]['open'],
-                        'high': data[st]['high'],
-                        'low': data[st]['low'],
-                        'close': data[st]['close'],
-                    })), data[st]['tick_volume'])
+                    DataFrame(
+                        {
+                            'open': data[st]['open'],
+                            'high': data[st]['high'],
+                            'low': data[st]['low'],
+                            'close': data[st]['close'],
+                        }
+                    )
+                ), data[st]['volume']
+            )
       self.bar_data = data
 
     return self.bar_data
@@ -326,10 +349,18 @@ class MT_Client(metaclass=Singleton):
     data_orders = data.get('orders')
     data_account_info = data.get('account_info')
 
-    if (len(data) > 0 and isinstance(data_orders, Dict)
-        and isinstance(data_account_info, Dict)
-        and (data_orders != self.open_orders
-             or data_account_info != self.account_info)):
+    len_data = len(data) > 0
+    data_orders_is_dict = isinstance(data_orders, Dict)
+    data_account_info_is_dict = isinstance(data_account_info, Dict)
+    changes = (
+        data_orders != self.open_orders or
+        data_account_info != self.account_info
+    )
+
+    if (
+        len_data and data_orders_is_dict and data_account_info_is_dict and
+        changes
+    ):
 
       orders = self._transform_json_orders_to_orders(data_orders)
 
@@ -353,8 +384,9 @@ class MT_Client(metaclass=Singleton):
         f.write(json.dumps(data))
 
       if new_event and self.event_handler:
-        self.event_handler.on_order_event(self, self.account_info,
-                                          self.open_orders)
+        self.event_handler.on_order_event(
+            self, self.account_info, self.open_orders
+        )
 
     return self.open_orders
 
@@ -420,15 +452,17 @@ class MT_Client(metaclass=Singleton):
 
   def _process_historical_data(self, symbol: str, data: Dict) -> None:
     # The dataframe is built
-    df = DataFrame.from_dict(data[f'{symbol}_{Config.timeframe}'],
-                             orient='index')  # type: ignore
+    df = DataFrame.from_dict(
+        data[f'{symbol}_{Config.timeframe}'], orient='index'
+    )  # type: ignore
     self.historical_data[symbol] = df
 
     # The date and time corresponding to the last load are calculated
-    last_date_from_df = string_to_date_utc(str_date=df.index[-1],
-                                           from_timezone=Config.broker_timezone)
+    last_date_from_df = string_to_date_utc(
+        str_date=df.index[-1],
+        from_timezone=Config.broker_timezone,
+    )
     if self._is_current_datetime(last_date_from_df):
-
       self.successful_symbols.add(symbol)
       if self.event_handler:
         if self.convert_to_utc:
@@ -441,14 +475,21 @@ class MT_Client(metaclass=Singleton):
       command_files = self.command_file_exist(symbol)
       for com in command_files:
         try_remove_file(com)
+    else:
+      log.debug(
+          f'Historical data for {symbol} not up to date: '
+          f'last date in data {last_date_from_df}'
+      )
 
   @staticmethod
   def _is_current_datetime(date_utc: datetime) -> bool:
     """Check if the historical data is up to date."""
     now_date = datetime.now(Config.utc_timezone)
-    td = timedelta(minutes=now_date.minute % 5,
-                   seconds=now_date.second,
-                   microseconds=now_date.microsecond)
+    td = timedelta(
+        minutes=now_date.minute % 5,
+        seconds=now_date.second,
+        microseconds=now_date.microsecond
+    )
     rounded_now_date = now_date - td
     start_range = rounded_now_date
     end_range = rounded_now_date + timedelta(minutes=5)
@@ -461,10 +502,46 @@ class MT_Client(metaclass=Singleton):
       if self.START:
         self.check_historical_trades()
 
-  def check_historical_trades(self) -> Dict:
+  def check_historical_trades(self) -> List[Trade]:
     """Update and return the historical trades object."""
-    self.historical_trades = try_load_json(self.path_historical_trades)
+    data = try_load_json(self.path_historical_trades)
+    if len(data) > 0 and isinstance(data, Dict):
+      self.historical_trades = self._transform_json_trades_to_trades(data)
     return self.historical_trades
+
+  def _transform_json_trades_to_trades(self, json_trades: Dict) -> List[Trade]:
+    """Return a list of historical trades objects."""
+    return [
+        Trade(
+            TradeMetadata(
+                symbol=trade['symbol'],
+                trade_type=trade['type'],
+                entry=trade['entry'],
+                magic=trade['magic'],
+                comment=trade['comment'],
+            ),
+            TradeFinancials(
+                deal_price=trade['deal_price'],
+                lots=trade['lots'],
+                pnl=trade['pnl'],
+                commission=trade['commission'],
+                swap=trade['swap'],
+            ),
+            TradeTimes(
+                deal_time=string_to_date_utc(
+                    str_date=trade['deal_time'],
+                    date_format='%Y.%m.%d %H:%M:%S',
+                    from_timezone=Config.broker_timezone,
+                ),
+                execution_time=string_to_date_utc(
+                    str_date=trade['execution_time'],
+                    date_format='%Y.%m.%d %H:%M:%S',
+                    from_timezone=Config.broker_timezone,
+                ),
+            ),
+            ticket=int(ticket),
+        ) for ticket, trade in json_trades.items()
+    ]
 
   def subscribe_symbols(self, symbols: List[str]) -> None:
     """To send a SUBSCRIBE_SYMBOLS command to subscribe to market (tick) data.
@@ -499,8 +576,9 @@ class MT_Client(metaclass=Singleton):
 
     """
     data = [f'{st[0]},{st[1]}' for st in symbols]
-    self.send_command('SUBSCRIBE_SYMBOLS_BAR_DATA',
-                      ','.join(str(p) for p in data))
+    self.send_command(
+        'SUBSCRIBE_SYMBOLS_BAR_DATA', ','.join(str(p) for p in data)
+    )
 
   def get_historical_data(self, symbol: str, time_frame: str) -> None:
     """To send a GET_HISTORIC_DATA command to request historical data.
@@ -573,8 +651,9 @@ class MT_Client(metaclass=Singleton):
     ]
     self.send_command('OPEN_ORDER', ','.join(str(p) for p in data))
 
-  def send_modify_order_command(self, ticket: int,
-                                mod: MutableOrderDetails) -> None:
+  def send_modify_order_command(
+      self, ticket: int, mod: MutableOrderDetails
+  ) -> None:
     """To send a MODIFY_ORDER command to modify an order.
 
     Args:
@@ -603,12 +682,20 @@ class MT_Client(metaclass=Singleton):
     break_even = order.price + pip if buy else order.price - pip
     self.send_modify_order_command(
         order.ticket,
-        MutableOrderDetails(prices=OrderPrice(stop_loss=break_even,
-                                              take_profit=order.take_profit),
-                            lots=order.lots,
-                            expiration=order.expiration))
-    log.debug((f'Break even placed ({break_even}) in ticket {order.ticket}. '
-               f'{log_comment}'))
+        MutableOrderDetails(
+            prices=OrderPrice(
+                stop_loss=break_even, take_profit=order.take_profit
+            ),
+            lots=order.lots,
+            expiration=order.expiration
+        )
+    )
+    log.debug(
+        (
+            f'Break even placed ({break_even}) in ticket {order.ticket}. '
+            f'{log_comment}'
+        )
+    )
 
   def send_close_order_command(self, ticket: int, lots: float = 0) -> None:
     """To send a CLOSE_ORDER command to close an order.
@@ -674,7 +761,8 @@ class MT_Client(metaclass=Singleton):
     self.command_id = (self.command_id + 1) % 100000
 
     end_time = datetime.now(
-        Config.utc_timezone) + timedelta(seconds=self.max_retry_command_seconds)
+        Config.utc_timezone
+    ) + timedelta(seconds=self.max_retry_command_seconds)
     now = datetime.now(Config.utc_timezone)
 
     # trying again for X seconds in case all files exist or are
@@ -739,8 +827,9 @@ class MT_Client(metaclass=Singleton):
     all_symbols = set(Config.symbols)
     return list(all_symbols - self.successful_symbols)
 
-  def get_lot_size(self, symbol: str, entry_price: float, stop_loss: float,
-                   risk_ratio: float) -> float:
+  def get_lot_size(
+      self, symbol: str, entry_price: float, stop_loss: float, risk_ratio: float
+  ) -> float:
     """Return the lot size based on the risk (0-100%) on your account.
 
     Returns 0.01 if the bid and ask are not available or if the risk is lower
@@ -753,8 +842,9 @@ class MT_Client(metaclass=Singleton):
       sl_pips = abs(entry_price - stop_loss) / pip
       balance = self.get_balance()
       risk_ratio = risk_ratio / 100
-      lots = round((risk_ratio * balance) / ((100000 / price * pip) * sl_pips),
-                   2)
+      lots = round(
+          (risk_ratio * balance) / ((100000 / price * pip) * sl_pips), 2
+      )
       return lots if lots > 0 else 0.01
     else:
       return 0.01
