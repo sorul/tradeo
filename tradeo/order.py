@@ -84,7 +84,8 @@ class Order:
       if the order should not have a TP.
   magic (int): Used to identify the order.
       Could be used to specify the timestamp as well.
-  comment (str): Order comment
+  comment (str): Order comment. Any `|` is automatically replaced by `/`
+      to avoid breaking the MQL5 command parser.
   expiration (int): Expiration time given as timestamp in seconds.
       Can be zero if the order should not have an expiration time.
 
@@ -98,10 +99,16 @@ class Order:
       pnl: float = 0,
   ):
     """Initialize the attributes."""
+    immutable_details.comment = self._sanitize_comment(immutable_details.comment)
     self._mutable_details = mutable_details
     self._immutable_details = immutable_details
     self._ticket = ticket  # it would not be available until the order be filled
     self._pnl = pnl  # it would not be available until the order be filled
+
+  @staticmethod
+  def _sanitize_comment(comment: str) -> str:
+    """Replace unsupported separator chars used by the MT bridge protocol."""
+    return comment.replace('|', '/')
 
   def __eq__(self, __value: object) -> bool:
     """Check if the order is equal to another order."""

@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.24.1
+- fix:
+  - `Order.comment` now sanitizes unsupported `|` characters by replacing them with `/` to avoid breaking the MQL5 command parser.
+
+
 ## v0.24.0 (2026/02/14)
 - feat:
 	- New attribute "open_time" in Order class.
