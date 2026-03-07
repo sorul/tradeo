@@ -137,7 +137,8 @@ int OnInit() {
    ArrayResize(lastMessages, numLastMessages);
    trade.SetAsyncMode(asyncMode);
    trade.SetDeviationInPoints(SlippagePoints);  // (int)(slippagePips*_pipInPoints)
-   trade.SetTypeFilling(ORDER_FILLING_RETURN);  // will fill the complete order, there are also FOK and IOC modes: ORDER_FILLING_FOK, ORDER_FILLING_IOC. 
+   // Do not force a single filling mode globally. Different symbols/brokers
+   // may reject orders if the filling policy is not supported.
    trade.LogLevel(LOG_LEVEL_ERRORS);  // else it will print a lot on tester. 
    // trade.SetExpertMagicNumber(magicNumber);
    return INIT_SUCCEEDED;
@@ -267,8 +268,8 @@ void OpenOrder(string orderStr) {
    int magic = (int)StringToInteger(data[6]);
    string comment = data[7];
    datetime expiration = (datetime)StringToInteger(data[8]);
-   if (price == 0 && orderType == POSITION_TYPE_BUY) price = ask(symbol);
-   if (price == 0 && orderType == POSITION_TYPE_SELL) price = bid(symbol);
+   if (price == 0 && orderType == ORDER_TYPE_BUY) price = ask(symbol);
+   if (price == 0 && orderType == ORDER_TYPE_SELL) price = bid(symbol);
    if (orderType == -1) {
       SendError("OPEN_ORDER_TYPE", StringFormat("Order type could not be parsed: %f (%f)", orderType, data[1]));
       return;
@@ -286,6 +287,7 @@ void OpenOrder(string orderStr) {
       return;
    }
    trade.SetExpertMagicNumber(magic);
+   trade.SetTypeFillingBySymbol(symbol);
    bool res = false;
    if (orderType == ORDER_TYPE_BUY)
       res = trade.Buy(lots, symbol, price, stopLoss, takeProfit, comment);
@@ -302,7 +304,16 @@ void OpenOrder(string orderStr) {
    if (res) {
       SendInfo("Successfully sent order: " + symbol + ", " + OrderOperationToString(orderType) + ", " + DoubleToString(lots, lotSizeDigits) + ", " + DoubleToString(price, digits));
    } else {
-      SendError("OPEN_ORDER", "Could not open order: " + ErrorDescription(GetLastError()));
+      SendError(
+         "OPEN_ORDER",
+         StringFormat(
+            "Could not open order. retcode=%d retcode_desc=%s last_error=%d last_error_desc=%s",
+            trade.ResultRetcode(),
+            trade.ResultRetcodeDescription(),
+            GetLastError(),
+            ErrorDescription(GetLastError())
+         )
+      );
    }
 }
 
@@ -669,7 +680,7 @@ void GetHistoricalData(string dataStr) {
                            rates_array[i].high, 
                            rates_array[i].low, 
                            rates_array[i].close, 
-                           rates_array[i].volume);
+                           rates_array[i].tick_volume);
       first = false;
    }
    text += "}}";
@@ -775,7 +786,7 @@ void CheckBarData() {
                                      curr_rate[0].high, 
                                      curr_rate[0].low, 
                                      curr_rate[0].close, 
-                                     curr_rate[0].volume);
+                                     curr_rate[0].tick_volume);
          text += rates;
          newData = true;
          // updates the timestamp
@@ -971,8 +982,9 @@ bool OpenChartIfNotOpen(string symbol, ENUM_TIMEFRAMES timeFrame) {
 
 // use string so that we can have the same in MT5. 
 string OrderOperationToString(int orderType) {
-   if (orderType == POSITION_TYPE_BUY) return "buy";
-   if (orderType == POSITION_TYPE_SELL) return "sell";
+   // Accept both position and order enums for market buy/sell values.
+   if (orderType == POSITION_TYPE_BUY || orderType == ORDER_TYPE_BUY) return "buy";
+   if (orderType == POSITION_TYPE_SELL || orderType == ORDER_TYPE_SELL) return "sell";
    if (orderType == ORDER_TYPE_BUY_LIMIT) return "buylimit";
    if (orderType == ORDER_TYPE_SELL_LIMIT) return "selllimit";
    if (orderType == ORDER_TYPE_BUY_STOP) return "buystop";
@@ -981,8 +993,9 @@ string OrderOperationToString(int orderType) {
 }
 
 int StringToOrderOperation(string orderTypeStr) {
-   if (orderTypeStr == "buy") return POSITION_TYPE_BUY;
-   if (orderTypeStr == "sell") return POSITION_TYPE_SELL;
+   // Return ORDER_TYPE_* so OpenOrder can work with a single enum family.
+   if (orderTypeStr == "buy") return ORDER_TYPE_BUY;
+   if (orderTypeStr == "sell") return ORDER_TYPE_SELL;
    if (orderTypeStr == "buylimit") return ORDER_TYPE_BUY_LIMIT;
    if (orderTypeStr == "selllimit") return ORDER_TYPE_SELL_LIMIT;
    if (orderTypeStr == "buystop") return ORDER_TYPE_BUY_STOP;
