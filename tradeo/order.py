@@ -7,7 +7,6 @@ from tradeo.order_type import OrderType
 
 class OrderPrice:
   """Class to hold order price."""
-
   def __init__(
       self,
       price: float = 0,
@@ -22,7 +21,6 @@ class OrderPrice:
 
 class MutableOrderDetails:
   """Class to hold order details."""
-
   def __init__(
       self,
       prices: OrderPrice,
@@ -52,7 +50,6 @@ class MutableOrderDetails:
 
 class ImmutableOrderDetails:
   """Class to hold order metadata."""
-
   def __init__(
       self,
       symbol: str,
@@ -90,7 +87,6 @@ class Order:
       Can be zero if the order should not have an expiration time.
 
   """
-
   def __init__(
       self,
       mutable_details: MutableOrderDetails,
@@ -99,7 +95,9 @@ class Order:
       pnl: float = 0,
   ):
     """Initialize the attributes."""
-    immutable_details.comment = self._sanitize_comment(immutable_details.comment)
+    immutable_details.comment = self._sanitize_comment(
+        comment=immutable_details.comment
+    )
     self._mutable_details = mutable_details
     self._immutable_details = immutable_details
     self._ticket = ticket  # it would not be available until the order be filled
@@ -116,9 +114,11 @@ class Order:
 
   def __str__(self) -> str:
     """Return a string representation of the order."""
-    return (f'Ticket: {self.ticket} - {self.comment} {self.symbol} '
-            f'price: {self.price} SL: {self.stop_loss} '
-            f'TP: {self.take_profit} ID: {self.magic}')
+    return (
+        f'Ticket: {self.ticket} - {self.comment} {self.symbol} '
+        f'price: {self.price} SL: {self.stop_loss} '
+        f'TP: {self.take_profit} ID: {self.magic}'
+    )
 
   @property
   def open_time(self) -> Optional[datetime]:
