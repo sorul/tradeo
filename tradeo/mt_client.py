@@ -475,11 +475,6 @@ class MT_Client(metaclass=Singleton):
       command_files = self.command_file_exist(symbol)
       for com in command_files:
         try_remove_file(com)
-    else:
-      log.debug(
-          f'Historical data for {symbol} not up to date: '
-          f'last date in data {last_date_from_df}'
-      )
 
   @staticmethod
   def _is_current_datetime(date_utc: datetime) -> bool:
