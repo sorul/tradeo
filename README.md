@@ -33,7 +33,7 @@ tradeo = { git = "git@github.com:sorul/tradeo.git", branch = "develop" }
 
 - You can customize the handler of metatrader responses inheriting *tradeo.event_handlers.event_handler.EventHandler* class. An example of this it would be [basic_handler.py](tradeo/event_handlers/basic_event_handler.py)
 
-- An example of a main script using this library would be [basic_forex.py](tradeo/tradeo/executable/basic_forex.py) that inheriting *tradeo.executable.executable.Executable*.
+- An example of a main script using this library would be [basic_forex.py](tradeo/executable/basic_forex.py) that inheriting *tradeo.executable.executable.Executable*.
 
 > [!NOTE]  
 > **The configuration of Metatrader is necessary for the functioning of Tradeo.** There is an example of both the configuration and the use of the library in a real project: [sorul_tradingbot](https://github.com/sorul/sorul_tradingbot)
