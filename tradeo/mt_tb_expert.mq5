@@ -680,7 +680,7 @@ void GetHistoricalData(string dataStr) {
                            rates_array[i].high, 
                            rates_array[i].low, 
                            rates_array[i].close, 
-                           rates_array[i].tick_volume);
+                           rates_array[i].volume);
       first = false;
    }
    text += "}}";
@@ -786,7 +786,7 @@ void CheckBarData() {
                                      curr_rate[0].high, 
                                      curr_rate[0].low, 
                                      curr_rate[0].close, 
-                                     curr_rate[0].tick_volume);
+                                     curr_rate[0].volume);
          text += rates;
          newData = true;
          // updates the timestamp
