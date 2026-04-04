@@ -13,6 +13,7 @@ dev_requirements:
 	poetry export --with dev -f requirements.txt --output requirements_dev.txt --without-hashes
 
 push_develop:
+	@poetry update
 	@make requirements
 	@make dev_requirements
 	git commit --allow-empty -m "updating requirements and pushing to develop"
@@ -43,6 +44,7 @@ check_untracked:
 	fi
 
 tag:
+	@poetry update
 	@make check_untracked
 	@make check_merge_master
 	@make flake8
