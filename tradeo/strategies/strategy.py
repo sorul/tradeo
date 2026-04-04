@@ -13,7 +13,13 @@ if TYPE_CHECKING:
 
 
 class Strategy(ABC):
-  """This class should not be instantiated."""
+  """This class should not be instantiated.
+
+  Only ``indicator`` is mandatory for subclasses. The remaining concrete
+  methods provide a default implementation and are intended as extension
+  points that users can override to adapt the strategy lifecycle to their
+  own execution logic.
+  """
 
   def __init__(
           self,
@@ -39,7 +45,11 @@ class Strategy(ABC):
       min_risk_profit: float = 1.5,
       **kwargs
   ) -> bool:
-    """Check if the order is viable."""
+    """Check if the order is viable.
+
+    Subclasses are expected to override this method when they need custom
+    execution filters or viability rules.
+    """
     _ = kwargs
     symbol = order.symbol
     orders = [o for o in self.mt_client.open_orders if o.symbol == symbol]
@@ -54,7 +64,10 @@ class Strategy(ABC):
       order: Order,
       time_threshold: int = 3600
   ) -> None:
-    """Handle limit orders based on the time threshold."""
+    """Handle limit orders based on the time threshold.
+
+    Subclasses can override this default management behavior.
+    """
     try:
       open_time = datetime.fromtimestamp(
           int(order.magic)).astimezone(Config.utc_timezone)
@@ -73,7 +86,10 @@ class Strategy(ABC):
       break_even_per_threshold: float = 0.75,
       **kwargs
   ) -> None:
-    """Handle filled orders by closing them or placing a break even."""
+    """Handle filled orders by closing them or placing a break even.
+
+    Subclasses can override this default management behavior.
+    """
     _ = kwargs
     try:
       open_time = datetime.fromtimestamp(
