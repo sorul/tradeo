@@ -43,10 +43,25 @@ check_untracked:
 		exit 1; \
 	fi
 
+check_origin_develop:
+	@current_branch=$$(git branch --show-current); \
+	if [ "$$current_branch" != "develop" ]; then \
+		echo "ERROR: check_origin_develop must run from develop (current: $$current_branch)"; \
+		exit 1; \
+	fi
+	@git fetch origin develop
+	@behind_count=$$(git rev-list --count HEAD..origin/develop); \
+	if [ "$$behind_count" -ne 0 ]; then \
+		echo "ERROR: origin/develop is ahead of local develop by $$behind_count commit(s)."; \
+		echo "Run 'git pull --rebase origin develop' before make tag."; \
+		exit 1; \
+	fi
+
 tag:
-	@poetry update
+	@make check_origin_develop
 	@make check_untracked
 	@make check_merge_master
+	@poetry update
 	@make flake8
 	@make test
 	@make requirements
@@ -54,7 +69,6 @@ tag:
 	@git add .
 	@git commit -am "v$$(poetry version -s)"
 	@git push
-	@git merge --no-edit --log develop
 	@git tag v$$(poetry version -s)
 	@git push --tags
 	@poetry version
