@@ -119,8 +119,11 @@ tag:
 	@make test
 	@make requirements
 	@make dev_requirements
-	@git add .
-	@git commit -am "v$$(poetry version -s)"
+	@if ! git diff --quiet; then \
+		git commit -m "v$$(poetry version -s)"; \
+	else \
+		echo "No changes to commit. Tagging current HEAD."; \
+	fi
 	@git push
 	@git tag v$$(poetry version -s)
 	@git push --tags
