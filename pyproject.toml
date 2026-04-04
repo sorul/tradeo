@@ -1,6 +1,6 @@
 [project]
 name = "tradeo"
-version = "0.24.1"
+version = "0.24.2"
 description = "This library contains a series of tools to create a trading bot for Forex trading using Metatrader."
 readme = "README.md"
 requires-python = ">=3.10.0"
