@@ -1,9 +1,12 @@
 # CHANGELOG
 
-## v0.24.1
+## v0.24.2 (2026/04/04)
+- fix:
+  - Update "request" dependency to 2.33.1 version for fixing vulnerability issue.
+
+## v0.24.1 (2026/04/01)
 - fix:
   - `Order.comment` now sanitizes unsupported `|` characters by replacing them with `/` to avoid breaking the MQL5 command parser.
-
 
 ## v0.24.0 (2026/02/14)
 - feat:
