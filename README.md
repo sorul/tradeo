@@ -38,7 +38,9 @@ tradeo = { git = "git@github.com:sorul/tradeo.git", branch = "develop" }
 > [!NOTE]  
 > **The configuration of Metatrader is necessary for the functioning of Tradeo.** There is an example of both the configuration and the use of the library in a real project: [sorul_tradingbot](https://github.com/sorul/sorul_tradingbot)
 
-
+## Utilities
+- *tradeo.utils.logger* module: It contains a logger that can be used in your project. It can be configured to log in a file, in the console or in a syslog server. It also has the possibility of sending logs to a Telegram chat.
+- *tradeo.trading_methods* module: It contains some trading methods that can be used in your strategies, such as calculating the pivots, calculating POH, VAL, VAH, calculating the EMA, RSI, etc.
 
 ## Execution of your project if you import this library
 
