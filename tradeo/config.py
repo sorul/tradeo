@@ -29,6 +29,12 @@ def _get_logging_level(level: str) -> int:
   return log_level
 
 
+def _get_bool_from_env_or_default(env_name: str, default: bool) -> bool:
+  """Get bool from env or return default when the variable is not set."""
+  value = _get_bool_from_env(env_name)
+  return default if value is None else value
+
+
 class Config:
   """Class to manage config."""
 
@@ -53,18 +59,18 @@ class Config:
   lookback_days = int(os.getenv('TB_LOOKBACK_DAYS') or 10)
 
   # Forex client configuration
-  check_messages_thread = _get_bool_from_env(
-      'TB_CHECK_MESSAGES_THREAD') or True
-  check_market_data_thread = _get_bool_from_env(
-      'TB_CHECK_MARKET_DATA_THREAD') or True
-  check_bar_data_thread = _get_bool_from_env(
-      'TB_CHECK_BAR_DATA_THREAD') or True
-  check_open_orders_thread = _get_bool_from_env(
-      'TB_CHECK_OPEN_ORDERS_THREAD') or True
-  check_historical_data_thread = _get_bool_from_env(
-      'TB_CHECK_HISTORICAL_DATA_THREAD') or True
-  check_historical_trades_thread = _get_bool_from_env(
-      'TB_CHECK_HISTORICAL_TRADES_THREAD') or True
+  check_messages_thread = _get_bool_from_env_or_default(
+      'TB_CHECK_MESSAGES_THREAD', True)
+  check_market_data_thread = _get_bool_from_env_or_default(
+      'TB_CHECK_MARKET_DATA_THREAD', True)
+  check_bar_data_thread = _get_bool_from_env_or_default(
+      'TB_CHECK_BAR_DATA_THREAD', True)
+  check_open_orders_thread = _get_bool_from_env_or_default(
+      'TB_CHECK_OPEN_ORDERS_THREAD', True)
+  check_historical_data_thread = _get_bool_from_env_or_default(
+      'TB_CHECK_HISTORICAL_DATA_THREAD', True)
+  check_historical_trades_thread = _get_bool_from_env_or_default(
+      'TB_CHECK_HISTORICAL_TRADES_THREAD', True)
 
   # Logging configuration
   activate_syslog = _get_bool_from_env('TB_ACTIVATE_SYSLOG') or False
