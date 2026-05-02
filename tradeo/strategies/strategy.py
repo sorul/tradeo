@@ -36,6 +36,7 @@ class Strategy(ABC):
           ohlc: OHLC,
           symbol: str,
           date: datetime,
+          **kwargs,
   ) -> Union[Order, None]:
     """Return an order if the strategy is triggered."""
 
@@ -43,7 +44,8 @@ class Strategy(ABC):
       self,
       order: Order,
       min_risk_profit: float = 1.5,
-      **kwargs
+      date: datetime = datetime.now(Config.utc_timezone),
+      **kwargs,
   ) -> bool:
     """Check if the order is viable.
 
@@ -51,6 +53,7 @@ class Strategy(ABC):
     execution filters or viability rules.
     """
     _ = kwargs
+    _ = date
     symbol = order.symbol
     orders = [o for o in self.mt_client.open_orders if o.symbol == symbol]
     c1 = len(orders) == 0
@@ -62,7 +65,8 @@ class Strategy(ABC):
   def handle_pending_orders(
       self,
       order: Order,
-      time_threshold: int = 3600
+      time_threshold: int = 3600,
+      **kwargs,
   ) -> None:
     """Handle limit orders based on the time threshold.
 
@@ -72,7 +76,7 @@ class Strategy(ABC):
       open_time = datetime.fromtimestamp(
           int(order.magic)).astimezone(Config.utc_timezone)
       current_datetime = datetime.now(Config.utc_timezone)
-      if (current_datetime - open_time).seconds > time_threshold:
+      if (current_datetime - open_time).total_seconds() > time_threshold:
         self.mt_client.send_close_orders_by_magic_command(order.magic)
         log.debug(f'Close order {order.magic} due to time threshold')
     except ValueError:  # int(order.magic)
@@ -84,7 +88,7 @@ class Strategy(ABC):
       time_threshold: int = 3600 * 24,
       break_even_time_threshold: int = 3600 * 12,
       break_even_per_threshold: float = 0.75,
-      **kwargs
+      **kwargs,
   ) -> None:
     """Handle filled orders by closing them or placing a break even.
 
@@ -97,7 +101,7 @@ class Strategy(ABC):
       current_datetime = datetime.now(Config.utc_timezone)
 
       # Check if the order can be closed based on the time threshold
-      if (current_datetime - open_time).seconds > time_threshold:
+      if (current_datetime - open_time).total_seconds() > time_threshold:
         self.mt_client.send_close_orders_by_magic_command(order.magic)
         log.debug(f'Close order {order.magic} due to time threshold')
 
@@ -121,7 +125,7 @@ class Strategy(ABC):
       current_datetime: datetime,
       break_even_time_threshold: int,
       break_even_per_threshold: float,
-      **kwargs
+      **kwargs,
   ) -> bool:
     """Check if a break even can be placed."""
     _ = kwargs
@@ -139,7 +143,7 @@ class Strategy(ABC):
     if not break_even_placed:
       reached_even_time_threshold = (
           current_datetime - open_time
-      ).seconds > break_even_time_threshold
+      ).total_seconds() > break_even_time_threshold
 
     # Check if the price has reached a threshold to place a break even
     if not break_even_placed:
