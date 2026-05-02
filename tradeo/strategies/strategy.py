@@ -1,4 +1,5 @@
 """Abstract class for strategies."""
+from __future__ import annotations  # for TYPE_CHECKING
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Union, TYPE_CHECKING, Optional
