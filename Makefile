@@ -30,71 +30,15 @@ check_merge_master:
 	fi
 	@set -e; \
 	git fetch origin; \
-	master_ref=origin/master; \
-	if git show-ref --verify --quiet refs/heads/master; then \
-		if git merge-base --is-ancestor origin/master master; then \
-			master_ref=master; \
-		fi; \
-	fi; \
-	echo "Checking merge conflicts between develop and $$master_ref..."; \
-	base_commit=$$(git merge-base HEAD "$$master_ref"); \
 	merge_output=$$(mktemp); \
-	git merge-tree "$$base_commit" HEAD "$$master_ref" > "$$merge_output"; \
-	conflict_files=$$(awk '/^changed in both$$/{getline; if ($$1 == "base") print $$NF}' "$$merge_output"); \
-	if [ -z "$$conflict_files" ]; then \
+	echo "Checking merge conflicts between develop and origin/master..."; \
+	if git merge-tree --write-tree HEAD origin/master > "$$merge_output" 2>&1; then \
 		rm -f "$$merge_output"; \
 		echo "OK: No merge conflicts detected with origin/master."; \
 		exit 0; \
 	fi; \
-	conflict_count=$$(printf "%s\n" "$$conflict_files" | wc -l | tr -d ' '); \
-	if [ "$$conflict_count" -eq 1 ] && [ "$$conflict_files" = "pyproject.toml" ] && \
-		awk ' \
-			BEGIN { in_conflict = 0; seen_start = 0; seen_sep = 0; seen_end = 0; ours_count = 0; theirs_count = 0; valid = 1 } \
-			/^[+]?<<<<<<< / { \
-				if (in_conflict != 0) valid = 0; \
-				in_conflict = 1; \
-				seen_start++; \
-				next; \
-			} \
-			/^[+]?=======$$/ { \
-				if (in_conflict != 1) valid = 0; \
-				in_conflict = 2; \
-				seen_sep++; \
-				next; \
-			} \
-			/^[+]?>>>>>>> / { \
-				if (in_conflict != 2) valid = 0; \
-				in_conflict = 0; \
-				seen_end++; \
-				next; \
-			} \
-			in_conflict == 1 { \
-				ours_count++; \
-				line = $$0; \
-				sub(/^[+]/, "", line); \
-				sub(/^[[:space:]]+/, "", line); \
-				if (index(line, "version = \"") != 1) valid = 0; \
-				next; \
-			} \
-			in_conflict == 2 { \
-				theirs_count++; \
-				line = $$0; \
-				sub(/^[+]/, "", line); \
-				sub(/^[[:space:]]+/, "", line); \
-				if (index(line, "version = \"") != 1) valid = 0; \
-				next; \
-			} \
-			END { \
-				if (valid && seen_start == 1 && seen_sep == 1 && seen_end == 1 && ours_count == 1 && theirs_count == 1) exit 0; \
-				exit 1; \
-			} \
-		' "$$merge_output"; then \
-		rm -f "$$merge_output"; \
-		echo "OK: Only the expected version conflict in pyproject.toml was detected."; \
-		exit 0; \
-	fi; \
-	echo "ERROR: Potential merge conflicts detected with origin/master. Resolve before make tag."; \
-	echo "$$conflict_files"; \
+	echo "ERROR: Merge conflicts detected with origin/master. Resolve before make tag."; \
+	sed -n 's/^CONFLICT .* in //p' "$$merge_output"; \
 	rm -f "$$merge_output"; \
 	exit 1
 
@@ -144,4 +88,3 @@ tag:
 	@git push --tags
 	@poetry version
 	@echo "Tagging complete. Make a pull request to merge develop into master -> https://github.com/sorul/tradeo/compare/develop?expand=1"
-
