@@ -6,15 +6,6 @@ import pytz
 from typing import Union
 
 
-def _get_bool_from_env(env_name: str) -> Union[bool, None]:
-  """Get bool from env."""
-  e = os.getenv(env_name)
-  if e is None:
-    return None
-  else:
-    return str(e).lower() in ['true', '1']
-
-
 def _get_logging_level(level: str) -> int:
   if level.lower() in ['info', 'inf', 'information']:
     log_level = logging.INFO
@@ -33,6 +24,15 @@ def _get_bool_from_env_or_default(env_name: str, default: bool) -> bool:
   """Get bool from env or return default when the variable is not set."""
   value = _get_bool_from_env(env_name)
   return default if value is None else value
+
+
+def _get_bool_from_env(env_name: str) -> Union[bool, None]:
+  """Get bool from env."""
+  e = os.getenv(env_name)
+  if e is None:
+    return None
+  else:
+    return str(e).lower() in ['true', '1']
 
 
 class Config:

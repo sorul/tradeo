@@ -1,8 +1,7 @@
 """Abstract class for strategies."""
-from __future__ import annotations
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Union, TYPE_CHECKING
+from typing import Union, TYPE_CHECKING, Optional
 
 from tradeo.config import Config
 from tradeo.log import log
@@ -44,23 +43,20 @@ class Strategy(ABC):
       self,
       order: Order,
       min_risk_profit: float = 1.5,
-      date: datetime = datetime.now(Config.utc_timezone),
+      date: Optional[datetime] = None,
       **kwargs,
   ) -> bool:
-    """Check if the order is viable.
+      """Check if the order is viable."""
+      _ = kwargs
+      if date is None:
+          date = datetime.now(Config.utc_timezone)
 
-    Subclasses are expected to override this method when they need custom
-    execution filters or viability rules.
-    """
-    _ = kwargs
-    _ = date
-    symbol = order.symbol
-    orders = [o for o in self.mt_client.open_orders if o.symbol == symbol]
-    c1 = len(orders) == 0
-    c2 = order.risk_benefit() > min_risk_profit
-    # High spread
-    c3 = datetime.now(Config.utc_timezone).hour not in [22, 23, 0]
-    return c1 and c2 and c3
+      symbol = order.symbol
+      orders = [o for o in self.mt_client.open_orders if o.symbol == symbol]
+      c1 = len(orders) == 0
+      c2 = order.risk_benefit() > min_risk_profit
+      c3 = date.hour not in [22, 23, 0]
+      return c1 and c2 and c3
 
   def handle_pending_orders(
       self,
@@ -72,6 +68,7 @@ class Strategy(ABC):
 
     Subclasses can override this default management behavior.
     """
+    _ = kwargs
     try:
       open_time = datetime.fromtimestamp(
           int(order.magic)).astimezone(Config.utc_timezone)
