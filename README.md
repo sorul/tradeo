@@ -42,9 +42,64 @@ tradeo = { git = "git@github.com:sorul/tradeo.git", branch = "develop" }
 - *tradeo.utils.logger* module: It contains a logger that can be used in your project. It can be configured to log in a file, in the console or in a syslog server. It also has the possibility of sending logs to a Telegram chat.
 - *tradeo.trading_methods* module: It contains some trading methods that can be used in your strategies, such as calculating the pivots, calculating POH, VAL, VAH, calculating the EMA, RSI, etc.
 
+### Forex client background threads
+
+The `MT_Client.start()` method starts background threads that poll files
+written by the MetaTrader expert advisor. Some files are written
+continuously by the expert advisor, while others are only generated after the
+Python client sends a command or subscription request.
+
+| Thread | Method called by the thread | Requires a previous command? | Reason |
+|---|---|---:|---|
+| `start_thread_check_messages` | `check_messages()` | No | The expert advisor writes `Messages.json` when it emits info/error messages. |
+| `start_thread_check_market_data` | `check_market_data()` | Yes | Requires `subscribe_symbols(...)`, which sends `SUBSCRIBE_SYMBOLS`. Otherwise, the expert advisor has no symbols in `MarketDataSymbols`. |
+| `start_thread_check_bar_data` | `check_bar_data()` | Yes | Requires `subscribe_symbols_bar_data(...)`, which sends `SUBSCRIBE_SYMBOLS_BAR_DATA`. Otherwise, `BarDataInstruments` is empty. |
+| `start_thread_check_open_orders` | `check_open_orders()` | No | The expert advisor runs `CheckOpenOrders()` on every tick/timer cycle and writes `Orders.json` continuously. |
+| `start_thread_check_historical_data` | `check_historical_data()` | Yes | Requires `get_historical_data(symbol, timeframe)`, which sends `GET_HISTORICAL_DATA`. Otherwise, no fresh `Historical_Data_<symbol>.json` file is generated. |
+| `start_thread_check_and_update_historical_trades` | `get_historical_trades()` and `check_historical_trades()` | No | The thread periodically sends `GET_HISTORICAL_TRADES` and then reads the generated `Historical_Trades.json` file. The refresh interval is configured through the `MT_Client` constructor. |
+
+In short:
+
+```text
+No previous command required:
+- start_thread_check_messages
+- start_thread_check_open_orders
+
+Previous subscription required:
+- start_thread_check_market_data
+- start_thread_check_bar_data
+
+Previous explicit request required:
+- start_thread_check_historical_data
+
+Automatically requested by its own thread:
+- start_thread_check_and_update_historical_trades
+```
+
+For critical workflows where stale closed-trade history could cause a wrong
+decision, such as opening a duplicate order after a position has just closed,
+use:
+
+```python
+mt_client.ensure_historical_trades_current(
+    timeout_seconds=5,
+    max_age_seconds=120,
+    lookback_days=2,
+)
+```
+
+This helper loads a recent `Historical_Trades.json` snapshot and, when the file
+is missing or stale, sends `GET_HISTORICAL_TRADES` once before waiting for a
+fresh file.
+
 ## Execution of your project if you import this library
 
 It's necessary to export certain environment variables before running the bot.
+The `TB_CHECK_*_THREAD` variables in the Forex-Client configuration decide
+which `MT_Client` background threads are enabled or disabled when
+`MT_Client.start()` is called. See the "Forex client background threads" section
+above for what each thread consumes and whether it needs a previous command or
+subscription.
 
 ```bash
 # Timezone configuration

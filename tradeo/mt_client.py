@@ -49,6 +49,7 @@ class MT_Client(metaclass=Singleton):
       event_handler: Union[EventHandler, None] = None,
       sleep_delay: float = 0.005,
       max_retry_command_seconds: int = 10,
+      historical_trades_refresh_seconds: int = 60,
       files_subfolder: str = 'AgentFiles',
       convert_to_utc: bool = True,
   ):
@@ -61,15 +62,24 @@ class MT_Client(metaclass=Singleton):
         Defaults to 0.005.
       max_retry_command_seconds (int, optional): Maximum seconds to retry
       sending a command. Defaults to 10.
+      historical_trades_refresh_seconds (int, optional): Seconds between
+        automatic GET_HISTORICAL_TRADES requests sent by the historical trades
+        thread. Defaults to 60.
       files_subfolder (str, optional): Subfolder for agent files. Defaults to
         'AgentFiles'.
       convert_to_utc (bool, optional): Whether to convert timestamps to UTC in
       "check_historical_data" method.
         Defaults to True.
     """
+    if historical_trades_refresh_seconds <= 0:
+      raise ValueError('historical_trades_refresh_seconds must be positive')
+
     # Parameter attributes
     self.sleep_delay = sleep_delay
     self.max_retry_command_seconds = max_retry_command_seconds
+    self.historical_trades_refresh_seconds = (
+        historical_trades_refresh_seconds
+    )
     self.num_command_files = 50
     self.convert_to_utc = convert_to_utc
 
@@ -146,7 +156,17 @@ class MT_Client(metaclass=Singleton):
     return thread
 
   def start(self) -> None:
-    """Start the threads."""
+    """Start the background file-polling threads.
+
+    These threads consume files written by the MetaTrader expert advisor. They
+    do not all request data by themselves:
+    - messages and open orders are written by the expert advisor continuously.
+    - market data requires a previous ``subscribe_symbols`` command.
+    - bar data requires a previous ``subscribe_symbols_bar_data`` command.
+    - historical candles require previous ``get_historical_data`` commands.
+    - historical trades are requested periodically by the historical trades
+      thread before reading ``Historical_Trades.json``.
+    """
     self.START = True
     self.send_reset_command_ids_command()
     # Start the demand threads
@@ -161,7 +181,7 @@ class MT_Client(metaclass=Singleton):
     if Config.check_historical_data_thread:
       self.start_thread(self.start_thread_check_historical_data)
     if Config.check_historical_trades_thread:
-      self.start_thread(self.start_thread_check_historical_trades)
+      self.start_thread(self.start_thread_check_and_update_historical_trades)
 
   def stop(self) -> None:
     """Stop the threads."""
@@ -182,7 +202,11 @@ class MT_Client(metaclass=Singleton):
     return self.symbol_locks[symbol]
 
   def start_thread_check_messages(self) -> None:
-    """Start the thread to check messages."""
+    """Start the thread to check MetaTrader messages.
+
+    No prior client command is required. The expert advisor writes
+    ``Messages.json`` when it emits info/error messages.
+    """
     while self.ACTIVE:
       sleep(self.sleep_delay)
       if self.START:
@@ -248,7 +272,11 @@ class MT_Client(metaclass=Singleton):
     self.messages = {'INFO': [], 'ERROR': []}
 
   def start_thread_check_market_data(self) -> None:
-    """Start the thread to check market data."""
+    """Start the thread to check subscribed market data.
+
+    Requires a previous ``subscribe_symbols`` call. Without that command, the
+    expert advisor has no symbols in its market-data subscription list.
+    """
     while self.ACTIVE:
       sleep(self.sleep_delay)
       if self.START:
@@ -298,7 +326,12 @@ class MT_Client(metaclass=Singleton):
     return 0, 0
 
   def start_thread_check_bar_data(self) -> None:
-    """Start the thread to check bar data."""
+    """Start the thread to check subscribed bar data.
+
+    Requires a previous ``subscribe_symbols_bar_data`` call. Without that
+    command, the expert advisor has no instruments in its bar-data subscription
+    list.
+    """
     while self.ACTIVE:
       sleep(self.sleep_delay)
       if self.START:
@@ -334,7 +367,12 @@ class MT_Client(metaclass=Singleton):
     return self.bar_data
 
   def start_thread_check_open_orders(self) -> None:
-    """Start the thread to check open orders."""
+    """Start the thread to check open orders and account info.
+
+    No prior client command is required. The expert advisor writes
+    ``Orders.json`` continuously from the current positions, pending orders,
+    and account state.
+    """
     while self.ACTIVE:
       sleep(self.sleep_delay)
       if self.START:
@@ -420,7 +458,12 @@ class MT_Client(metaclass=Singleton):
     ]
 
   def start_thread_check_historical_data(self) -> None:
-    """Start the thread to check historical data."""
+    """Start the thread to check requested historical candle data.
+
+    Requires previous ``get_historical_data`` calls. This thread only reads the
+    ``Historical_Data_<symbol>.json`` files generated by the expert advisor in
+    response to those commands.
+    """
     while self.ACTIVE:
       sleep(self.sleep_delay)
       if self.START:
@@ -495,19 +538,101 @@ class MT_Client(metaclass=Singleton):
     end_range = rounded_now_date + timedelta(minutes=5)
     return (date_utc >= start_range and date_utc < end_range)
 
-  def start_thread_check_historical_trades(self) -> None:
-    """Start the thread to check historical trades."""
+  def start_thread_check_and_update_historical_trades(self) -> None:
+    """Start the thread to request and check historical trades.
+
+    This thread periodically sends ``GET_HISTORICAL_TRADES`` through
+    ``get_historical_trades`` and then reads ``Historical_Trades.json`` through
+    ``check_historical_trades``. The request is throttled by
+    ``historical_trades_refresh_seconds`` to avoid flooding MetaTrader with
+    commands.
+    """
+    last_refresh: Union[datetime, None] = None
     while self.ACTIVE:
       sleep(self.sleep_delay)
-      if self.START:
-        self.check_historical_trades()
+      if not self.START:
+        continue
+
+      now = datetime.now(Config.utc_timezone)
+      should_refresh = (
+          last_refresh is None or
+          (now - last_refresh).total_seconds() >=
+          self.historical_trades_refresh_seconds
+      )
+      if should_refresh:
+        self.get_historical_trades()
+        last_refresh = now
+
+      self.check_historical_trades()
 
   def check_historical_trades(self) -> List[Trade]:
     """Update and return the historical trades object."""
     data = try_load_json(self.path_historical_trades)
-    if len(data) > 0 and isinstance(data, Dict):
+    if isinstance(data, Dict):
       self.historical_trades = self._transform_json_trades_to_trades(data)
     return self.historical_trades
+
+  def ensure_historical_trades_current(
+      self,
+      timeout_seconds: int = 5,
+      max_age_seconds: int = 120,
+      request_if_stale: bool = True,
+      lookback_days: int = 2,
+  ) -> bool:
+    """Ensure that historical trades are loaded from a recent snapshot.
+
+    This method is intended for critical moments where stale closed-trade data
+    could lead to wrong decisions, such as opening a duplicate order after a
+    position has just closed.
+
+    If ``Historical_Trades.json`` is missing or older than
+    ``max_age_seconds``, the method can request a fresh snapshot by sending
+    ``GET_HISTORICAL_TRADES`` once. It then waits up to ``timeout_seconds`` for
+    the expert advisor to write a recent file and loads it through
+    ``check_historical_trades``.
+    """
+    if timeout_seconds <= 0:
+      raise ValueError('timeout_seconds must be positive')
+    if max_age_seconds <= 0:
+      raise ValueError('max_age_seconds must be positive')
+    if lookback_days <= 0:
+      raise ValueError('lookback_days must be positive')
+
+    deadline = datetime.now(Config.utc_timezone) + timedelta(
+        seconds=timeout_seconds
+    )
+    requested = False
+
+    while datetime.now(Config.utc_timezone) < deadline:
+      self.check_historical_trades()
+      if self._historical_trades_file_is_current(max_age_seconds):
+        return True
+
+      if request_if_stale and not requested:
+        self.get_historical_trades(lookback_days=lookback_days)
+        requested = True
+
+      sleep(0.1)
+
+    return False
+
+  def _historical_trades_file_is_current(self, max_age_seconds: int) -> bool:
+    """Return True when Historical_Trades.json exists and is recent enough."""
+    if not self.path_historical_trades.exists():
+      return False
+
+    try:
+      updated_at = datetime.fromtimestamp(
+          self.path_historical_trades.stat().st_mtime,
+          Config.utc_timezone,
+      )
+    except OSError:
+      return False
+
+    age_seconds = (
+        datetime.now(Config.utc_timezone) - updated_at
+    ).total_seconds()
+    return age_seconds <= max_age_seconds
 
   def _transform_json_trades_to_trades(self, json_trades: Dict) -> List[Trade]:
     """Return a list of historical trades objects."""
