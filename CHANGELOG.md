@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## v0.25.0 (2026/05/02)
+- feat:
+  - `MT_Client` can now periodically request historical trades (`start_thread_check_and_update_historical_trades`) and ensure the local historical trades (`ensure_historical_trades_current`) snapshot is current.
+  - Strategy hooks can now receive extra context through keyword arguments.
+- docs:
+  - Document MetaTrader background threads and their command or subscription requirements.
+- fix:
+  - Boolean thread configuration environment variables now preserve explicit `False` values instead of falling back to `True`.
+  - Strategy elapsed time checks now use total seconds so thresholds work correctly across day boundaries.
+
 ## v0.24.2 (2026/04/04)
 - fix:
   - Update "request" dependency to 2.33.1 version for fixing vulnerability issue.

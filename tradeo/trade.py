@@ -1,4 +1,10 @@
-"""Class to hold trade data."""
+"""Historical trade records returned by MetaTrader.
+
+This module models executed trade/deal history. A ``Trade`` is not used to
+open, modify, or manage a live order; it represents a historical record that
+has already been written by MetaTrader, including execution times, realized
+financial result, commission, and swap.
+"""
 from datetime import datetime
 from typing import Optional
 
@@ -11,7 +17,7 @@ class TradeTimes:
       deal_time: Optional[datetime] = None,
       execution_time: Optional[datetime] = None,
   ):
-    """Initialize the attributes."""
+    """Initialize historical timing information for an executed trade."""
     self.deal_time = deal_time
     self.execution_time = execution_time
 
@@ -27,7 +33,7 @@ class TradeFinancials:
       commission: float,
       swap: float,
   ):
-    """Initialize the attributes."""
+    """Initialize realized financial values for an executed trade."""
     self.deal_price = deal_price
     self.lots = lots
     self.pnl = pnl
@@ -46,7 +52,7 @@ class TradeMetadata:
       magic: int,
       comment: str,
   ):
-    """Initialize the attributes."""
+    """Initialize identifying metadata for a historical trade record."""
     self.symbol = symbol
     self.trade_type = trade_type
     self.entry = entry
@@ -64,7 +70,12 @@ class Trade:
       times: TradeTimes,
       ticket: int,
   ):
-    """Initialize the attributes."""
+    """Initialize a historical trade/deal record.
+
+    ``Trade`` instances are created from historical MetaTrader data. They are
+    read-only domain objects for analysis, reconciliation, or duplicate-order
+    checks, not commands that can be sent back to MetaTrader.
+    """
     self._metadata = metadata
     self._financials = financials
     self._times = times

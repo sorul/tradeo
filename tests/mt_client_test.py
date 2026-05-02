@@ -839,6 +839,41 @@ def test_get_historical_trades(tmp_path):
   assert exists(file_path)
 
 
+def test_ensure_historical_trades_current_with_current_file(tmp_path):
+  mt_client = MT_Client()
+  historical_trades_path = tmp_path / 'Historical_Trades.json'
+  original_historical_trades_path = Path(
+      f'{resources_test_path()}/AgentFiles/Historical_Trades.json')
+  shutil.copyfile(original_historical_trades_path, historical_trades_path)
+  mt_client.path_historical_trades = historical_trades_path
+
+  current = mt_client.ensure_historical_trades_current(
+      timeout_seconds=1,
+      max_age_seconds=120,
+      request_if_stale=False,
+  )
+
+  assert current
+  assert len(mt_client.historical_trades) == 1
+
+
+def test_ensure_historical_trades_current_requests_when_missing(tmp_path):
+  mt_client = MT_Client()
+  mt_client.path_historical_trades = tmp_path / 'Historical_Trades.json'
+  mt_client.path_commands_prefix = tmp_path / 'Commands_'
+
+  current = mt_client.ensure_historical_trades_current(
+      timeout_seconds=0.2,
+      max_age_seconds=120,
+      request_if_stale=True,
+      lookback_days=2,
+  )
+
+  file_path = f'{mt_client.path_commands_prefix}{0}.txt'
+  assert not current
+  assert exists(file_path)
+
+
 def test_modify_pending_order():
   mt_client = MT_Client()
   order = Order(

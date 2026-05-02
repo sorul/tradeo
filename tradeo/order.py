@@ -1,4 +1,10 @@
-"""Class to hold order data."""
+"""Live order and order-command data used by the MetaTrader client.
+
+This module models orders that can be opened, modified, closed, or tracked
+while they are pending or active. ``Order`` is the object strategies return
+when they want to place a new order, and it is also used for currently open
+orders reported by MetaTrader.
+"""
 from datetime import datetime
 from typing import Optional
 
@@ -13,7 +19,7 @@ class OrderPrice:
       stop_loss: float = 0,
       take_profit: float = 0,
   ):
-    """Initialize the attributes."""
+    """Initialize entry, stop-loss, and take-profit prices for an order."""
     self.price = price
     self.stop_loss = stop_loss
     self.take_profit = take_profit
@@ -27,7 +33,7 @@ class MutableOrderDetails:
       lots: float = 0.01,
       expiration: int = 0,
   ):
-    """Initialize the attributes."""
+    """Initialize order fields that may change during order management."""
     self._prices = prices
     self.lots = lots
     self.expiration = expiration
@@ -58,7 +64,7 @@ class ImmutableOrderDetails:
       comment: str,
       open_time: Optional[datetime] = None,
   ):
-    """Initialize the attributes."""
+    """Initialize order metadata that identifies the order."""
     self.open_time = open_time
     self.symbol = symbol
     self.order_type = order_type
@@ -94,7 +100,12 @@ class Order:
       ticket: int = 0,
       pnl: float = 0,
   ):
-    """Initialize the attributes."""
+    """Initialize a live order or an order command.
+
+    ``Order`` instances are used to request new orders and to represent
+    pending or filled orders that are still open in MetaTrader. Historical
+    executed trade records are represented by ``Trade`` instead.
+    """
     immutable_details.comment = self._sanitize_comment(
         comment=immutable_details.comment
     )
