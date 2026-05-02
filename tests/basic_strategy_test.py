@@ -1,6 +1,6 @@
 from pandas import DataFrame
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import patch
 from pathlib import Path
 from freezegun import freeze_time
@@ -95,6 +95,9 @@ def test_handle_pending_orders(mock_debug, tmp_path):
 
   tz = pytz.timezone(str(Config.broker_timezone))
   d = datetime(2024, 1, 1, 0, 0)
+  order._immutable_details.magic = str(
+      round((tz.localize(d) - timedelta(seconds=120)).timestamp())
+  )
   with freeze_time(tz.localize(d)):
     strategy.handle_pending_orders(order, time_threshold)
     mock_debug.assert_called_with(
@@ -126,6 +129,9 @@ def test_handle_filled_orders(mock_debug, tmp_path):
 
   tz = pytz.timezone(str(Config.broker_timezone))
   d = datetime(2024, 1, 1, 0, 0)
+  order._immutable_details.magic = str(
+      round((tz.localize(d) - timedelta(seconds=120)).timestamp())
+  )
   with freeze_time(tz.localize(d)):
     strategy.handle_filled_orders(order, time_threshold, 0)
     mock_debug.assert_called_with(
