@@ -80,7 +80,11 @@ tag:
 		git commit -m "v$$(poetry version -s)"; \
 	fi
 	@if git rev-parse -q --verify refs/tags/v$$(poetry version -s) >/dev/null; then \
-		echo "ERROR: Tag v$$(poetry version -s) already exists."; \
+		echo "ERROR: Tag v$$(poetry version -s) already exists locally."; \
+		exit 1; \
+	fi
+	@if git ls-remote --exit-code --tags origin v$$(poetry version -s) >/dev/null 2>&1; then \
+		echo "ERROR: Tag v$$(poetry version -s) already exists in origin."; \
 		exit 1; \
 	fi
 	@git tag v$$(poetry version -s)
