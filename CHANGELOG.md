@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## v0.26.0 (2026/05/10)
+- feat:
+  - `MT_Client` accepts explicit `pollers` configuration in the constructor and through `set_pollers`, while still supporting `TB_CHECK_*_THREAD` environment variables when no explicit configuration is provided.
+  - `MT_Client` adds `request_historical_data` and `wait_historical_data` helpers for interval-based bots that want to request and process historical candles deterministically.
+- refactor:
+  - `BasicForex` now demonstrates explicit poller configuration and uses the new historical-data request/wait flow instead of polling symbols manually.
+- fix:
+  - `get_bid_ask` refreshes market data during its timeout, so callers are less dependent on the market-data poller being enabled.
+
 ## v0.25.0 (2026/05/02)
 - feat:
   - `MT_Client` can now periodically request historical trades (`start_thread_check_and_update_historical_trades`) and ensure the local historical trades (`ensure_historical_trades_current`) snapshot is current.

@@ -32,9 +32,28 @@ check_merge_master:
 	git fetch origin; \
 	merge_output=$$(mktemp); \
 	echo "Checking merge conflicts between develop and origin/master..."; \
+	if git merge-base --is-ancestor origin/master HEAD; then \
+		rm -f "$$merge_output"; \
+		echo "OK: origin/master is already merged into develop."; \
+		exit 0; \
+	fi; \
 	if git merge-tree --write-tree HEAD origin/master > "$$merge_output" 2>&1; then \
 		rm -f "$$merge_output"; \
 		echo "OK: No merge conflicts detected with origin/master."; \
+		exit 0; \
+	fi; \
+	master_tree=$$(git rev-parse origin/master^{tree}); \
+	if git log --format=%T HEAD | grep -qx "$$master_tree"; then \
+		if ! git diff --cached --quiet; then \
+			echo "ERROR: origin/master content is already in develop, but staged changes prevent automatic history sync."; \
+			echo "Unstage your changes and run make tag again."; \
+			rm -f "$$merge_output"; \
+			exit 1; \
+		fi; \
+		echo "origin/master content already exists in develop history; syncing merge history automatically."; \
+		git merge -s ours --no-edit origin/master; \
+		rm -f "$$merge_output"; \
+		echo "OK: origin/master history synced with develop."; \
 		exit 0; \
 	fi; \
 	echo "ERROR: Merge conflicts detected with origin/master. Resolve before make tag."; \
