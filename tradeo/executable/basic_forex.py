@@ -1,6 +1,5 @@
 """This script is one of the possible entry points of the project."""
 from datetime import datetime, timedelta
-from random import randrange
 import traceback
 
 from tradeo.mt_client import MT_Client
@@ -25,7 +24,17 @@ class BasicForex(Executable):
   def entry_point(self) -> None:
     """Entry point of the forex bot."""
     if self.check_time_viability():
-      mt_client = MT_Client(event_handler=BasicEventHandler())
+      mt_client = MT_Client(
+          event_handler=BasicEventHandler(),
+          pollers={
+              'messages': True,
+              'market_data': True,
+              'bar_data': False,
+              'open_orders': True,
+              'historical_data': False,
+              'historical_trades': False,
+          },
+      )
       try:
         # Lock the execution of the forex bot.
         # Another thread can not run at the same time.
@@ -65,10 +74,7 @@ class BasicForex(Executable):
     self._send_profit_message(mt_client, local_date)
 
     # Send commands to obtain the historical data
-    [
-        mt_client.get_historical_data(s, Config.timeframe)
-        for s in Config.symbols
-    ]
+    mt_client.request_historical_data(Config.symbols, Config.timeframe)
 
     # Send commands to obtain bid/ask
     mt_client.subscribe_symbols(Config.symbols)
@@ -106,25 +112,21 @@ class BasicForex(Executable):
           execution_time: timedelta
   ) -> None:
     """Handle the new historical data."""
-    # Initialize the remaining symbols
-    rs = mt_client.get_remaining_symbols()
-
     # The execution will take up to 4 minutes
     stop_condition = utc_date - execution_time + timedelta(minutes=4)
+    timeout_seconds = max(
+        0.0,
+        (stop_condition - datetime.now(Config.utc_timezone)).total_seconds()
+    )
 
-    while len(rs) > 0 and datetime.now(Config.utc_timezone) < stop_condition:
-      # Get randomly the next symbol
-      next_symbol = rs[randrange(len(rs))]
-
-      # Check if JSON data is available to trigger the event
-      mt_client.check_historical_data(next_symbol)
-
-      # Update the remaining symbols
-      rs = mt_client.get_remaining_symbols()
+    remaining_symbols = mt_client.wait_historical_data(
+        Config.symbols,
+        timeout_seconds=timeout_seconds,
+    )
 
     # Check if there are remaining symbols to process
-    if len(rs) > 0:
-      log.warning(f'{len(rs)} remaining symbols to process.')
+    if len(remaining_symbols) > 0:
+      log.warning(f'{len(remaining_symbols)} remaining symbols to process.')
     else:
       reset_consecutive_times_down()
 

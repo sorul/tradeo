@@ -7,11 +7,8 @@ from tradeo.ohlc import OHLC
 from tradeo.utils import create_magic_number
 from tradeo.strategies.strategy import Strategy
 from tradeo.mt_client import MT_Client
-from tradeo.order import (Order,
-                          MutableOrderDetails,
-                          ImmutableOrderDetails,
-                          OrderPrice,
-                          OrderType)
+from tradeo.order import (Order, MutableOrderDetails, ImmutableOrderDetails,
+                          OrderPrice, OrderType)
 
 
 class BasicStrategy(Strategy):
@@ -21,12 +18,8 @@ class BasicStrategy(Strategy):
     """Initialize the attributes."""
     super().__init__('BasicStrategy', mt_client)
 
-  def indicator(
-      self,
-      ohlc: OHLC,
-      symbol: str,
-      now_date: datetime
-  ) -> Union[Order, None]:
+  def indicator(self, ohlc: OHLC, symbol: str,
+                now_date: datetime) -> Union[Order, None]:
     """Return an order if the strategy is triggered."""
     # This strategy does not use the date
     _ = now_date
@@ -45,8 +38,9 @@ class BasicStrategy(Strategy):
 
     # Check the conditions
     upper_tendency = max_pivot_1 > max_pivot_2 and min_pivot_1 > min_pivot_2
-    lower_tendency = not upper_tendency and (
-        max_pivot_1 < max_pivot_2) and (min_pivot_1 < min_pivot_2)
+    lower_tendency = not upper_tendency and (max_pivot_1
+                                             < max_pivot_2) and (min_pivot_1
+                                                                 < min_pivot_2)
 
     # Obtain common features
     magic = create_magic_number()
@@ -57,22 +51,26 @@ class BasicStrategy(Strategy):
           MutableOrderDetails(
               OrderPrice(
                   take_profit=ema_20[-1] + 20 * pip,
-                  stop_loss=ema_50[-1] - 10 * pip
-              )),
+                  stop_loss=ema_50[-1] - 10 * pip,
+              ), ),
           ImmutableOrderDetails(
-              symbol=symbol, order_type=OrderType(buy=True, market=True),
-              magic=magic, comment=self.strategy_name)
-      )
+              symbol=symbol,
+              order_type=OrderType(buy=True, market=True),
+              magic=magic,
+              comment=self.strategy_name,
+          ))
     elif lower_tendency:
       return Order(
           MutableOrderDetails(
               OrderPrice(
                   take_profit=ema_20[-1] - 20 * pip,
-                  stop_loss=ema_50[-1] + 10 * pip
-              )),
+                  stop_loss=ema_50[-1] + 10 * pip,
+              ), ),
           ImmutableOrderDetails(
-              symbol=symbol, order_type=OrderType(buy=False, market=True),
-              magic=magic, comment=self.strategy_name)
-      )
+              symbol=symbol,
+              order_type=OrderType(buy=False, market=True),
+              magic=magic,
+              comment=self.strategy_name,
+          ))
 
     return None
