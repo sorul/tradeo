@@ -29,11 +29,15 @@ tradeo = { git = "git@github.com:sorul/tradeo.git", branch = "develop" }
 
 ## Usage
 
-- You can create strategies inheriting *tradeo.strategies.strategy.Strategy* class. An example of this it would be [basic_strategy.py](tradeo/strategies/basic_strategy.py)
+Tradeo is built around three small pieces:
 
-- You can customize the handler of metatrader responses inheriting *tradeo.event_handlers.event_handler.EventHandler* class. An example of this it would be [basic_handler.py](tradeo/event_handlers/basic_event_handler.py)
+- A strategy decides whether a candle snapshot should become an order. See [basic_strategy.py](tradeo/strategies/basic_strategy.py).
+- An event handler receives MetaTrader responses and calls your strategy. See [basic_event_handler.py](tradeo/event_handlers/basic_event_handler.py).
+- An executable wires everything together: starts the client, asks MetaTrader for data, handles open trades and waits for new candles. See [basic_forex.py](tradeo/executable/basic_forex.py).
 
-- An example of a main script using this library would be [basic_forex.py](tradeo/executable/basic_forex.py) that inheriting *tradeo.executable.executable.Executable*.
+The main object is `MT_Client`. It talks to MetaTrader through files written in
+the `MQL5/Files/AgentFiles` folder. You can let it poll those files in
+background threads, or you can request data and wait for it explicitly.
 
 > [!NOTE]  
 > **The configuration of Metatrader is necessary for the functioning of Tradeo.** There is an example of both the configuration and the use of the library in a real project: [sorul_tradingbot](https://github.com/sorul/sorul_tradingbot)
@@ -42,39 +46,65 @@ tradeo = { git = "git@github.com:sorul/tradeo.git", branch = "develop" }
 - *tradeo.utils.logger* module: It contains a logger that can be used in your project. It can be configured to log in a file, in the console or in a syslog server. It also has the possibility of sending logs to a Telegram chat.
 - *tradeo.trading_methods* module: It contains some trading methods that can be used in your strategies, such as calculating the pivots, calculating POH, VAL, VAH, calculating the EMA, RSI, etc.
 
-### Forex client background threads
+### MT_Client pollers
 
-The `MT_Client.start()` method starts background threads that poll files
-written by the MetaTrader expert advisor. Some files are written
-continuously by the expert advisor, while others are only generated after the
-Python client sends a command or subscription request.
+`MT_Client.start()` can launch small background pollers. Each poller watches one
+MetaTrader file and updates the in-memory client state.
 
-| Thread | Method called by the thread | Requires a previous command? | Reason |
-|---|---|---:|---|
-| `start_thread_check_messages` | `check_messages()` | No | The expert advisor writes `Messages.json` when it emits info/error messages. |
-| `start_thread_check_market_data` | `check_market_data()` | Yes | Requires `subscribe_symbols(...)`, which sends `SUBSCRIBE_SYMBOLS`. Otherwise, the expert advisor has no symbols in `MarketDataSymbols`. |
-| `start_thread_check_bar_data` | `check_bar_data()` | Yes | Requires `subscribe_symbols_bar_data(...)`, which sends `SUBSCRIBE_SYMBOLS_BAR_DATA`. Otherwise, `BarDataInstruments` is empty. |
-| `start_thread_check_open_orders` | `check_open_orders()` | No | The expert advisor runs `CheckOpenOrders()` on every tick/timer cycle and writes `Orders.json` continuously. |
-| `start_thread_check_historical_data` | `check_historical_data()` | Yes | Requires `get_historical_data(symbol, timeframe)`, which sends `GET_HISTORICAL_DATA`. Otherwise, no fresh `Historical_Data_<symbol>.json` file is generated. |
-| `start_thread_check_and_update_historical_trades` | `get_historical_trades()` and `check_historical_trades()` | No | The thread periodically sends `GET_HISTORICAL_TRADES` and then reads the generated `Historical_Trades.json` file. The refresh interval is configured through the `MT_Client` constructor. |
+For interval-based bots, the clearest setup is usually:
 
-In short:
-
-```text
-No previous command required:
-- start_thread_check_messages
-- start_thread_check_open_orders
-
-Previous subscription required:
-- start_thread_check_market_data
-- start_thread_check_bar_data
-
-Previous explicit request required:
-- start_thread_check_historical_data
-
-Automatically requested by its own thread:
-- start_thread_check_and_update_historical_trades
+```python
+mt_client = MT_Client(
+    event_handler=BasicEventHandler(),
+    pollers={
+        'messages': True,
+        'market_data': True,
+        'bar_data': False,
+        'open_orders': True,
+        'historical_data': False,
+        'historical_trades': False,
+    },
+)
 ```
+
+That means:
+
+| Poller | Reads | Most useful for |
+|---|---|---|
+| `messages` | `Messages.json` | Almost every live bot. It keeps MetaTrader errors and info messages available so the bot can report failed commands, wrong order formats or broker-side rejections. |
+| `market_data` | `Market_Data.json` | Bots that need current bid/ask while managing orders: break-even logic, trailing stops, pending-order type detection, spread checks, or lot/risk calculations. Enable it after `subscribe_symbols(...)`. |
+| `bar_data` | `Bar_Data.json` | Always-on bots that want live candle updates from `subscribe_symbols_bar_data(...)`, for example a dashboard or a process that reacts as soon as a new M1/M5 bar is published. Leave it off for cron-style bots that request candles explicitly. |
+| `open_orders` | `Orders.json` | Bots that manage existing positions or account state: closing unknown orders, moving stop loss, reading balance/equity, avoiding duplicate open orders, or reporting current exposure. |
+| `historical_data` | `Historical_Data_<symbol>.json` | Long-running, event-driven bots that send `get_historical_data(...)` requests and want `on_historical_data(...)` to fire in the background. For interval-based bots, `request_historical_data(...)` plus `wait_historical_data(...)` is usually clearer. |
+| `historical_trades` | `Historical_Trades.json` | Always-on bots that need closed trades refreshed periodically, for example daily PnL tracking or duplicate-trade prevention across the whole session. For interval-based bots, `ensure_historical_trades_current(...)` before making decisions is usually enough. |
+
+If `pollers` is not provided, Tradeo reads the `TB_CHECK_*_THREAD` environment
+variables instead. This is useful when you prefer to configure the runtime from
+a `.env` file rather than making the Python call explicit.
+
+### Request data explicitly
+
+For a bot that runs every few minutes, prefer this flow:
+
+```python
+mt_client.start()
+mt_client.request_historical_data(Config.symbols, Config.timeframe)
+mt_client.subscribe_symbols(Config.symbols)
+
+# handle existing trades first
+orders = mt_client.check_open_orders()
+
+# then process the candles requested above
+remaining_symbols = mt_client.wait_historical_data(
+    Config.symbols,
+    timeout_seconds=240,
+)
+```
+
+`wait_historical_data(...)` calls `check_historical_data(...)` internally, so
+your `event_handler.on_historical_data(...)` still receives the candle snapshot.
+The example executable [basic_forex.py](tradeo/executable/basic_forex.py) uses
+this style.
 
 For critical workflows where stale closed-trade history could cause a wrong
 decision, such as opening a duplicate order after a position has just closed,
@@ -92,14 +122,23 @@ This helper loads a recent `Historical_Trades.json` snapshot and, when the file
 is missing or stale, sends `GET_HISTORICAL_TRADES` once before waiting for a
 fresh file.
 
+This is intentionally different from enabling the `historical_trades` poller:
+
+- Use `historical_trades=True` when your application is always running and you
+  want closed trades to refresh periodically in the background.
+- Use `historical_trades=False` plus `ensure_historical_trades_current(...)`
+  when your bot runs by intervals and only needs a fresh snapshot before making
+  a decision.
+
+Using both is usually redundant for interval-based bots. It can make sense for
+an always-on application that wants background refreshes most of the time, but
+still needs to force a freshness check before a critical decision.
+
 ## Execution of your project if you import this library
 
-It's necessary to export certain environment variables before running the bot.
-The `TB_CHECK_*_THREAD` variables in the Forex-Client configuration decide
-which `MT_Client` background threads are enabled or disabled when
-`MT_Client.start()` is called. See the "Forex client background threads" section
-above for what each thread consumes and whether it needs a previous command or
-subscription.
+You usually need environment variables for timezones, symbols, MetaTrader paths
+and logging. Pollers can also be configured from the environment when you do not
+want to pass `pollers={...}` in Python.
 
 ```bash
 # Timezone configuration
@@ -112,12 +151,12 @@ export TB_ACCOUNT_CURRENCY=EUR
 export TB_TIMEFRAME=M5
 export TB_LOOKBACK_DAYS=10
 
-# Forex-Client configuration
+# Optional Forex-Client poller configuration
 export TB_CHECK_MESSAGES_THREAD=true
-export TB_CHECK_MARKET_DATA_THREAD=false
+export TB_CHECK_MARKET_DATA_THREAD=true
 export TB_CHECK_BAR_DATA_THREAD=false
 export TB_CHECK_OPEN_ORDERS_THREAD=true
-export TB_CHECK_HISTORICAL_DATA_THREAD=true
+export TB_CHECK_HISTORICAL_DATA_THREAD=false
 export TB_CHECK_HISTORICAL_TRADES_THREAD=false
 
 # Metatrader configuration
