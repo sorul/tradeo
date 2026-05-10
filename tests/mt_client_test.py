@@ -5,6 +5,7 @@ from pandas import DataFrame
 import json
 from datetime import datetime, timedelta
 import pytz
+import pytest
 from freezegun import freeze_time
 from os.path import join, exists
 
@@ -67,6 +68,24 @@ def test_invalid_file_path():
       delattr(mt_client, 'path_orders')
     mt_client.set_agent_paths()
     assert not hasattr(mt_client, 'path_orders')
+
+
+def test_set_pollers():
+  mt_client = MT_Client()
+  pollers = {
+      'messages': True,
+      'market_data': True,
+      'bar_data': False,
+      'open_orders': True,
+      'historical_data': False,
+      'historical_trades': False,
+  }
+
+  mt_client.set_pollers(pollers)
+
+  assert mt_client.pollers == pollers
+  with pytest.raises(ValueError, match='Unknown poller'):
+    mt_client.set_pollers({'dummy': True})
 
 
 def test_start_threads(tmp_path):
@@ -135,6 +154,8 @@ def test_check_messages(tmp_path):
 
   mt_client = MT_Client()
   mt_client.path_messages = messages_path
+  mt_client.messages = {'INFO': [], 'ERROR': []}
+  mt_client._last_messages_millis = 0
 
   # Call for the first time to read messages
   with freeze_time(broker_dt):
@@ -431,6 +452,61 @@ def test_check_historical_data(tmp_path):
   assert mt_client.check_historical_data(symbol) == {}
 
 
+def test_request_and_wait_historical_data(tmp_path):
+  symbol = 'USDJPY'
+  prefix = 'AgentFiles'
+  Path(tmp_path / prefix).mkdir()
+  historical_path = tmp_path / f'{prefix}/Historical_Data_{symbol}.json'
+
+  mt_client = MT_Client()
+  mt_client.event_handler = None
+  mt_client.path_historical_data_prefix = Path(
+      tmp_path / f'{prefix}/Historical_Data_'
+  )
+  mt_client.path_commands_prefix = tmp_path / f'{prefix}/Commands_'
+  mt_client._successful_symbols = {symbol}
+
+  mt_client.request_historical_data([symbol], Config.timeframe)
+
+  assert symbol not in mt_client.successful_symbols
+  assert exists(f'{mt_client.path_commands_prefix}{0}.txt')
+
+  now_date = datetime.now(Config.broker_timezone)
+  td = timedelta(minutes=now_date.minute % 5,
+                 seconds=now_date.second,
+                 microseconds=now_date.microsecond)
+  rounded_now_date = now_date - td + timedelta(minutes=1)
+  rounded_now_date_minus_5 = rounded_now_date - timedelta(minutes=5)
+  data = {
+      f'{symbol}_{Config.timeframe}': {
+          f'''{rounded_now_date_minus_5.strftime('%Y.%m.%d %H:%M')}''': {
+              'open': 143.92400,
+              'high': 143.98000,
+              'low': 143.92000,
+              'close': 143.92500,
+              'volume': 400.00000
+          },
+          f'''{rounded_now_date.strftime('%Y.%m.%d %H:%M')}''': {
+              'open': 143.92400,
+              'high': 143.97200,
+              'low': 143.91600,
+              'close': 143.92100,
+              'volume': 305.00000
+          }
+      }
+  }
+
+  with open(historical_path, 'w') as f:
+    f.write(json.dumps(data))
+
+  remaining_symbols = mt_client.wait_historical_data(
+      [symbol], timeout_seconds=0
+  )
+
+  assert remaining_symbols == []
+  assert mt_client.successful_symbols == {symbol}
+
+
 def test_check_historical_trades(tmp_path):
 
   # Copy the Historical_Trades.json file to the temporary folder
@@ -639,7 +715,7 @@ def test_get_bid_ask(tmp_path):
   shutil.copyfile(original_market_data_path, market_data_path)
   mt_client = MT_Client()
   mt_client.path_market_data = market_data_path
-  mt_client.check_market_data()
+  mt_client.market_data = {}
 
   bid, ask = mt_client.get_bid_ask('EURUSD')
   assert isinstance(bid, float)

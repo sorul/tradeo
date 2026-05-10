@@ -37,6 +37,7 @@ attributes_data_type = Dict[str, Dict]
 messages_type = Dict[str, List[Union[MT_MessageInfo, MT_MessageError]]]
 account_info_type = Dict[str, Union[float, str]]
 historical_data_type = Dict[str, DataFrame]
+pollers_type = Dict[str, bool]
 
 
 class MT_Client(metaclass=Singleton):
@@ -52,6 +53,7 @@ class MT_Client(metaclass=Singleton):
       historical_trades_refresh_seconds: int = 60,
       files_subfolder: str = 'AgentFiles',
       convert_to_utc: bool = True,
+      pollers: Union[pollers_type, None] = None,
   ):
     """Initialize the MT_Client instance with specified parameters.
 
@@ -70,6 +72,10 @@ class MT_Client(metaclass=Singleton):
       convert_to_utc (bool, optional): Whether to convert timestamps to UTC in
       "check_historical_data" method.
         Defaults to True.
+      pollers (dict[str, bool], optional): File-polling threads to start. When
+        omitted, the legacy ``TB_CHECK_*_THREAD`` environment variables are
+        used. Valid keys are ``messages``, ``market_data``, ``bar_data``,
+        ``open_orders``, ``historical_data`` and ``historical_trades``.
     """
     if historical_trades_refresh_seconds <= 0:
       raise ValueError('historical_trades_refresh_seconds must be positive')
@@ -82,6 +88,7 @@ class MT_Client(metaclass=Singleton):
     )
     self.num_command_files = 50
     self.convert_to_utc = convert_to_utc
+    self.pollers = self._build_pollers(pollers)
 
     # Paths to output MT files
     self.prefix_files_path = files_subfolder
@@ -149,6 +156,56 @@ class MT_Client(metaclass=Singleton):
     return self._successful_symbols
 
   @staticmethod
+  def _default_pollers() -> pollers_type:
+    """Return the polling thread configuration from Config."""
+    return {
+        'messages': Config.check_messages_thread,
+        'market_data': Config.check_market_data_thread,
+        'bar_data': Config.check_bar_data_thread,
+        'open_orders': Config.check_open_orders_thread,
+        'historical_data': Config.check_historical_data_thread,
+        'historical_trades': Config.check_historical_trades_thread,
+    }
+
+  @classmethod
+  def _build_pollers(
+      cls: type, pollers: Union[pollers_type, None] = None
+  ) -> pollers_type:
+    """Merge explicit poller settings with the Config defaults."""
+    result = cls._default_pollers()
+    if pollers is None:
+      return result
+
+    unknown_keys = set(pollers) - set(result)
+    if unknown_keys:
+      joined_keys = ', '.join(sorted(unknown_keys))
+      raise ValueError(f'Unknown poller(s): {joined_keys}')
+
+    result.update(pollers)
+    return result
+
+  def set_pollers(self, pollers: pollers_type) -> None:
+    """Set polling thread configuration for this client instance."""
+    self.pollers = self._build_pollers(pollers)
+
+  def _can_start_poller(
+      self, poller_name: str, required_paths: List[str]
+  ) -> bool:
+    """Return whether a poller has all path attributes required to run."""
+    missing_paths = [
+        path for path in required_paths if not hasattr(self, path)
+    ]
+    if len(missing_paths) == 0:
+      return True
+
+    joined_paths = ', '.join(missing_paths)
+    log.warning(
+        f'Skipping {poller_name} poller because missing path attributes: '
+        f'{joined_paths}'
+    )
+    return False
+
+  @staticmethod
   def start_thread(target: Callable) -> Thread:
     """To start the thread with a method as target."""
     thread = Thread(target=target, args=(), daemon=True)
@@ -170,17 +227,29 @@ class MT_Client(metaclass=Singleton):
     self.START = True
     self.send_reset_command_ids_command()
     # Start the demand threads
-    if Config.check_messages_thread:
+    if self.pollers['messages'] and self._can_start_poller(
+        'messages', ['path_messages']
+    ):
       self.start_thread(self.start_thread_check_messages)
-    if Config.check_market_data_thread:
+    if self.pollers['market_data'] and self._can_start_poller(
+        'market_data', ['path_market_data']
+    ):
       self.start_thread(self.start_thread_check_market_data)
-    if Config.check_bar_data_thread:
+    if self.pollers['bar_data'] and self._can_start_poller(
+        'bar_data', ['path_bar_data']
+    ):
       self.start_thread(self.start_thread_check_bar_data)
-    if Config.check_open_orders_thread:
+    if self.pollers['open_orders'] and self._can_start_poller(
+        'open_orders', ['path_orders', 'path_orders_stored']
+    ):
       self.start_thread(self.start_thread_check_open_orders)
-    if Config.check_historical_data_thread:
+    if self.pollers['historical_data'] and self._can_start_poller(
+        'historical_data', ['path_historical_data_prefix']
+    ):
       self.start_thread(self.start_thread_check_historical_data)
-    if Config.check_historical_trades_thread:
+    if self.pollers['historical_trades'] and self._can_start_poller(
+        'historical_trades', ['path_historical_trades']
+    ):
       self.start_thread(self.start_thread_check_and_update_historical_trades)
 
   def stop(self) -> None:
@@ -316,6 +385,7 @@ class MT_Client(metaclass=Singleton):
     start_time = time.time()
 
     while (time.time() - start_time) < timeout:
+      self.check_market_data()
       try:
         bid_ask = self.market_data[symbol]
         return bid_ask['bid'], bid_ask['ask']
@@ -473,11 +543,13 @@ class MT_Client(metaclass=Singleton):
     """Update historical_data, trigger event if needed and return that data."""
     # "symbol" is None when it comes from "start_thread_check_historical_data"
     # In this case, we need to get a random remaining symbol
-    remaining_symbols = self.get_remaining_symbols()
-    if len(remaining_symbols) == 0:
-      return {}
     if symbol is None:
+      remaining_symbols = self.get_remaining_symbols()
+      if len(remaining_symbols) == 0:
+        return {}
       symbol = remaining_symbols[randrange(len(remaining_symbols))]
+    elif symbol in self.successful_symbols:
+      return {}
 
     # We read the symbol file
     file_path = Path(f'{self.path_historical_data_prefix}{symbol}.json')
@@ -727,6 +799,58 @@ class MT_Client(metaclass=Singleton):
     data = [symbol, time_frame, int(start), int(end)]
     self.send_command('GET_HISTORICAL_DATA', ','.join(str(p) for p in data))
 
+  def request_historical_data(
+      self, symbols: List[str], time_frame: str
+  ) -> None:
+    """Request historical candle data for all symbols.
+
+    This is a convenience wrapper for interval-based applications that want to
+    request data first and then decide explicitly when to wait/process it.
+    """
+    for symbol in symbols:
+      self.successful_symbols.discard(symbol)
+      self.get_historical_data(symbol, time_frame)
+
+  def wait_historical_data(
+      self,
+      symbols: List[str],
+      timeout_seconds: float = 240,
+      poll_interval_seconds: float = 0.1,
+  ) -> List[str]:
+    """Wait until requested historical data has been processed.
+
+    The method polls ``Historical_Data_<symbol>.json`` files and calls
+    ``check_historical_data`` so the configured event handler is triggered.
+    It returns the symbols that could not be processed before the timeout.
+    """
+    if timeout_seconds < 0:
+      raise ValueError('timeout_seconds cannot be negative')
+    if poll_interval_seconds <= 0:
+      raise ValueError('poll_interval_seconds must be positive')
+
+    remaining_symbols = self.get_remaining_symbols(list(dict.fromkeys(symbols)))
+    deadline = datetime.now(Config.utc_timezone) + timedelta(
+        seconds=timeout_seconds
+    )
+
+    while len(remaining_symbols) > 0:
+      for symbol in remaining_symbols:
+        self.check_historical_data(symbol)
+
+      remaining_symbols = [
+          symbol for symbol in remaining_symbols
+          if symbol not in self.successful_symbols
+      ]
+      if (
+          len(remaining_symbols) == 0 or
+          datetime.now(Config.utc_timezone) >= deadline
+      ):
+        break
+
+      sleep(poll_interval_seconds)
+
+    return remaining_symbols
+
   def get_historical_trades(self, lookback_days: int = 30) -> None:
     """To send a GET_HISTORIC_TRADES command to request historical trades.
 
@@ -925,6 +1049,7 @@ class MT_Client(metaclass=Singleton):
     for symbol in Config.symbols:
       file_path = Path(f'{self.path_historical_data_prefix}{symbol}.json')
       try_remove_file(file_path)
+      self.successful_symbols.discard(symbol)
 
   def command_file_exist(self, symbol: str) -> List[Path]:
     """Return the command files that match request hist. data from symbol."""
@@ -947,9 +1072,11 @@ class MT_Client(metaclass=Singleton):
     log.warning(f'Balance is not a float: {balance}')
     return -1.0
 
-  def get_remaining_symbols(self) -> List[str]:
+  def get_remaining_symbols(
+      self, symbols: Union[List[str], None] = None
+  ) -> List[str]:
     """Return the list of remaining symbols."""
-    all_symbols = set(Config.symbols)
+    all_symbols = set(Config.symbols if symbols is None else symbols)
     return list(all_symbols - self.successful_symbols)
 
   def get_lot_size(
