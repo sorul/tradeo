@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## v0.27.0 (2026/06/20)
+- fix:
+  - Break-even placement now requires the order's close price to be in profit, calculates progress from the entry price toward take profit for both buy and sell orders, and avoids sending an invalid stop-loss modification when the break-even price has already been crossed.
+- refactor:
+  - Break-even command logs now clarify that a modify command was sent and include the requested stop-loss price.
+- build:
+  - Update the `tag` workflow to commit tracked release changes using the current version before creating the tag.
+- chore:
+  - Remove the workspace-specific custom spelling dictionary configuration from VS Code.
+  - Ignore task-local `.atl/` agent artifacts.
+
 ## v0.26.0 (2026/05/10)
 - feat:
   - `MT_Client` accepts explicit `pollers` configuration in the constructor and through `set_pollers`, while still supporting `TB_CHECK_*_THREAD` environment variables when no explicit configuration is provided.

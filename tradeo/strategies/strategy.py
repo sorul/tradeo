@@ -6,6 +6,7 @@ from typing import Union, TYPE_CHECKING, Optional
 
 from tradeo.config import Config
 from tradeo.log import log
+from tradeo.trading_methods import get_pip
 if TYPE_CHECKING:
   from tradeo.order import Order
   from tradeo.ohlc import OHLC
@@ -137,32 +138,94 @@ class Strategy(ABC):
     )
     break_even_placed = break_even_placed_buy or break_even_placed_sell
 
+    if break_even_placed:
+      return result
+
+    bid, ask = self.mt_client.get_bid_ask(order.symbol)
+
+    # Break even can only be placed when the close price is in profit.
+    if not self._price_is_in_profit(order, bid, ask):
+      return result
+
     # Check if the time has reached a threshold to place a break even
-    if not break_even_placed:
-      reached_even_time_threshold = (
-          current_datetime - open_time
-      ).total_seconds() > break_even_time_threshold
+    reached_even_time_threshold = (
+        current_datetime - open_time
+    ).total_seconds() > break_even_time_threshold
 
     # Check if the price has reached a threshold to place a break even
-    if not break_even_placed:
-      bid, ask = self.mt_client.get_bid_ask(order.symbol)
-      price = (bid + ask) / 2
-      percentage_reached = (
-          price - order.stop_loss
-      ) / (
-          order.take_profit - order.stop_loss
-      )
-      price_reached_threshold = percentage_reached >= break_even_per_threshold
+    price_reached_threshold = (
+        self._profit_path_percentage_reached(order, bid, ask) >=
+        break_even_per_threshold
+    )
 
-    if not break_even_placed and (
-        price_reached_threshold or reached_even_time_threshold
-    ):
+    if price_reached_threshold or reached_even_time_threshold:
       if price_reached_threshold:
         reason = 'Price percentage reached'
       else:
         reason = 'Time threshold reached'
-      # We place a break even
-      self.mt_client.place_break_even(order, log_comment=reason)
-      result = True
+      if self._break_even_stop_already_crossed(order, bid, ask):
+        log.debug(
+            f'Break even was not placed for order {order.ticket} because '
+            f'the current close price already crossed the break even stop. '
+            f'{reason}'
+        )
+      else:
+        result = True
+        self.mt_client.place_break_even(order, log_comment=reason)
 
     return result
+
+  def _price_is_in_profit(
+      self,
+      order: Order,
+      bid: float,
+      ask: float,
+  ) -> bool:
+    """Return whether the order can currently be closed in profit."""
+    close_price = bid if order.order_type.buy else ask
+    if not close_price:
+      return False
+    if order.order_type.buy:
+      return close_price > order.price
+    return close_price < order.price
+
+  def _profit_path_percentage_reached(
+      self,
+      order: Order,
+      bid: float,
+      ask: float,
+  ) -> float:
+    """Return how much of the entry-to-take-profit path was reached."""
+    close_price = bid if order.order_type.buy else ask
+    profit_path = abs(order.take_profit - order.price)
+    if profit_path == 0:
+      return 0
+    reached_path = (
+        close_price - order.price
+        if order.order_type.buy
+        else order.price - close_price
+    )
+    return reached_path / profit_path
+
+  def _break_even_stop_already_crossed(
+      self,
+      order: Order,
+      bid: float,
+      ask: float,
+  ) -> bool:
+    """Return whether placing break even would create an invalid stop."""
+    close_price = bid if order.order_type.buy else ask
+    if not close_price:
+      return False
+    break_even = self._get_break_even_price(order)
+    if order.order_type.buy:
+      return close_price <= break_even
+    return close_price >= break_even
+
+  @staticmethod
+  def _get_break_even_price(order: Order) -> float:
+    """Return the stop-loss price used by MT_Client.place_break_even."""
+    pip = get_pip(order.symbol)
+    if order.order_type.buy:
+      return order.price + pip
+    return order.price - pip

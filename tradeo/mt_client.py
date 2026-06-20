@@ -941,8 +941,8 @@ class MT_Client(metaclass=Singleton):
     )
     log.debug(
         (
-            f'Break even placed ({break_even}) in ticket {order.ticket}. '
-            f'{log_comment}'
+            f'Break even modify command sent for ticket {order.ticket}: '
+            f'stop_loss={break_even}. {log_comment}'
         )
     )
 

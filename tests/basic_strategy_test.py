@@ -2,15 +2,12 @@ from pandas import DataFrame
 import numpy as np
 from datetime import datetime, timedelta
 from unittest.mock import patch
-from pathlib import Path
 from freezegun import freeze_time
 import pytz
-import shutil
 
 from tradeo.log import log
 from tradeo.order_type import OrderType
 from tradeo.config import Config
-from tradeo.paths import resources_test_path
 from tradeo.mt_client import MT_Client
 from tradeo.ohlc import OHLC
 from tradeo.strategies.basic_strategy import BasicStrategy
@@ -138,24 +135,14 @@ def test_handle_filled_orders(mock_debug, tmp_path):
         f'Close order {order.magic} due to time threshold')
 
 
-def test_check_if_break_even_can_be_placed(tmp_path):
-
-  # Prepare the test to obtain bid and ask
-  market_data_path = tmp_path / 'Market_Data.json'
-  original_market_data_path = Path(
-      f'{resources_test_path()}/AgentFiles/Market_Data.json')
-  shutil.copyfile(original_market_data_path, market_data_path)
-  mt_client = MT_Client()
-  mt_client.path_market_data = market_data_path
-  mt_client.path_commands_prefix = tmp_path
-  mt_client.check_market_data()
-
+def test_check_if_break_even_can_be_placed():
+  mt_client = _BreakEvenMTClient(bid=1.2500, ask=1.2502)
   order = Order(
       MutableOrderDetails(
           prices=OrderPrice(
-              price=2,
+              price=1.2,
               stop_loss=1,
-              take_profit=4
+              take_profit=1.4
           ), lots=0.01
       ),
       ImmutableOrderDetails(
@@ -178,4 +165,161 @@ def test_check_if_break_even_can_be_placed(tmp_path):
       current_datetime,
       break_even_time_threshold,
       break_even_per_threshold
+  )
+
+
+class _BreakEvenMTClient:
+  def __init__(self, bid, ask):
+    self.bid = bid
+    self.ask = ask
+    self.closed_tickets = []
+    self.break_even_orders = []
+
+  def get_bid_ask(self, symbol):
+    _ = symbol
+    return self.bid, self.ask
+
+  def send_close_order_command(self, ticket):
+    self.closed_tickets.append(ticket)
+
+  def place_break_even(self, order, log_comment=''):
+    self.break_even_orders.append((order.ticket, log_comment))
+
+
+@patch.object(log, 'debug')
+def test_check_if_break_even_skips_buy_when_stop_is_already_crossed(
+    mock_debug
+):
+  _ = mock_debug
+  mt_client = _BreakEvenMTClient(bid=1.199, ask=1.1992)
+  strategy = BasicStrategy(mt_client)
+  order = _break_even_order(buy=True)
+
+  result = strategy._check_if_break_even_can_be_placed(
+      order,
+      datetime.now(Config.utc_timezone),
+      datetime.now(Config.utc_timezone),
+      break_even_time_threshold=0,
+      break_even_per_threshold=1,
+  )
+
+  assert not result
+  assert mt_client.closed_tickets == []
+  assert mt_client.break_even_orders == []
+
+
+@patch.object(log, 'debug')
+def test_check_if_break_even_skips_sell_when_stop_is_already_crossed(
+    mock_debug
+):
+  _ = mock_debug
+  mt_client = _BreakEvenMTClient(bid=1.2008, ask=1.2009)
+  strategy = BasicStrategy(mt_client)
+  order = _break_even_order(buy=False)
+
+  result = strategy._check_if_break_even_can_be_placed(
+      order,
+      datetime.now(Config.utc_timezone),
+      datetime.now(Config.utc_timezone),
+      break_even_time_threshold=0,
+      break_even_per_threshold=1,
+  )
+
+  assert not result
+  assert mt_client.closed_tickets == []
+  assert mt_client.break_even_orders == []
+
+
+def test_check_if_break_even_places_stop_when_not_crossed():
+  mt_client = _BreakEvenMTClient(bid=1.2500, ask=1.2502)
+  strategy = BasicStrategy(mt_client)
+  order = _break_even_order(buy=True)
+
+  result = strategy._check_if_break_even_can_be_placed(
+      order,
+      datetime.now(Config.utc_timezone),
+      datetime.now(Config.utc_timezone),
+      break_even_time_threshold=0,
+      break_even_per_threshold=1,
+  )
+
+  assert result
+  assert mt_client.closed_tickets == []
+  assert mt_client.break_even_orders == [
+      (order.ticket, 'Time threshold reached')
+  ]
+
+
+def test_check_if_break_even_waits_for_profit_after_time_threshold():
+  mt_client = _BreakEvenMTClient(bid=1.1900, ask=1.1902)
+  strategy = BasicStrategy(mt_client)
+  order = _break_even_order(buy=True)
+
+  result = strategy._check_if_break_even_can_be_placed(
+      order,
+      datetime.now(Config.utc_timezone),
+      datetime.now(Config.utc_timezone),
+      break_even_time_threshold=0,
+      break_even_per_threshold=1,
+  )
+
+  assert not result
+  assert mt_client.closed_tickets == []
+  assert mt_client.break_even_orders == []
+
+
+def test_check_if_break_even_waits_for_profit_after_percentage_threshold():
+  mt_client = _BreakEvenMTClient(bid=1.1900, ask=1.1902)
+  strategy = BasicStrategy(mt_client)
+  order = _break_even_order(buy=True)
+
+  result = strategy._check_if_break_even_can_be_placed(
+      order,
+      datetime.now(Config.utc_timezone),
+      datetime.now(Config.utc_timezone),
+      break_even_time_threshold=3600,
+      break_even_per_threshold=-1,
+  )
+
+  assert not result
+  assert mt_client.closed_tickets == []
+  assert mt_client.break_even_orders == []
+
+
+def test_check_if_break_even_uses_sell_profit_direction_for_percentage():
+  mt_client = _BreakEvenMTClient(bid=1.0988, ask=1.0990)
+  strategy = BasicStrategy(mt_client)
+  order = _break_even_order(buy=False)
+
+  result = strategy._check_if_break_even_can_be_placed(
+      order,
+      datetime.now(Config.utc_timezone),
+      datetime.now(Config.utc_timezone),
+      break_even_time_threshold=3600,
+      break_even_per_threshold=0.5,
+  )
+
+  assert result
+  assert mt_client.closed_tickets == []
+  assert mt_client.break_even_orders == [
+      (order.ticket, 'Price percentage reached')
+  ]
+
+
+def _break_even_order(buy=True):
+  return Order(
+      MutableOrderDetails(
+          prices=OrderPrice(
+              price=1.2,
+              stop_loss=1.0 if buy else 1.4,
+              take_profit=1.4 if buy else 1.0,
+          ), lots=0.01
+      ),
+      ImmutableOrderDetails(
+          symbol='EURUSD',
+          order_type=OrderType(buy=buy, market=True),
+          magic='1999999999',
+          comment=''
+      ),
+      ticket=123,
   )
