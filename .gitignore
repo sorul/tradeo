@@ -164,3 +164,6 @@ cython_debug/
 # Project-specific files
 main.py
 tradeo/data/*.txt
+
+# Agent task-local artifacts
+.atl/
