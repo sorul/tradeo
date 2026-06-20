@@ -94,7 +94,7 @@ tag:
 	@make dev_requirements
 	@if git diff --quiet && git diff --cached --quiet; then \
 		echo "No tracked changes to commit. Tagging current HEAD."; \
-	else \w
+	else \
 		git add -u; \
 		git commit -m "v$$(poetry version -s)"; \
 	fi
