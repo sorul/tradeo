@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.28.0 (2026/10/27)
+- refactor:
+  - From now on, the minimum python version is 3.10.0
+
 ## v0.27.0 (2026/06/20)
 - fix:
   - Break-even placement now requires the order's close price to be in profit, calculates progress from the entry price toward take profit for both buy and sell orders, and avoids sending an invalid stop-loss modification when the break-even price has already been crossed.
