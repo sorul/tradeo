@@ -2,7 +2,7 @@
 
 ## v0.28.0 (2026/10/27)
 - refactor:
-  - From now on, the minimum python version is 3.10.0
+  - From now on, the minimum python version is 3.11.0
 
 ## v0.27.0 (2026/06/20)
 - fix:
